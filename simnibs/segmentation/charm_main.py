@@ -563,6 +563,8 @@ def run(
         skin_care = mesh_settings["skin_care"]
         mmg_noinsert = mesh_settings["mmg_noinsert"]
 
+        logger.info(f"Using skin tag: {skin_tag}")
+        
         # Meshing
 
         debug_path = None
@@ -610,13 +612,14 @@ def run(
         for fn in cap_files:
             fn_out = os.path.splitext(os.path.basename(fn))[0]
             fn_out = os.path.join(sub_files.eeg_cap_folder, fn_out)
-            transformations.warp_coordinates(
+            transformations.warp_coordinates( 
                 fn,
                 sub_files.subpath,
                 transformation_direction="mni2subject",
                 out_name=fn_out + ".csv",
                 out_geo=fn_out + ".geo",
                 mesh_in=mesh,
+                skin_tag=skin_tag
             )
 
         logger.info("Write label image from mesh")

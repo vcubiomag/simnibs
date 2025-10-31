@@ -885,7 +885,7 @@ def project_points_on_surface(mesh, pts, surface_tags = None, distance = 0.):
     return projs
 
 
-def transform_tdcs_positions(coords, transf_type, transf_def, pos_y=None, mesh=None):
+def transform_tdcs_positions(coords, transf_type, transf_def, pos_y=None, mesh=None, surface_tags=None):
     ''' Transform positions of tDCS electrodes
 
     Parameters
@@ -905,6 +905,8 @@ def transform_tdcs_positions(coords, transf_type, transf_def, pos_y=None, mesh=N
         Array with reference points
     mesh: simnibs.msh.mesh_io.Msh
         Mesh structure
+    surface_tags: int 
+        Surface tag to project points onto
     Returns
     ------
     coords_transf: nx3 ndarray
@@ -930,19 +932,22 @@ def transform_tdcs_positions(coords, transf_type, transf_def, pos_y=None, mesh=N
     else:
         raise ValueError('Invalid transformation type')
 
+    if not isinstance(surface_tags, int): 
+        surface_tags = 1005 
+
     if mesh:
-        coords_transf = project_points_on_surface(mesh, coords_transf, surface_tags = 1005)
+        coords_transf = project_points_on_surface(mesh, coords_transf, surface_tags = surface_tags)
         if pos_y is not None:
-            pos_y_transf = project_points_on_surface(mesh, pos_y_transf, surface_tags = 1005)
+            pos_y_transf = project_points_on_surface(mesh, pos_y_transf, surface_tags = surface_tags)
 
     if pos_y is not None:
         return coords_transf, pos_y_transf
     else:
         return coords_transf
-
+    
 
 def transform_tms_positions(coords, v_y, v_z, transf_type, transf_def,
-                            mesh=None, distances=None):
+                            mesh=None, distances=None, surface_tags=None):
     ''' Transform positions and vectors for TMS positions
     Enforces the orthonomality of v_z and v_y by orthogonalizing the transformed v_y
     w.r.t v_z
@@ -968,6 +973,9 @@ def transform_tms_positions(coords, v_y, v_z, transf_type, transf_def,
         Mesh structure. Used to project and get the right distance to skin. Default: do not project
     distances: nx1 ndarray
         Array with coil distances
+    surface_tags: int 
+        Surface tag to project points onto
+        
     Returns
     ------
     coords_t: nx3 ndarray
@@ -982,11 +990,14 @@ def transform_tms_positions(coords, v_y, v_z, transf_type, transf_def,
     if coords.shape[1] != 3:
         raise ValueError('Input coordinates should have a nx3 format')
 
+    if not isinstance(surface_tags, int):
+        surface_tags = 1005
+                
     if transf_type == 'affine':
         coords_transf = coordinates_affine(coords, transf_def)
         if mesh:
             coords_transf = project_points_on_surface(mesh, coords_transf,
-                                                      surface_tags = 1005,
+                                                      surface_tags=surface_tags,
                                                       distance=distances)
         vy_transf = vectors_affine(v_y, transf_def)
         vz_transf = vectors_affine(v_z, transf_def)
@@ -998,7 +1009,7 @@ def transform_tms_positions(coords, v_y, v_z, transf_type, transf_def,
                                                          vectors=v_z)
         if mesh:
             coords_transf = project_points_on_surface(mesh, coords_transf,
-                                                      surface_tags = 1005,
+                                                      surface_tags=surface_tags,
                                                       distance=distances)
     else:
         raise ValueError('Invalid transformation type')
@@ -1183,7 +1194,8 @@ def warp_coordinates(coordinates, m2m_folder,
                      transformation_type='nonl',
                      out_name=None,
                      out_geo=None,
-                     mesh_in=None):
+                     mesh_in=None, 
+                     skin_tag=None):
     ''' Warps a set of coordinates
     For simpler calls, please see subject2mni_coords and mni2subject_coords
 
@@ -1233,6 +1245,8 @@ def warp_coordinates(coordinates, m2m_folder,
         TMS coil distances from scalp; is used only for direction 'mni2subject'
         (standard: None; the head mesh file will then be automatically loaded,
          which is slower for repeated applications)
+    skin_tag: int 
+        Skin tag used as target for projection of eeg positions. 
 
     Returns
     ----------
@@ -1321,8 +1335,8 @@ def warp_coordinates(coordinates, m2m_folder,
     electrode = [i for i, t in enumerate(
         type_) if t in ['Fiducial', 'Electrode', 'ReferenceElectrode']]
     if len(electrode) > 0:
-        transformed_coords[electrode, :] = transform_tdcs_positions(
-            coordinates[electrode, :], ttype, warp, mesh=mesh)
+        transformed_coords[electrode, :] = transform_tdcs_positions( 
+            coordinates[electrode, :], ttype, warp, mesh=mesh, surface_tags=skin_tag)
 
     # Transform the pos_y coordinates, if any
     electrode_posy = [i for i in electrode if extra[i] is not None]
@@ -1331,7 +1345,7 @@ def warp_coordinates(coordinates, m2m_folder,
         posy = posy[None, :]
 
     if len(electrode_posy) > 0:
-        posy = transform_tdcs_positions(posy, ttype, warp, mesh=mesh)
+        posy = transform_tdcs_positions(posy, ttype, warp, mesh=mesh, surface_tags=skin_tag)
     for el, y in zip(electrode_posy, posy):
         transformed_extra[el] = y
 
@@ -1346,7 +1360,7 @@ def warp_coordinates(coordinates, m2m_folder,
         vy = e[:, 3:6]
         d = e[:, 6]
         transformed_coords[coil, :], vy, vz = transform_tms_positions(
-            coordinates[coil, :], vy, vz, ttype, warp, mesh=mesh, distances=d)
+            coordinates[coil, :], vy, vz, ttype, warp, mesh=mesh, distances=d, surface_tags=skin_tag) 
 
         coil_extra = np.hstack((vz, vy, d[None, :].T))
 

@@ -291,7 +291,8 @@ class TmsCoilModel(TcdElement):
     def from_tcd_dict(cls, tcd_coil_model: dict):
         if isinstance(tcd_coil_model["points"], str):
             points = np.frombuffer(
-                zlib.decompress(base64.b64decode(tcd_coil_model["points"])), dtype=np.float64
+                zlib.decompress(base64.b64decode(tcd_coil_model["points"])),
+                dtype=np.float64,
             ).reshape(-1, 3)
         else:
             points = np.array(tcd_coil_model["points"])
@@ -299,7 +300,8 @@ class TmsCoilModel(TcdElement):
         if isinstance(tcd_coil_model["faces"], str):
             faces = (
                 np.frombuffer(
-                    zlib.decompress(base64.b64decode(tcd_coil_model["faces"])), dtype=np.int64
+                    zlib.decompress(base64.b64decode(tcd_coil_model["faces"])),
+                    dtype=np.int64,
                 ).reshape(-1, 3)
                 + 1
             )
@@ -310,7 +312,8 @@ class TmsCoilModel(TcdElement):
             min_distance_points = None
         elif isinstance(tcd_coil_model["minDistancePoints"], str):
             min_distance_points = np.frombuffer(
-                zlib.decompress(base64.b64decode(tcd_coil_model["minDistancePoints"])), dtype=np.float64
+                zlib.decompress(base64.b64decode(tcd_coil_model["minDistancePoints"])),
+                dtype=np.float64,
             ).reshape(-1, 3)
         else:
             min_distance_points = np.array(tcd_coil_model["minDistancePoints"])

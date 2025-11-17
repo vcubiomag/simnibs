@@ -1,22 +1,22 @@
 # -*- coding: utf-8 -*-
 """
-    command line tool to convert coil dipole definition ccd or tcd files to nifti1
-    format. This program is part of the SimNIBS package.
-    Please check on www.simnibs.org how to cite our work in publications.
+command line tool to convert coil dipole definition ccd or tcd files to nifti1
+format. This program is part of the SimNIBS package.
+Please check on www.simnibs.org how to cite our work in publications.
 
-    Copyright (C) 2021  Kristoffer H. Madsen
+Copyright (C) 2021  Kristoffer H. Madsen
 
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or any later version.
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or any later version.
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 """
 
@@ -91,7 +91,7 @@ def main():
             if coil.limits is None:
                 coil.limits = np.array([[-300, 300], [-200, 200], [0, 300]])
             coil.write_nifti(outfile, b_field=options.Bfield)
-            print(f"Time spend: {time.perf_counter()-t0:.0f}s")
+            print(f"Time spend: {time.perf_counter() - t0:.0f}s")
         else:
             print(f"Nifti1 version of {coil_file} already exists")
 

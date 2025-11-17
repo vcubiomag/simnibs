@@ -9,12 +9,15 @@ class ProbabilisticAtlas:
     def __init__(self):
         pass
 
-    def getMesh(self, meshCollectionFileName,
-                transform=None,
-                K=None,
-                initialDeformation=None, initialDeformationMeshCollectionFileName=None,
-                returnInitialDeformationApplied=False):
-
+    def getMesh(
+        self,
+        meshCollectionFileName,
+        transform=None,
+        K=None,
+        initialDeformation=None,
+        initialDeformationMeshCollectionFileName=None,
+        returnInitialDeformationApplied=False,
+    ):
         # Get the mesh
         mesh_collection = gems.KvlMeshCollection()
         mesh_collection.read(meshCollectionFileName)
@@ -35,20 +38,28 @@ class ProbabilisticAtlas:
 
             # Get the mesh node positions transformed back into template space (i.e., undoing the affine registration that we applied)
             nodePositions = mesh.points
-            nodePositionsInTemplateSpace = self.mapPositionsFromSubjectToTemplateSpace(nodePositions, transform)
+            nodePositionsInTemplateSpace = self.mapPositionsFromSubjectToTemplateSpace(
+                nodePositions, transform
+            )
 
             # Get the estimated warp in template space
-            [estimatedNodeDeformationInTemplateSpace, estimated_averageDistance,
-             estimated_maximumDistance] = kvlWarpMesh(
+            [
+                estimatedNodeDeformationInTemplateSpace,
+                estimated_averageDistance,
+                estimated_maximumDistance,
+            ] = kvlWarpMesh(
                 initialDeformationMeshCollectionFileName,
                 initialDeformation,
-                meshCollectionFileName
+                meshCollectionFileName,
             )
 
             # Apply this warp on the mesh node positions in template space, and transform into current space
-            desiredNodePositionsInTemplateSpace = nodePositionsInTemplateSpace + estimatedNodeDeformationInTemplateSpace
-            desiredNodePositions = self.mapPositionsFromTemplateToSubjectSpace(desiredNodePositionsInTemplateSpace,
-                                                                               transform)
+            desiredNodePositionsInTemplateSpace = (
+                nodePositionsInTemplateSpace + estimatedNodeDeformationInTemplateSpace
+            )
+            desiredNodePositions = self.mapPositionsFromTemplateToSubjectSpace(
+                desiredNodePositionsInTemplateSpace, transform
+            )
             mesh.points = requireNumpyArray(desiredNodePositions)
 
         # Return what we got
@@ -60,63 +71,81 @@ class ProbabilisticAtlas:
             return mesh
 
     def mapPositionsFromSubjectToTemplateSpace(self, positions, transform):
-
         #
-        tmp = np.linalg.solve(transform.as_numpy_array,
-                              np.pad(positions, ((0, 0), (0, 1)), mode='constant', constant_values=1).T).T
+        tmp = np.linalg.solve(
+            transform.as_numpy_array,
+            np.pad(positions, ((0, 0), (0, 1)), mode="constant", constant_values=1).T,
+        ).T
         return tmp[:, 0:3]
 
     def mapPositionsFromTemplateToSubjectSpace(self, positions, transform):
-
         #
-        tmp = (transform.as_numpy_array @ \
-               np.pad(positions, ((0, 0), (0, 1)), 'constant', constant_values=1).T).T
+        tmp = (
+            transform.as_numpy_array
+            @ np.pad(positions, ((0, 0), (0, 1)), "constant", constant_values=1).T
+        ).T
         return tmp[:, 0:3]
 
-    def deformMesh(self, mesh, transform, data, mask, means, variances, mixtureWeights, numberOfGaussiansPerClass,
-                   userOptimizationParameters={}):
-       
+    def deformMesh(
+        self,
+        mesh,
+        transform,
+        data,
+        mask,
+        means,
+        variances,
+        mixtureWeights,
+        numberOfGaussiansPerClass,
+        userOptimizationParameters={},
+    ):
         logger = logging.getLogger(__name__)
         # Get images in ITK format
         numberOfContrasts = data.shape[-1]
         images = []
         for contrastNumber in range(numberOfContrasts):
-            tmp = np.zeros(mask.shape, order='F')
+            tmp = np.zeros(mask.shape, order="F")
             tmp[mask] = data[:, contrastNumber]
             images.append(gems.KvlImage(requireNumpyArray(tmp)))
 
         # Set up cost calculator
         calculator = gems.KvlCostAndGradientCalculator(
-            typeName='AtlasMeshToIntensityImage',
+            typeName="AtlasMeshToIntensityImage",
             images=images,
-            boundaryCondition='Sliding',
+            boundaryCondition="Sliding",
             transform=transform,
             means=means,
             variances=variances,
             mixtureWeights=mixtureWeights,
-            numberOfGaussiansPerClass=numberOfGaussiansPerClass)
+            numberOfGaussiansPerClass=numberOfGaussiansPerClass,
+        )
 
         # Get optimizer and plug calculator in it
-        optimizerType = 'L-BFGS'
+        optimizerType = "L-BFGS"
         optimizationParameters = {
-            'Verbose': False,
-            'MaximalDeformationStopCriterion': 0.001,  # measured in pixels,
-            'LineSearchMaximalDeformationIntervalStopCriterion': 0.001,
-            'MaximumNumberOfIterations': 20,
-            'BFGS-MaximumMemoryLength': 12
+            "Verbose": False,
+            "MaximalDeformationStopCriterion": 0.001,  # measured in pixels,
+            "LineSearchMaximalDeformationIntervalStopCriterion": 0.001,
+            "MaximumNumberOfIterations": 20,
+            "BFGS-MaximumMemoryLength": 12,
         }
         optimizationParameters.update(userOptimizationParameters)
-        #print(optimizationParameters)
-        optimizer = gems.KvlOptimizer(optimizerType, mesh, calculator, optimizationParameters)
+        # print(optimizationParameters)
+        optimizer = gems.KvlOptimizer(
+            optimizerType, mesh, calculator, optimizationParameters
+        )
 
         # Run deformation optimization
         historyOfDeformationCost = []
         historyOfMaximalDeformation = []
         nodePositionsBeforeDeformation = mesh.points
         while True:
-            minLogLikelihoodTimesDeformationPrior, maximalDeformation = optimizer.step_optimizer_samseg()
-            logger.info("maximalDeformation=%.4f minLogLikelihood=%.4f" % (
-            maximalDeformation, minLogLikelihoodTimesDeformationPrior))
+            minLogLikelihoodTimesDeformationPrior, maximalDeformation = (
+                optimizer.step_optimizer_samseg()
+            )
+            logger.info(
+                "maximalDeformation=%.4f minLogLikelihood=%.4f"
+                % (maximalDeformation, minLogLikelihoodTimesDeformationPrior)
+            )
             historyOfDeformationCost.append(minLogLikelihoodTimesDeformationPrior)
             historyOfMaximalDeformation.append(maximalDeformation)
             if maximalDeformation == 0:
@@ -125,11 +154,28 @@ class ProbabilisticAtlas:
         # Return
         nodePositionsAfterDeformation = mesh.points
         maximalDeformationApplied = np.sqrt(
-            np.max(np.sum((nodePositionsAfterDeformation - nodePositionsBeforeDeformation) ** 2, 1)))
-        return historyOfDeformationCost, historyOfMaximalDeformation, maximalDeformationApplied, minLogLikelihoodTimesDeformationPrior
+            np.max(
+                np.sum(
+                    (nodePositionsAfterDeformation - nodePositionsBeforeDeformation)
+                    ** 2,
+                    1,
+                )
+            )
+        )
+        return (
+            historyOfDeformationCost,
+            historyOfMaximalDeformation,
+            maximalDeformationApplied,
+            minLogLikelihoodTimesDeformationPrior,
+        )
 
-    def saveDeformedAtlas(self, originalAtlasFileName, deformedAtlasFileName, arg, applyAsDeformation=False):
-
+    def saveDeformedAtlas(
+        self,
+        originalAtlasFileName,
+        deformedAtlasFileName,
+        arg,
+        applyAsDeformation=False,
+    ):
         #
         self.mesh_collection = gems.KvlMeshCollection()
         self.mesh_collection.read(originalAtlasFileName)

@@ -373,14 +373,16 @@ class TmsCoilElements(ABC, TcdElement):
         if tcd_coil_element["type"] == 1:
             if isinstance(tcd_coil_element["points"], str):
                 points = np.frombuffer(
-                    zlib.decompress(base64.b64decode(tcd_coil_element["points"])), dtype=np.float64
+                    zlib.decompress(base64.b64decode(tcd_coil_element["points"])),
+                    dtype=np.float64,
                 ).reshape(-1, 3)
             else:
                 points = np.array(tcd_coil_element["points"])
 
             if isinstance(tcd_coil_element["values"], str):
                 values = np.frombuffer(
-                    zlib.decompress(base64.b64decode(tcd_coil_element["values"])), dtype=np.float64
+                    zlib.decompress(base64.b64decode(tcd_coil_element["values"])),
+                    dtype=np.float64,
                 ).reshape(-1, 3)
             else:
                 values = np.array(tcd_coil_element["values"])
@@ -397,14 +399,16 @@ class TmsCoilElements(ABC, TcdElement):
         elif tcd_coil_element["type"] == 2:
             if isinstance(tcd_coil_element["points"], str):
                 points = np.frombuffer(
-                    zlib.decompress(base64.b64decode(tcd_coil_element["points"])), dtype=np.float64
+                    zlib.decompress(base64.b64decode(tcd_coil_element["points"])),
+                    dtype=np.float64,
                 ).reshape(-1, 3)
             else:
                 points = np.array(tcd_coil_element["points"])
 
             if isinstance(tcd_coil_element["values"], str):
                 values = np.frombuffer(
-                    zlib.decompress(base64.b64decode(tcd_coil_element["values"])), dtype=np.float64
+                    zlib.decompress(base64.b64decode(tcd_coil_element["values"])),
+                    dtype=np.float64,
                 ).reshape(-1, 3)
             else:
                 values = np.array(tcd_coil_element["values"])
@@ -414,7 +418,9 @@ class TmsCoilElements(ABC, TcdElement):
             )
         elif tcd_coil_element["type"] == 3:
             if isinstance(tcd_coil_element["data"], str):
-                data = pickle.loads(zlib.decompress(base64.b64decode(tcd_coil_element["data"])))
+                data = pickle.loads(
+                    zlib.decompress(base64.b64decode(tcd_coil_element["data"]))
+                )
             else:
                 data = np.array(tcd_coil_element["data"])
 
@@ -708,12 +714,12 @@ class DipoleElements(PositionalTmsCoilElements):
             tcd_coil_element["points"] = self.points.tolist()
             tcd_coil_element["values"] = self.values.tolist()
         else:
-            tcd_coil_element["points"] = base64.b64encode(zlib.compress(self.points.tobytes())).decode(
-                "ascii"
-            )
-            tcd_coil_element["values"] = base64.b64encode(zlib.compress(self.values.tobytes())).decode(
-                "ascii"
-            )
+            tcd_coil_element["points"] = base64.b64encode(
+                zlib.compress(self.points.tobytes())
+            ).decode("ascii")
+            tcd_coil_element["values"] = base64.b64encode(
+                zlib.compress(self.values.tobytes())
+            ).decode("ascii")
 
         return tcd_coil_element
 
@@ -942,12 +948,12 @@ class LineSegmentElements(PositionalTmsCoilElements):
             tcd_coil_element["points"] = self.points.tolist()
             tcd_coil_element["values"] = self.values.tolist()
         else:
-            tcd_coil_element["points"] = base64.b64encode(zlib.compress(self.points.tobytes())).decode(
-                "ascii"
-            )
-            tcd_coil_element["values"] = base64.b64encode(zlib.compress(self.values.tobytes())).decode(
-                "ascii"
-            )
+            tcd_coil_element["points"] = base64.b64encode(
+                zlib.compress(self.points.tobytes())
+            ).decode("ascii")
+            tcd_coil_element["values"] = base64.b64encode(
+                zlib.compress(self.values.tobytes())
+            ).decode("ascii")
 
         return tcd_coil_element
 
@@ -1155,9 +1161,9 @@ class SampledGridPointElements(TmsCoilElements):
         if ascii_mode:
             tcd_coil_element["data"] = data.tolist()
         else:
-            tcd_coil_element["data"] = base64.b64encode(zlib.compress(pickle.dumps(data))).decode(
-                "ascii"
-            )
+            tcd_coil_element["data"] = base64.b64encode(
+                zlib.compress(pickle.dumps(data))
+            ).decode("ascii")
 
         tcd_coil_element["affine"] = self.affine.tolist()
         return tcd_coil_element

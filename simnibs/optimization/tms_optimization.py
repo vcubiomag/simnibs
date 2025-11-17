@@ -19,6 +19,7 @@ from ..utils.file_finder import SubjectFiles
 from ..utils.matlab_read import try_to_read_matlab_field, remove_None
 from ..utils.mesh_element_properties import ElementTags
 
+
 class TMSoptimize:
     """
     Attributes:
@@ -172,9 +173,12 @@ class TMSoptimize:
         self.mesh = mesh_io.read_msh(self.fnamehead)
         TMSLIST.resolve_fnamecoil(self)
         single_target_defined = self.target is not None and len(self.target) == 3
-        multiple_targets_defined = self.multiple_targets is not None and np.shape(self.multiple_targets)[1] == 3
+        multiple_targets_defined = (
+            self.multiple_targets is not None
+            and np.shape(self.multiple_targets)[1] == 3
+        )
         if not single_target_defined and not multiple_targets_defined:
-            raise ValueError('Target for optimization not defined')
+            raise ValueError("Target for optimization not defined")
 
         assert self.search_radius > 0
         assert self.spatial_resolution > 0
@@ -240,7 +244,9 @@ class TMSoptimize:
             mat, "fname_tensor", str, self.fname_tensor
         )
         self.target = try_to_read_matlab_field(mat, "target", list, self.target)
-        self.multiple_targets = try_to_read_matlab_field(mat, "multiple_targets", list, self.multiple_targets)
+        self.multiple_targets = try_to_read_matlab_field(
+            mat, "multiple_targets", list, self.multiple_targets
+        )
         self.target_direction = try_to_read_matlab_field(
             mat, "target_direction", list, self.target_direction
         )
@@ -453,20 +459,13 @@ class TMSoptimize:
     def _get_target_region(self):
         if self.multiple_targets is not None:
             region = define_target_region_from_multiple_positions(
-                self.mesh,
-                self.multiple_targets,
-                self.target_size,
-                self.tissues
+                self.mesh, self.multiple_targets, self.target_size, self.tissues
             )
         else:
             region = define_target_region(
-                self.mesh,
-                self.target,
-                self.target_size,
-                self.tissues
+                self.mesh, self.target, self.target_size, self.tissues
             )
         return region
-
 
     def _direct_optimize(
         self, cond_field, target_region, pos_matrices, cpus, keep_hdf5=False
@@ -554,7 +553,9 @@ class TMSoptimize:
         moments = []
         for coil_element in coil.elements:
             if not isinstance(coil_element, DipoleElements):
-                raise ValueError('ADM optimization is only possible with dipole based coil files')
+                raise ValueError(
+                    "ADM optimization is only possible with dipole based coil files"
+                )
             dipoles.append(coil_element.get_points() * 1e-3)
             moments.append(coil_element.get_values())
 
@@ -650,7 +651,11 @@ class TMSoptimize:
         string += "Mesh file name: %s\n" % self.fnamehead
         string += "Coil file: %s\n" % self.fnamecoil
         string += "Target: %s\n" % self.target
-        string += 'Number of targets: {}\n'.format("1" if self.multiple_targets is None else str(np.shape(self.multiple_targets)[0]))
+        string += "Number of targets: {}\n".format(
+            "1"
+            if self.multiple_targets is None
+            else str(np.shape(self.multiple_targets)[0])
+        )
         string += "Target Direction: %s\n" % self.target_direction
         string += "Centre position: %s\n" % self.centre
         string += "Reference y: %s\n" % self.pos_ydir
@@ -862,7 +867,7 @@ def plot_matsimnibs_list(matsimnibs_list, values, field_name, fn_geo):
                 "VP(" + ", ".join([str(i) for i in c]) + ")"
                 "{" + ", ".join([str(i) for i in y]) + "};\n"
             )
-            f.write("SP(" + ", ".join([str(i) for i in c]) + ")" "{" + str(v) + "};\n")
+            f.write("SP(" + ", ".join([str(i) for i in c]) + "){" + str(v) + "};\n")
         f.write("};\n")
 
 
@@ -897,8 +902,10 @@ def define_target_region(mesh, target_position, target_radius, tags, elm_type=4)
     return elm
 
 
-def define_target_region_from_multiple_positions(mesh, target_positions, target_radius, tags, elm_type=4):
-    ''' Defines a target based on multiple positions, a radius and an element tag.
+def define_target_region_from_multiple_positions(
+    mesh, target_positions, target_radius, tags, elm_type=4
+):
+    """Defines a target based on multiple positions, a radius and an element tag.
     Target will include elements that are within the target_radius of any of the target_positions.
 
     Paramters
@@ -918,18 +925,18 @@ def define_target_region_from_multiple_positions(mesh, target_positions, target_
     -------
     elements: array of size (n,)
         Numbers (1-based) of elements in the tag
-    '''
+    """
     bar = mesh.elements_baricenters()[:]
     center_pos = np.mean(target_positions, axis=0)
     max_dist = np.linalg.norm(target_positions - center_pos, axis=1).max() * 1.1
     dist = np.linalg.norm(bar - center_pos, axis=1)
     elm = mesh.elm.elm_number[
-        (dist <= max_dist) *
-        np.isin(mesh.elm.tag1, tags) *
-        np.isin(mesh.elm.elm_type, elm_type)
+        (dist <= max_dist)
+        * np.isin(mesh.elm.tag1, tags)
+        * np.isin(mesh.elm.elm_type, elm_type)
     ]
     candidate_elm = elm
-    candidate_bar = bar[elm-1]
+    candidate_bar = bar[elm - 1]
 
     elm_in_roi = set()
     for pos in target_positions:

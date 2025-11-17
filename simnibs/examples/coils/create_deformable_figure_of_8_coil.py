@@ -4,11 +4,15 @@ The coil is constructed using line segments which reconstruct the windings of th
 
 Copyright (c) 2024 SimNIBS developers. Licensed under the GPL v3.
 """
+
 import os
 
 import numpy as np
 from simnibs.simulation.tms_coil.tms_coil import TmsCoil
-from simnibs.simulation.tms_coil.tms_coil_deformation import TmsCoilRotation, TmsCoilDeformationRange
+from simnibs.simulation.tms_coil.tms_coil_deformation import (
+    TmsCoilRotation,
+    TmsCoilDeformationRange,
+)
 
 from simnibs.simulation.tms_coil.tms_coil_element import LineSegmentElements
 from simnibs.simulation.tms_coil.tms_stimulator import TmsStimulator
@@ -137,7 +141,10 @@ def figure_of_8_wire_path(
             ),
             axis=1,
         ).T,
-        initial_wire_path.shape[1] + wire_coil_2_connection.shape[1] + spiral_2.shape[1] + coil_coil_connection_1.shape[1]
+        initial_wire_path.shape[1]
+        + wire_coil_2_connection.shape[1]
+        + spiral_2.shape[1]
+        + coil_coil_connection_1.shape[1],
     )
 
 
@@ -174,16 +181,41 @@ resolution = [1, 1, 1]
 stimulator = TmsStimulator("Example Stimulator", "Example Stimulator Brand", 122.22e6)
 
 # Creating coil element deformation to rotate the spirals around the y-axis
-rotation_1 = TmsCoilRotation(TmsCoilDeformationRange(30, [0, 60]), [0, 0, -winding_casing_distance], [0, -1, -winding_casing_distance])
-rotation_2 = TmsCoilRotation(TmsCoilDeformationRange(30, [0, 60]), [0, 0, -winding_casing_distance], [0, 1, -winding_casing_distance])
+rotation_1 = TmsCoilRotation(
+    TmsCoilDeformationRange(30, [0, 60]),
+    [0, 0, -winding_casing_distance],
+    [0, -1, -winding_casing_distance],
+)
+rotation_2 = TmsCoilRotation(
+    TmsCoilDeformationRange(30, [0, 60]),
+    [0, 0, -winding_casing_distance],
+    [0, 1, -winding_casing_distance],
+)
 
 # Creating the line segment elements from the line segments
-line_element_1 = LineSegmentElements(stimulator, segment_points[:split_idx], wire_dir[:split_idx], name="Figure_of_8_part_1", deformations=[rotation_1])
-line_element_2 = LineSegmentElements(stimulator, segment_points[split_idx:], wire_dir[split_idx:], name="Figure_of_8_part_2", deformations=[rotation_2])
+line_element_1 = LineSegmentElements(
+    stimulator,
+    segment_points[:split_idx],
+    wire_dir[:split_idx],
+    name="Figure_of_8_part_1",
+    deformations=[rotation_1],
+)
+line_element_2 = LineSegmentElements(
+    stimulator,
+    segment_points[split_idx:],
+    wire_dir[split_idx:],
+    name="Figure_of_8_part_2",
+    deformations=[rotation_2],
+)
 
 # Creating the TMS coil with its element, a name, a brand, a version, the limits and the resolution
 tms_coil = TmsCoil(
-    [line_element_1, line_element_2], "Example Coil", "Example Coil Brand", "V1.0", limits, resolution
+    [line_element_1, line_element_2],
+    "Example Coil",
+    "Example Coil Brand",
+    "V1.0",
+    limits,
+    resolution,
 )
 
 # Generating a coil casing that has a specified distance from the coil windings

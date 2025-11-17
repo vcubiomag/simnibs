@@ -4,7 +4,12 @@ import sys
 from .mesh_tools import mesh_io
 from .mesh_tools.mesh_io import read_msh
 from .utils import transformations, file_finder, region_of_interest
-from .utils.transformations import mni2subject_coilpos, mni2subject_coords, subject2mni_coords, subject_atlas
+from .utils.transformations import (
+    mni2subject_coilpos,
+    mni2subject_coords,
+    subject2mni_coords,
+    subject_atlas,
+)
 from .utils.file_finder import *
 from .utils.nnav import localite, softaxic, brainsight, ant
 from .utils.mesh_element_properties import ElementTags

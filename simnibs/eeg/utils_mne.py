@@ -14,9 +14,9 @@ from simnibs.utils.file_finder import SubjectFiles
 from simnibs.utils.transformations import make_cross_subject_morph, normalize
 from simnibs.utils.simnibs_logger import logger
 
-assert (
-    int(mne.__version__.split(".")[0]) >= 1
-), f"Requires MNE version 1 or above (installed version is {mne.__version__})"
+assert int(mne.__version__.split(".")[0]) >= 1, (
+    f"Requires MNE version 1 or above (installed version is {mne.__version__})"
+)
 
 # mne.set_log_level("warning")
 
@@ -30,6 +30,7 @@ landmarks_mapper = {
     "simnibs_to_mne": {"Nz": "nasion", "Iz": "inion", "LPA": "lpa", "RPA": "rpa"},
     "mne_to_simnibs": {"nasion": "Nz", "inion": "Iz", "lpa": "LPA", "rpa": "RPA"},
 }
+
 
 # Modify load_subject_surfaces and load_reference_surfaces to return a dict of
 # dicts instead of a dict of mesh objects as this is a little easier to work
@@ -331,9 +332,9 @@ def compute_morph_matrix(
     This is equivalent to mne.morph._compute_morph_matrix albeit with some
     simplifications as we do not need the 'xhemi' functionality.
     """
-    assert (
-        len(src_from) == len(src_to) == len(mmaps)
-    ), "The length of the inputs must be compatible"
+    assert len(src_from) == len(src_to) == len(mmaps), (
+        "The length of the inputs must be compatible"
+    )
 
     # iterate over to / block-rows of CSR matrix
     # Ensure we have the same hemispheres from src and mmaps
@@ -420,20 +421,20 @@ def make_forward(
     kwargs["mri_head_t"] = trans
 
     # Check the inputs
-    assert all(
-        s["coord_frame"] == FIFF.FIFFV_COORD_MRI for s in src
-    ), f"Source space should be in {FIFF.FIFFV_COORD_MRI} coordinate system"
+    assert all(s["coord_frame"] == FIFF.FIFFV_COORD_MRI for s in src), (
+        f"Source space should be in {FIFF.FIFFV_COORD_MRI} coordinate system"
+    )
 
     # Pick the EEG channels and check
     # picks = [info["ch_names"][i] for i in mne.pick_types(info, eeg=True)]
     # info.pick_channels(picks)
-    assert (
-        info["ch_names"] == forward["ch_names"]
-    ), f"Inconsistencies between channels in Info and leadfield {info['ch_names']} and {forward['ch_names']}"
+    assert info["ch_names"] == forward["ch_names"], (
+        f"Inconsistencies between channels in Info and leadfield {info['ch_names']} and {forward['ch_names']}"
+    )
     bads_in_forward = tuple(filter(lambda x: x in info["bads"], forward["ch_names"]))
     if any(bads_in_forward):
         logger.warning(
-            "Bad channels from Info found in forward solution: " f"{bads_in_forward}"
+            f"Bad channels from Info found in forward solution: {bads_in_forward}"
         )
 
     # fmt: off
@@ -546,8 +547,12 @@ def prepare_montage(
         ch_names += fid_names
 
     csv_reader.write_csv_positions(
-        fname, ch_types, ch_pos, ch_names,
+        fname,
+        ch_types,
+        ch_pos,
+        ch_names,
     )
+
 
 def simnibs_montage_to_mne_montage(montage, coord_frame="unknown"):
     valid_entries = {"Electrode", "ReferenceElectrode"}

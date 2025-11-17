@@ -23,6 +23,7 @@ from .sim_struct import SimuList
 # here once this is resolved.
 # from simnibs.simulation.numba_fem_utils import sumf, sumf2, node2elmf, sumf3, postp, postp_mag, spmatmul
 
+
 class OnlineFEM:
     """
     OnlineFEM class for fast FEM calculations using the Pardiso solver of the MKL library
@@ -62,32 +63,54 @@ class OnlineFEM:
     dirichlet_node : int
         Index of dirichlet node (indexing starting with 1)
     """
-    def __init__(self, mesh, method, roi, anisotropy_type="scalar", solver_options="pardiso", fn_logger=None,
-                 useElements=True, fn_coil=None, dataType=0, coil=None, electrode=None, dirichlet_node=None,
-                 solver_loglevel=logging.DEBUG, cpus=None, cond=None):
+
+    def __init__(
+        self,
+        mesh,
+        method,
+        roi,
+        anisotropy_type="scalar",
+        solver_options="pardiso",
+        fn_logger=None,
+        useElements=True,
+        fn_coil=None,
+        dataType=0,
+        coil=None,
+        electrode=None,
+        dirichlet_node=None,
+        solver_loglevel=logging.DEBUG,
+        cpus=None,
+        cond=None,
+    ):
         """
         Constructor of the OnlineFEM class
         """
 
-        self.method = method                        # 'TES' or 'TMS'
-        self.dataType = dataType                    # calc. magn. of e-field for dataType=0 otherwise return Ex, Ey, Ez
+        self.method = method  # 'TES' or 'TMS'
+        self.dataType = dataType  # calc. magn. of e-field for dataType=0 otherwise return Ex, Ey, Ez
         self.cond = cond
-        self.anisotropy_type = anisotropy_type      # 'scalar', 'dir', 'vn', 'mc'
-        self.A = None                               # stiffness matrix
-        self.b = None                               # rhs
-        self.v = None                               # electric potential
-        self.solver = None                          # solver
-        self.fn_coil = fn_coil                      # filename of TMS coil (.nii)
-        self.roi = roi                              # list of ROI instances
-        self.fn_logger = fn_logger                  # either name of log file or True (using standard simnibs logger in later case)
-        self.ff_templates = Templates()             # initialize file finder templates
-        self.force_integrals = None                 # precomputed force integrals for rhs
-        self.coil = coil                            # TMS coil
-        self.electrode = electrode                  # TES electrode
-        self.n_iter_dirichlet_correction = 0        # number of iterations required for dirichlet correction
-        self.aniso_maxratio = 10                    # not used (included to use methods of the SimuList class)
-        self.name = None                            # not used (included to use methods of the SimuList class)
-        self.aniso_maxcond = 2                      # not used (included to use methods of the SimuList class)
+        self.anisotropy_type = anisotropy_type  # 'scalar', 'dir', 'vn', 'mc'
+        self.A = None  # stiffness matrix
+        self.b = None  # rhs
+        self.v = None  # electric potential
+        self.solver = None  # solver
+        self.fn_coil = fn_coil  # filename of TMS coil (.nii)
+        self.roi = roi  # list of ROI instances
+        self.fn_logger = fn_logger  # either name of log file or True (using standard simnibs logger in later case)
+        self.ff_templates = Templates()  # initialize file finder templates
+        self.force_integrals = None  # precomputed force integrals for rhs
+        self.coil = coil  # TMS coil
+        self.electrode = electrode  # TES electrode
+        self.n_iter_dirichlet_correction = (
+            0  # number of iterations required for dirichlet correction
+        )
+        self.aniso_maxratio = (
+            10  # not used (included to use methods of the SimuList class)
+        )
+        self.name = None  # not used (included to use methods of the SimuList class)
+        self.aniso_maxcond = (
+            2  # not used (included to use methods of the SimuList class)
+        )
 
         if type(self.roi) is not list:
             self.roi = [self.roi]
@@ -101,7 +124,9 @@ class OnlineFEM:
         self.useElements = useElements
 
         if platform.system() == "Darwin" and solver_options == "pardiso":
-            warnings.warn("solver `pardiso` was specified but MKL PARDISO is not available for Darwin systems; falling back to MUMPS.")
+            warnings.warn(
+                "solver `pardiso` was specified but MKL PARDISO is not available for Darwin systems; falling back to MUMPS."
+            )
             solver_options = "mumps"
 
         self.solver_options = solver_options
@@ -122,13 +147,16 @@ class OnlineFEM:
                     f"MKL_DOMAIN_PARDISO={str(int(cpus))}"
                 )
                 # Note: Using MKL_DOMAIN_PARDISO means that only PARDISO is affected, VML, BLAS, LAPACK is potentially still more threads otherwise change to MKL_NUM_THREADS OR MKL_DOMAIN_ALL
-            else: #mainly for solver_options == "mumps" but PETsc can also use MPI
-                os.environ["MKL_DOMAIN_NUM_THREADS"] = f"OMP_NUM_THREADS={str(int(cpus))}"
+            else:  # mainly for solver_options == "mumps" but PETsc can also use MPI
+                os.environ["MKL_DOMAIN_NUM_THREADS"] = (
+                    f"OMP_NUM_THREADS={str(int(cpus))}"
+                )
             from numba import set_num_threads
 
-            #below is to limit numba threads
+            # below is to limit numba threads
             set_num_threads(int(cpus))
             from numba import get_num_threads
+
             logger.info(f"Numba reports {get_num_threads()} threads available")
 
         # read mesh or store in self
@@ -137,7 +165,9 @@ class OnlineFEM:
         elif type(mesh) == Msh:
             self.mesh = mesh
         else:
-            raise TypeError("'mesh' parameter has to be either path to .msh file or SimNIBS mesh object.")
+            raise TypeError(
+                "'mesh' parameter has to be either path to .msh file or SimNIBS mesh object."
+            )
 
         # get subject specific filenames
         if self.mesh.fn:
@@ -148,7 +178,9 @@ class OnlineFEM:
 
         # get Dirichlet node index where V=0 (close to center of gravity of mesh but not on a surface)
         if dirichlet_node is None:
-            self.dirichlet_node = get_dirichlet_node_index_cog(mesh=self.mesh)  # self.mesh.nodes.node_number[self.mesh.nodes.node_coord[:, 2].argmin()]
+            self.dirichlet_node = get_dirichlet_node_index_cog(
+                mesh=self.mesh
+            )  # self.mesh.nodes.node_number[self.mesh.nodes.node_coord[:, 2].argmin()]
         else:
             self.dirichlet_node = dirichlet_node
 
@@ -158,8 +190,12 @@ class OnlineFEM:
             nodes_before = np.copy(self.mesh.nodes.node_coord)
             self.mesh = self.mesh.crop_mesh(elm_type=4)
             # ensure that the nodes did not change
-            assert self.mesh.nodes.nr == node_nr_before, 'The mesh nodes changed when removing triangles! Please make sure the mesh is valid.'
-            assert (self.mesh.nodes.node_coord == nodes_before).all(), 'The mesh nodes changed when removing triangles! Please make sure the mesh is valid.'
+            assert self.mesh.nodes.nr == node_nr_before, (
+                "The mesh nodes changed when removing triangles! Please make sure the mesh is valid."
+            )
+            assert (self.mesh.nodes.node_coord == nodes_before).all(), (
+                "The mesh nodes changed when removing triangles! Please make sure the mesh is valid."
+            )
 
         # prepare solver and set self.solver
         self._set_matrices_and_prepare_solver()
@@ -167,21 +203,27 @@ class OnlineFEM:
         # prepare coil for TMS
         ################################################################################################################
         if method == "TMS":
-            if (self.coil is not None and self.fn_coil is not None) or (self.coil is None and self.fn_coil is None):
-                raise AssertionError("Provide either filename of TMS coil or Coil object.")
+            if (self.coil is not None and self.fn_coil is not None) or (
+                self.coil is None and self.fn_coil is None
+            ):
+                raise AssertionError(
+                    "Provide either filename of TMS coil or Coil object."
+                )
 
             if coil is None:
                 self.coil = TmsCoil.from_file(self.fn_coil)
 
                 if self._logging:
-                    logger.info(f'Loaded coil from file: {self.fn_coil}')
+                    logger.info(f"Loaded coil from file: {self.fn_coil}")
 
         # prepare electrode for TES
         ################################################################################################################
         if method == "TES" and electrode is None:
-            raise AssertionError("Please provide TES electrode object for TES simulations.")
+            raise AssertionError(
+                "Please provide TES electrode object for TES simulations."
+            )
 
-    def _set_logger(self,log_fn):
+    def _set_logger(self, log_fn):
         """
         Set-up loggger to write to a file
 
@@ -195,9 +237,10 @@ class OnlineFEM:
             self._logging = log_fn
             return
         if type(log_fn) == str:
-            fh = logging.FileHandler(log_fn, mode='w')
+            fh = logging.FileHandler(log_fn, mode="w")
             formatter = logging.Formatter(
-                f'[ %(name)s {__version__} - %(asctime)s - %(process)d ]%(levelname)s: %(message)s')
+                f"[ %(name)s {__version__} - %(asctime)s - %(process)d ]%(levelname)s: %(message)s"
+            )
             fh.setFormatter(formatter)
             fh.setLevel(logging.DEBUG)
             logger.addHandler(fh)
@@ -205,8 +248,14 @@ class OnlineFEM:
             return
         raise ValueError(f"log_fn {log_fn}: has to be string or bool")
 
-    def update_field(self, electrode=None, matsimnibs=None, didt=1e6, fn_electrode_txt=None,
-                     dirichlet_correction=False):
+    def update_field(
+        self,
+        electrode=None,
+        matsimnibs=None,
+        didt=1e6,
+        fn_electrode_txt=None,
+        dirichlet_correction=False,
+    ):
         """
         Calculating and updating electric field for given coil position (matsimnibs) for TMS or electrode position (TES)
 
@@ -261,8 +310,9 @@ class OnlineFEM:
             # solve for potential
             ############################################################################################################
             if self.method == "TES" and dirichlet_correction:
-                self.v = self.solve_dirichlet_correction(electrode=electrode[i_sim],
-                                                         fn_electrode_txt=fn_electrode_txt)
+                self.v = self.solve_dirichlet_correction(
+                    electrode=electrode[i_sim], fn_electrode_txt=fn_electrode_txt
+                )
             else:
                 self.v = self.solve(b=self.b)
 
@@ -272,9 +322,13 @@ class OnlineFEM:
                 if self.v is None:
                     self.e[i_sim][i_roi] = None
                     if self._logging:
-                        logger.warning("Warning! Simulation failed! Returning e-field: None!")
+                        logger.warning(
+                            "Warning! Simulation failed! Returning e-field: None!"
+                        )
                 else:
-                    self.e[i_sim][i_roi] = r.calc_fields(v=self.v, dadt=self.dadt, dataType=self.dataType[i_roi])
+                    self.e[i_sim][i_roi] = r.calc_fields(
+                        v=self.v, dadt=self.dadt, dataType=self.dataType[i_roi]
+                    )
 
                 if self.method == "TMS":
                     self.e[i_sim][i_roi] *= didt
@@ -282,7 +336,9 @@ class OnlineFEM:
             stop = time.time()
 
             if self._logging:
-                logger.info(f"Finished simulation #{i_sim + 1}/{n_sim} (time: {(stop-start):.3f}s).")
+                logger.info(
+                    f"Finished simulation #{i_sim + 1}/{n_sim} (time: {(stop - start):.3f}s)."
+                )
 
         return self.e
 
@@ -320,36 +376,54 @@ class OnlineFEM:
                         self.fem.weigh_by_area = True
                     electrodes.append(_ele.node_idx + 1)
 
-            b = self.fem.assemble_rhs(electrodes=electrodes,       # list of node indices of electrodes
-                                      currents=currents)           # list of electrode currents
+            b = self.fem.assemble_rhs(
+                electrodes=electrodes,  # list of node indices of electrodes
+                currents=currents,
+            )  # list of electrode currents
 
         elif self.method == "TMS":
             # determine magnetic vector potential
             if self.useElements:
-                self.dadt = self.coil.get_da_dt_at_coordinates(self.coordinates.T, matsimnibs)
+                self.dadt = self.coil.get_da_dt_at_coordinates(
+                    self.coordinates.T, matsimnibs
+                )
             else:
-                da_dt = self.coil.get_da_dt_at_coordinates(self.coordinates.T, matsimnibs).T
-                #self.dadt = NodeData(da_dt, mesh=self.mesh).node_data2elm_data()[:]
+                da_dt = self.coil.get_da_dt_at_coordinates(
+                    self.coordinates.T, matsimnibs
+                ).T
+                # self.dadt = NodeData(da_dt, mesh=self.mesh).node_data2elm_data()[:]
 
                 self.dadt = node2elmf(da_dt, self.reshaped_node_numbersT)
 
-            #reshaped_node_numbers=self.reshaped_node_numbersT,
-            #useElements=self.useElements
+            # reshaped_node_numbers=self.reshaped_node_numbersT,
+            # useElements=self.useElements
 
             # isotropic
             if self.cond.ndim == 1:
-                b = sumf2(x=self.force_integrals, y=self.dadt, w=self.reshaped_node_numbers)
+                b = sumf2(
+                    x=self.force_integrals, y=self.dadt, w=self.reshaped_node_numbers
+                )
 
             # anisotropic
             elif self.cond.ndim == 3:
-                b = sumf3(v=self.volume, dadt=self.dadt, g=self.gradient, nn=(self.node_numbers-1).reshape(-1), c=self.cond)
+                b = sumf3(
+                    v=self.volume,
+                    dadt=self.dadt,
+                    g=self.gradient,
+                    nn=(self.node_numbers - 1).reshape(-1),
+                    c=self.cond,
+                )
 
         else:
-            raise NotImplementedError("Simulation method not implemented yet. Method is either 'TMS' or 'TES'.")
+            raise NotImplementedError(
+                "Simulation method not implemented yet. Method is either 'TMS' or 'TES'."
+            )
 
         return b
 
-    def normalize_solution(self, v_nodes, channel_id, ele_id, node_area, currents, electrode):
+    def normalize_solution(
+        self, v_nodes, channel_id, ele_id, node_area, currents, electrode
+    ):
         """
         Normalize electric potential and input currents for later correction step.
 
@@ -378,15 +452,17 @@ class OnlineFEM:
         channel_id_unique = np.unique(channel_id)
 
         # average and weight potential with node area over electrodes and whole channel (separately)
-        v_mean_ele = []         # [n_channel][n_ele]
-        v_mean_channel = []     # [n_channel]
+        v_mean_ele = []  # [n_channel][n_ele]
+        v_mean_channel = []  # [n_channel]
 
         for i, _channel_id in enumerate(channel_id_unique):
             channel_mask = _channel_id == channel_id
 
             # average area weighted potential over whole channel
-            v_mean_channel.append(np.sum(node_area[channel_mask] * v_nodes[channel_mask]) / \
-                                  np.sum(node_area[channel_mask]))
+            v_mean_channel.append(
+                np.sum(node_area[channel_mask] * v_nodes[channel_mask])
+                / np.sum(node_area[channel_mask])
+            )
 
             ele_id_unique = np.unique(ele_id[channel_mask])
 
@@ -399,7 +475,10 @@ class OnlineFEM:
                 for _ele_id in ele_id_unique:
                     ele_mask = _ele_id == ele_id
                     mask = ele_mask * channel_mask
-                    v_mean_ele[i].append(np.sum(node_area[mask] * v_nodes[mask]) / np.sum(node_area[mask]))
+                    v_mean_ele[i].append(
+                        np.sum(node_area[mask] * v_nodes[mask])
+                        / np.sum(node_area[mask])
+                    )
 
                 v_mean_ele[i] = np.hstack(v_mean_ele[i])
 
@@ -413,10 +492,16 @@ class OnlineFEM:
             std_scale = np.std(v_mean_channel)
 
             # calculate differences of electrode potentials to channel potential
-            v_ele_norm[i_channel] = (v_mean_ele[i_channel] - np.mean(v_mean_ele[i_channel])) / std_scale
-            currents_ele_norm[i_channel] = (currents[i_channel] - np.mean(currents[i_channel])) / np.mean(currents[i_channel])
+            v_ele_norm[i_channel] = (
+                v_mean_ele[i_channel] - np.mean(v_mean_ele[i_channel])
+            ) / std_scale
+            currents_ele_norm[i_channel] = (
+                currents[i_channel] - np.mean(currents[i_channel])
+            ) / np.mean(currents[i_channel])
 
-            if (np.isnan(v_ele_norm[i_channel])).any() or (np.isnan(currents_ele_norm[i_channel])).any():
+            if (np.isnan(v_ele_norm[i_channel])).any() or (
+                np.isnan(currents_ele_norm[i_channel])
+            ).any():
                 te = 1
 
         return v_ele_norm, currents_ele_norm
@@ -480,16 +565,26 @@ class OnlineFEM:
 
             if electrode.dirichlet_correction_detailed:
                 # take nodal current
-                I[i_channel] = electrode._node_current[electrode._node_channel_id == _channel_id]
-                I_sign[i_channel] = electrode._node_current_sign[electrode._node_channel_id == _channel_id]
+                I[i_channel] = electrode._node_current[
+                    electrode._node_channel_id == _channel_id
+                ]
+                I_sign[i_channel] = electrode._node_current_sign[
+                    electrode._node_channel_id == _channel_id
+                ]
 
                 # mean current over electrodes [n_channel]
-                I_mean[i_channel] = electrode._current_channel[i_channel] / np.sum(electrode._node_channel_id == _channel_id)
+                I_mean[i_channel] = electrode._current_channel[i_channel] / np.sum(
+                    electrode._node_channel_id == _channel_id
+                )
 
             else:
                 # take total electrode current (sum nodal current up)
-                for _ele_id in np.unique(electrode._node_ele_id[electrode._node_channel_id == _channel_id]):
-                    mask = (electrode._node_channel_id == _channel_id) * (electrode._node_ele_id == _ele_id)
+                for _ele_id in np.unique(
+                    electrode._node_ele_id[electrode._node_channel_id == _channel_id]
+                ):
+                    mask = (electrode._node_channel_id == _channel_id) * (
+                        electrode._node_ele_id == _ele_id
+                    )
                     I[i_channel].append(np.sum(electrode._node_current[mask]))
                     I_sign[i_channel].append(electrode._node_current_sign[mask][0])
                 I[i_channel] = np.hstack(I[i_channel])
@@ -506,12 +601,14 @@ class OnlineFEM:
         v_nodes = v[electrode._node_idx]
 
         # v_norm: [n_channel][n_ele], I_norm: [n_channel][n_ele]
-        v_norm, I_norm = self.normalize_solution(v_nodes=v_nodes,
-                                                 channel_id=electrode._node_channel_id,
-                                                 ele_id=electrode._node_ele_id,
-                                                 node_area=electrode._node_area,
-                                                 currents=I,
-                                                 electrode=electrode)
+        v_norm, I_norm = self.normalize_solution(
+            v_nodes=v_nodes,
+            channel_id=electrode._node_channel_id,
+            ele_id=electrode._node_ele_id,
+            node_area=electrode._node_area,
+            currents=I,
+            electrode=electrode,
+        )
 
         for i_channel in range(n_channel):
             v_norm[i_channel] = v_norm[i_channel][np.newaxis, :]
@@ -522,13 +619,19 @@ class OnlineFEM:
         denom_factor = 100
         n_wrong_current_signs = [0]
 
-        while maxrelerr > th_maxrelerr or n_wrong_current_signs[-1] / n_nodes_total > th_wrong_current_sign:
+        while (
+            maxrelerr > th_maxrelerr
+            or n_wrong_current_signs[-1] / n_nodes_total > th_wrong_current_sign
+        ):
             if self._logging:
                 if j == 0:
                     logger.debug(
-                        f"iter: {j:03}, err: {maxrelerr:.3f}, df={denom_factor:.3f}")
+                        f"iter: {j:03}, err: {maxrelerr:.3f}, df={denom_factor:.3f}"
+                    )
                 else:
-                    logger.debug(f"iter: {j:03}, err: {maxrelerr:.3f}, wcs: {n_wrong_current_signs[-1] / n_nodes_total:.3f}, df={denom_factor:.3f}")
+                    logger.debug(
+                        f"iter: {j:03}, err: {maxrelerr:.3f}, wcs: {n_wrong_current_signs[-1] / n_nodes_total:.3f}, df={denom_factor:.3f}"
+                    )
 
             j += 1
             if j == maxiter:
@@ -536,7 +639,11 @@ class OnlineFEM:
 
             if j > maxiter:
                 if self._logging:
-                    logger.warning('warning: did not converge after ' + str(maxiter) + ' iterations')
+                    logger.warning(
+                        "warning: did not converge after "
+                        + str(maxiter)
+                        + " iterations"
+                    )
 
                 # reset to original currents
                 for _electrode_array in electrode._electrode_arrays:
@@ -559,12 +666,19 @@ class OnlineFEM:
                             I.append(np.array([I_mean[i_channel]]))
                             all_pos = True
                         else:
-                            I.append(step_size_factor * np.sign(I_mean[i_channel]) * v_norm[i_channel][0, :] / np.max(np.abs(v_norm[i_channel][0, :])))
+                            I.append(
+                                step_size_factor
+                                * np.sign(I_mean[i_channel])
+                                * v_norm[i_channel][0, :]
+                                / np.max(np.abs(v_norm[i_channel][0, :]))
+                            )
 
                             if ((I[i_channel] - np.mean(I[i_channel]) + 1) < 0).any():
                                 step_size_factor /= 10
                                 if self._logging:
-                                    logger.debug(f"Decreasing step size factor to {step_size_factor}")
+                                    logger.debug(
+                                        f"Decreasing step size factor to {step_size_factor}"
+                                    )
                                 all_pos = False
                                 break
 
@@ -577,14 +691,25 @@ class OnlineFEM:
                     if len(I_norm[i_channel][-1, :]) == 1:
                         I[i_channel] = I[i_channel]
                     else:
-                        denom = (v_norm[i_channel][-1, :] - v_norm[i_channel][-2, :])
-                        denom += np.sign(denom) * maxrelerr / denom_factor  # regularize: avoid too small denominators to gain stability
+                        denom = v_norm[i_channel][-1, :] - v_norm[i_channel][-2, :]
+                        denom += (
+                            np.sign(denom) * maxrelerr / denom_factor
+                        )  # regularize: avoid too small denominators to gain stability
                         denom[denom == 0] = 1e-12
-                        I[i_channel] = I_norm[i_channel][-1] - (I_norm[i_channel][-1, :] - I_norm[i_channel][-2, :]) / denom * v_norm[i_channel][-1, :]
-                        n_wrong_current_signs[-1] += np.sum(((I[i_channel] - np.mean(I[i_channel]) + 1) < 0))
+                        I[i_channel] = (
+                            I_norm[i_channel][-1]
+                            - (I_norm[i_channel][-1, :] - I_norm[i_channel][-2, :])
+                            / denom
+                            * v_norm[i_channel][-1, :]
+                        )
+                        n_wrong_current_signs[-1] += np.sum(
+                            ((I[i_channel] - np.mean(I[i_channel]) + 1) < 0)
+                        )
                         # print(f"Channel: {i_channel}: {n_wrong_current_signs[i_channel]}/{len(I[i_channel])} wrong current signs.")
 
-                if (np.array(n_wrong_current_signs[-3:]) == n_wrong_current_signs[-1]).all():
+                if (
+                    np.array(n_wrong_current_signs[-3:]) == n_wrong_current_signs[-1]
+                ).all():
                     denom_factor = np.random.rand(1)[0] * 20
                 elif n_wrong_current_signs[-1] == 0:
                     denom_factor = 15
@@ -592,7 +717,10 @@ class OnlineFEM:
                     denom_factor = 100 * n_wrong_current_signs[-1] / n_nodes_total
 
             # convert back from I_norm to I
-            I = [I_mean[i_channel] * (I[i_channel] - np.mean(I[i_channel]) + 1) for i_channel in range(n_channel)]
+            I = [
+                I_mean[i_channel] * (I[i_channel] - np.mean(I[i_channel]) + 1)
+                for i_channel in range(n_channel)
+            ]
 
             # print(f"sum current: sum(I[0]) = {np.sum(I[0])}   sum(I[1]) = {np.sum(I[1])}")
 
@@ -600,12 +728,26 @@ class OnlineFEM:
             for i_channel, _channel_id in enumerate(electrode._channel_id_unique):
                 if electrode.dirichlet_correction_detailed:
                     # write nodal current
-                    electrode._node_current[electrode._node_channel_id == _channel_id] = I[i_channel]
+                    electrode._node_current[
+                        electrode._node_channel_id == _channel_id
+                    ] = I[i_channel]
                 else:
                     # calculate nodal current from total electrode current
-                    for i_ele, _ele_id in enumerate(np.unique(electrode._node_ele_id[electrode._node_channel_id == _channel_id])):
-                        mask = (electrode._node_channel_id == _channel_id) * (electrode._node_ele_id == _ele_id)
-                        electrode._node_current[mask] = I[i_channel][i_ele] * electrode._node_area[mask] / np.sum(electrode._node_area[mask])
+                    for i_ele, _ele_id in enumerate(
+                        np.unique(
+                            electrode._node_ele_id[
+                                electrode._node_channel_id == _channel_id
+                            ]
+                        )
+                    ):
+                        mask = (electrode._node_channel_id == _channel_id) * (
+                            electrode._node_ele_id == _ele_id
+                        )
+                        electrode._node_current[mask] = (
+                            I[i_channel][i_ele]
+                            * electrode._node_area[mask]
+                            / np.sum(electrode._node_area[mask])
+                        )
 
             # update electrodes from node arrays
             electrode.update_electrode_from_node_arrays()
@@ -618,50 +760,84 @@ class OnlineFEM:
             v_nodes = v[electrode._node_idx]
 
             # normalize
-            _v_norm, _I_norm = self.normalize_solution(v_nodes=v_nodes,
-                                                       channel_id=electrode._node_channel_id,
-                                                       ele_id=electrode._node_ele_id,
-                                                       node_area=electrode._node_area,
-                                                       currents=I,
-                                                       electrode=electrode)
+            _v_norm, _I_norm = self.normalize_solution(
+                v_nodes=v_nodes,
+                channel_id=electrode._node_channel_id,
+                ele_id=electrode._node_ele_id,
+                node_area=electrode._node_area,
+                currents=I,
+                electrode=electrode,
+            )
 
             # append
             for i_channel in range(n_channel):
-                v_norm[i_channel] = np.vstack((v_norm[i_channel], _v_norm[i_channel][np.newaxis, :]))
-                I_norm[i_channel] = np.vstack((I_norm[i_channel], _I_norm[i_channel][np.newaxis, :]))
+                v_norm[i_channel] = np.vstack(
+                    (v_norm[i_channel], _v_norm[i_channel][np.newaxis, :])
+                )
+                I_norm[i_channel] = np.vstack(
+                    (I_norm[i_channel], _I_norm[i_channel][np.newaxis, :])
+                )
 
             # update error
-            maxrelerr = np.max([np.max(np.abs(v_norm[i_channel][-1])) for i_channel in range(n_channel)])
+            maxrelerr = np.max(
+                [
+                    np.max(np.abs(v_norm[i_channel][-1]))
+                    for i_channel in range(n_channel)
+                ]
+            )
 
         # final number of iterations to determine optimal currents
         self.n_iter_dirichlet_correction = j
 
-        masks_sign = [(np.sign(I[i_channel]) == I_sign[i_channel]) for i_channel in range(n_channel)]
+        masks_sign = [
+            (np.sign(I[i_channel]) == I_sign[i_channel])
+            for i_channel in range(n_channel)
+        ]
 
         # test if signs are correct return no solution
-        if not np.array([(masks_sign[i_channel]).all() for i_channel in range(n_channel)]).all():
+        if not np.array(
+            [(masks_sign[i_channel]).all() for i_channel in range(n_channel)]
+        ).all():
             masks_sign_not = copy.copy(masks_sign)
             masks_sign_not[0] = np.logical_not(masks_sign[0])
             masks_sign_not[1] = np.logical_not(masks_sign[1])
 
             # ensure correct sign
-            I = [np.abs(I[i_channel]) * I_sign[i_channel] for i_channel in range(n_channel)]
+            I = [
+                np.abs(I[i_channel]) * I_sign[i_channel]
+                for i_channel in range(n_channel)
+            ]
 
             # normalize currents again to match maximal channel current (we flipped currents before)
-            I = [I[i_channel] / np.sum(np.abs(I[i_channel])) * np.abs(I_total[i_channel]) for i_channel in range(n_channel)]
+            I = [
+                I[i_channel] / np.sum(np.abs(I[i_channel])) * np.abs(I_total[i_channel])
+                for i_channel in range(n_channel)
+            ]
 
             # write final currents in electrode
             for i_channel, _channel_id in enumerate(electrode._channel_id_unique):
                 if electrode.dirichlet_correction_detailed:
                     # write nodal current
-                    electrode._node_current[electrode._node_channel_id == _channel_id] = I[i_channel]
+                    electrode._node_current[
+                        electrode._node_channel_id == _channel_id
+                    ] = I[i_channel]
                 else:
                     # calculate nodal current from total electrode current
                     for i_ele, _ele_id in enumerate(
-                            np.unique(electrode._node_ele_id[electrode._node_channel_id == _channel_id])):
-                        mask = (electrode._node_channel_id == _channel_id) * (electrode._node_ele_id == _ele_id)
-                        electrode._node_current[mask] = I[i_channel][i_ele] * electrode._node_area[mask] / np.sum(
-                            electrode._node_area[mask])
+                        np.unique(
+                            electrode._node_ele_id[
+                                electrode._node_channel_id == _channel_id
+                            ]
+                        )
+                    ):
+                        mask = (electrode._node_channel_id == _channel_id) * (
+                            electrode._node_ele_id == _ele_id
+                        )
+                        electrode._node_current[mask] = (
+                            I[i_channel][i_ele]
+                            * electrode._node_area[mask]
+                            / np.sum(electrode._node_area[mask])
+                        )
 
             # update electrodes from node arrays
             electrode.update_electrode_from_node_arrays()
@@ -678,38 +854,67 @@ class OnlineFEM:
             v_nodes = v[electrode._node_idx]
 
             # normalize
-            _v_norm, _ = self.normalize_solution(v_nodes=v_nodes,
-                                                 channel_id=electrode._node_channel_id,
-                                                 ele_id=electrode._node_ele_id,
-                                                 node_area=electrode._node_area,
-                                                 currents=I,
-                                                 electrode=electrode)
+            _v_norm, _ = self.normalize_solution(
+                v_nodes=v_nodes,
+                channel_id=electrode._node_channel_id,
+                ele_id=electrode._node_ele_id,
+                node_area=electrode._node_area,
+                currents=I,
+                electrode=electrode,
+            )
 
             # final error
-            maxrelerr = np.max([np.max(np.abs(_v_norm[i_channel])) for i_channel in range(n_channel)])
+            maxrelerr = np.max(
+                [np.max(np.abs(_v_norm[i_channel])) for i_channel in range(n_channel)]
+            )
 
             if self._logging:
-                logger.debug(f"Correcting current signs (pos: {np.sum(masks_sign_not[0])}/{len(masks_sign_not[0])}, "
-                      f"neg: {np.sum(masks_sign_not[1])}/{len(masks_sign_not[1])}), final maxrelerr: {maxrelerr:3f}")
+                logger.debug(
+                    f"Correcting current signs (pos: {np.sum(masks_sign_not[0])}/{len(masks_sign_not[0])}, "
+                    f"neg: {np.sum(masks_sign_not[1])}/{len(masks_sign_not[1])}), final maxrelerr: {maxrelerr:3f}"
+                )
 
         # add optimal currents to CurrentEstimator (training data) to improve estimation in further iterations
         # this is done electrode wise and not node wise because the number of nodes changes depending on the
         # electrode position
         if electrode._current_estimator is not None:
-            electrode_pos = [_electrode_array.electrode_pos for _electrode_array in electrode._electrode_arrays]
+            electrode_pos = [
+                _electrode_array.electrode_pos
+                for _electrode_array in electrode._electrode_arrays
+            ]
 
             I_ele = []
             for i_channel, _channel_id in enumerate(electrode._channel_id_unique):
                 I_ele.append([])
-                for i_ele, _ele_id in enumerate(np.unique(electrode._node_ele_id[electrode._node_channel_id == _channel_id])):
-                    mask = (electrode._node_channel_id == _channel_id) * (electrode._node_ele_id == _ele_id)
-                    I_ele.append(np.sum(electrode._node_current[mask] * electrode._node_area[mask] / np.sum(electrode._node_area[mask])))
+                for i_ele, _ele_id in enumerate(
+                    np.unique(
+                        electrode._node_ele_id[
+                            electrode._node_channel_id == _channel_id
+                        ]
+                    )
+                ):
+                    mask = (electrode._node_channel_id == _channel_id) * (
+                        electrode._node_ele_id == _ele_id
+                    )
+                    I_ele.append(
+                        np.sum(
+                            electrode._node_current[mask]
+                            * electrode._node_area[mask]
+                            / np.sum(electrode._node_area[mask])
+                        )
+                    )
 
-            electrode._current_estimator.add_training_data(electrode_pos=np.hstack(electrode_pos),
-                                                           current=np.hstack(I_ele))
+            electrode._current_estimator.add_training_data(
+                electrode_pos=np.hstack(electrode_pos), current=np.hstack(I_ele)
+            )
 
         if fn_electrode_txt is not None:
-            np.savetxt(fn_electrode_txt, np.hstack((electrode._node_coords, electrode._node_current[:, np.newaxis])))
+            np.savetxt(
+                fn_electrode_txt,
+                np.hstack(
+                    (electrode._node_coords, electrode._node_current[:, np.newaxis])
+                ),
+            )
 
         return np.squeeze(v)
 
@@ -729,13 +934,13 @@ class OnlineFEM:
         """
 
         # remove dirichlet node
-        b_reduced = np.delete(b, self.dirichlet_node-1)
+        b_reduced = np.delete(b, self.dirichlet_node - 1)
 
         # solve equation system
         x = self.solver.solve(b_reduced)
 
         # add Dirichlet node to solution
-        v = np.insert(x, self.dirichlet_node-1, 0)
+        v = np.insert(x, self.dirichlet_node - 1, 0)
 
         return np.squeeze(v)
 
@@ -765,7 +970,9 @@ class OnlineFEM:
 
             # get the coordinates of nodal points/element centers to prepare for the calculation of dadt.
             # Use self.coordinates to interpolate the field in calculate_dadt().
-            self.coordinates = get_coordinates(node_coordinates, self.node_numbers, useElements)
+            self.coordinates = get_coordinates(
+                node_coordinates, self.node_numbers, useElements
+            )
 
             # set the reshaped_node_numbers (there are two different ways to reshape it and sometimes
             # it is more efficient to use one or the other
@@ -776,33 +983,37 @@ class OnlineFEM:
             local_dist, _ = _get_local_distances(self.node_numbers, node_coordinates)
 
             # calculate the volume of a tetrahedron given the coordinates of its four nodal points
-            self.volume = np.abs(np.linalg.det(local_dist)) / 6.
+            self.volume = np.abs(np.linalg.det(local_dist)) / 6.0
 
             # get gradient operator
             self.gradient = _get_gradient(local_dist)
 
             # set the force integrals. We use the force integrals to assemble the right hand side force vector
             if self.cond.ndim == 1:
-                self.force_integrals = get_force_integrals(self.volume, self.gradient, self.cond)
+                self.force_integrals = get_force_integrals(
+                    self.volume, self.gradient, self.cond
+                )
 
-            self.fem = TMSFEM(mesh=self.mesh,
-                              cond=self.cond,
-                              solver_options=self.solver_options,
-                              solver_loglevel=self.solver_loglevel,
-                              dirichlet_node=self.dirichlet_node
-                              )
+            self.fem = TMSFEM(
+                mesh=self.mesh,
+                cond=self.cond,
+                solver_options=self.solver_options,
+                solver_loglevel=self.solver_loglevel,
+                dirichlet_node=self.dirichlet_node,
+            )
 
             self.fem.prepare_solver()
             self.solver = self.fem._solver
 
         elif self.method == "TES":
-            self.fem = TDCSFEMNeumann(mesh=self.mesh,
-                                      cond=self.cond,
-                                      ground_electrode=self.dirichlet_node,
-                                      input_type="nodes", #this option is actually not supported fem.py claims only 'tag' is supported
-                                      solver_options=self.solver_options,
-                                      solver_loglevel=self.solver_loglevel
-                                      )
+            self.fem = TDCSFEMNeumann(
+                mesh=self.mesh,
+                cond=self.cond,
+                ground_electrode=self.dirichlet_node,
+                input_type="nodes",  # this option is actually not supported fem.py claims only 'tag' is supported
+                solver_options=self.solver_options,
+                solver_loglevel=self.solver_loglevel,
+            )
 
             self.fem.prepare_solver()
             self.solver = self.fem._solver
@@ -833,7 +1044,7 @@ def assemble_force_vector(force_integrals, reshaped_node_numbers, dadt):
 
     # integrate in each node of each element, the value for repeated nodes will be summed
     # together later
-    node_integrals = np.zeros(force_integrals.shape[:2], order='C')
+    node_integrals = np.zeros(force_integrals.shape[:2], order="C")
 
     # force_integrals: (4, number_of_elements, 3); dadt: (number_of_elements, 3); node_integrals: (4, number_of_elements)
     sumf(force_integrals, dadt, node_integrals)
@@ -843,9 +1054,12 @@ def assemble_force_vector(force_integrals, reshaped_node_numbers, dadt):
 
     # keep np.bincount to make the testing more stable. May change it back to bincount_nb() for performance reason.
     # forcevec = bincount_nb(reshaped_node_numbers, node_integrals.reshape(-1)).reshape(-1, 1)
-    forcevec = np.bincount(reshaped_node_numbers, node_integrals.reshape(-1)).reshape(-1, 1)
+    forcevec = np.bincount(reshaped_node_numbers, node_integrals.reshape(-1)).reshape(
+        -1, 1
+    )
 
     return forcevec
+
 
 def calculate_element_centers(node_coordinates, node_numbers):
     """
@@ -869,7 +1083,7 @@ def calculate_element_centers(node_coordinates, node_numbers):
     index = node_numbers - 1
 
     # calculate a/4, b/4, c/4 and d/4 first
-    coordinates_normalized = node_coordinates * (1./index.shape[1])
+    coordinates_normalized = node_coordinates * (1.0 / index.shape[1])
 
     # locate the coordinates of nodes in each element
     # (3, number_of_elements, 4)
@@ -877,7 +1091,7 @@ def calculate_element_centers(node_coordinates, node_numbers):
 
     # then calculate the sum of a/4, b/4, c/4 and d/4
     # (3, number_of_elements)
-    element_centers = np.einsum('ijk->ij', pos)
+    element_centers = np.einsum("ijk->ij", pos)
 
     return element_centers
 
@@ -903,13 +1117,15 @@ def get_force_integrals(volume, gradient, conductivity):
     """
 
     if conductivity.ndim != 1:
-        raise ValueError('Invalid conductivity array')
+        raise ValueError("Invalid conductivity array")
 
     # volume and conductivity are 1D array shape=(M,)
     vol_cond = volume * conductivity * 1e-6  # 1e-6 is to convert 'mm' to 'm'
 
     # calculate the force_integrals = volume * conductivity * gradient, and rearrange the dimension to 4xMx3
-    force_integrals = np.swapaxes(-vol_cond[:, None, None] * gradient, 0, 1)  # (4, number_of_elements, 3)
+    force_integrals = np.swapaxes(
+        -vol_cond[:, None, None] * gradient, 0, 1
+    )  # (4, number_of_elements, 3)
 
     return force_integrals
 
@@ -965,16 +1181,16 @@ def delete_row_csr(mat, i):
     """
     if not isinstance(mat, sparse.csr_matrix):
         raise ValueError("works only for CSR format -- use .tocsr() first")
-    n = mat.indptr[i+1] - mat.indptr[i]
+    n = mat.indptr[i + 1] - mat.indptr[i]
     if n > 0:
-        mat.data[mat.indptr[i]:-n] = mat.data[mat.indptr[i+1]:]
+        mat.data[mat.indptr[i] : -n] = mat.data[mat.indptr[i + 1] :]
         mat.data = mat.data[:-n]
-        mat.indices[mat.indptr[i]:-n] = mat.indices[mat.indptr[i+1]:]
+        mat.indices[mat.indptr[i] : -n] = mat.indices[mat.indptr[i + 1] :]
         mat.indices = mat.indices[:-n]
-    mat.indptr[i:-1] = mat.indptr[i+1:]
+    mat.indptr[i:-1] = mat.indptr[i + 1 :]
     mat.indptr[i:] -= n
     mat.indptr = mat.indptr[:-1]
-    mat._shape = (mat._shape[0]-1, mat._shape[1])
+    mat._shape = (mat._shape[0] - 1, mat._shape[1])
 
     return mat
 
@@ -1051,8 +1267,15 @@ class FemTargetPointCloud:
     n_tet_mesh : int
         Number of tetrahedra in the whole head mesh
     """
-    def __init__(self, mesh, center=None, gradient=None, nearest_neighbor=False, fill_nearest=False):
 
+    def __init__(
+        self,
+        mesh,
+        center=None,
+        gradient=None,
+        nearest_neighbor=False,
+        fill_nearest=False,
+    ):
         self.center = center
         self.sF = None
         self.n_center = None
@@ -1065,27 +1288,37 @@ class FemTargetPointCloud:
         # crop mesh that only tetrahedra are included
         mesh_cropped: Msh = mesh.crop_mesh(elm_type=4)
         # ensure that the nodes did not change
-        assert mesh_cropped.nodes.nr == mesh.nodes.nr, 'The mesh nodes changed when removing triangles! Please make sure the mesh is valid.'
-        assert (mesh_cropped.nodes.node_coord == mesh.nodes.node_coord).all(), 'The mesh nodes changed when removing triangles! Please make sure the mesh is valid.'
+        assert mesh_cropped.nodes.nr == mesh.nodes.nr, (
+            "The mesh nodes changed when removing triangles! Please make sure the mesh is valid."
+        )
+        assert (mesh_cropped.nodes.node_coord == mesh.nodes.node_coord).all(), (
+            "The mesh nodes changed when removing triangles! Please make sure the mesh is valid."
+        )
 
         self.n_tet_mesh = mesh_cropped.elm.node_number_list.shape[0]
 
         # compute gradient
         if not gradient:
             # get the lengths of the tetrahedral edges _get_local_distances(node_numbers, node_coordinates)
-            local_dist, _ = _get_local_distances(node_numbers=mesh_cropped.elm.node_number_list,
-                                                 node_coordinates=mesh_cropped.nodes.node_coord.T)
+            local_dist, _ = _get_local_distances(
+                node_numbers=mesh_cropped.elm.node_number_list,
+                node_coordinates=mesh_cropped.nodes.node_coord.T,
+            )
             # get gradient operator
             gradient = _get_gradient(local_dist)
 
         if nearest_neighbor:
-            th_with_points, bar = mesh_cropped.find_tetrahedron_with_points(center, compute_baricentric=True)
+            th_with_points, bar = mesh_cropped.find_tetrahedron_with_points(
+                center, compute_baricentric=True
+            )
             self.inside = th_with_points != -1
             self.any_outside = np.any(~self.inside)
             self.idx = th_with_points - 1
             if self.any_outside:
                 if fill_nearest == 1:  # fill == 'nearest'
-                    _, nearest = mesh_cropped.find_closest_element(center[~self.inside], return_index=True)
+                    _, nearest = mesh_cropped.find_closest_element(
+                        center[~self.inside], return_index=True
+                    )
                     self.idx[~self.inside] = nearest - 1
 
             self.gradient = gradient[self.idx]
@@ -1098,7 +1331,6 @@ class FemTargetPointCloud:
             self.gradient = gradient[self.idx]
             self.node_index_list = mesh_cropped.elm.node_number_list[self.idx] - 1
             self.n_center = self.center.shape[0]
-
 
     def calc_fields(self, v, dadt=None, dataType=0):
         """
@@ -1141,9 +1373,21 @@ class FemTargetPointCloud:
             # TES
             ############################################################################################################
             if dataType == 0:
-                fields = postp_mag(self.gradient, v, np.zeros((self.n_tet_mesh, 3)), self.node_index_list, self.idx)
+                fields = postp_mag(
+                    self.gradient,
+                    v,
+                    np.zeros((self.n_tet_mesh, 3)),
+                    self.node_index_list,
+                    self.idx,
+                )
             else:
-                fields = postp(self.gradient, v, np.zeros((self.n_tet_mesh, 3)), self.node_index_list, self.idx)
+                fields = postp(
+                    self.gradient,
+                    v,
+                    np.zeros((self.n_tet_mesh, 3)),
+                    self.node_index_list,
+                    self.idx,
+                )
 
             # fields = np.einsum('ijk,ij->ik', self.gradient, - (v * 1e3)[self.node_index_list])
             # if dataType == 0:
@@ -1153,7 +1397,9 @@ class FemTargetPointCloud:
             # TMS (dadt should be in elements)
             ############################################################################################################
             if dataType == 0:
-                fields = postp_mag(self.gradient, v, dadt, self.node_index_list, self.idx)
+                fields = postp_mag(
+                    self.gradient, v, dadt, self.node_index_list, self.idx
+                )
             else:
                 fields = postp(self.gradient, v, dadt, self.node_index_list, self.idx)
 
@@ -1203,7 +1449,9 @@ class FemTargetPointCloud:
         else:
             th_indices = msh.elm.elm_number[np.isin(msh.elm.tag1, tags)]
 
-        th_with_points, bar = msh.find_tetrahedron_with_points(center, compute_baricentric=True)
+        th_with_points, bar = msh.find_tetrahedron_with_points(
+            center, compute_baricentric=True
+        )
         inside = np.isin(th_with_points, th_indices)
         self.inside = inside
 
@@ -1214,7 +1462,9 @@ class FemTargetPointCloud:
             th = th_with_points[inside]
 
             # interpolate the E field to the points using SPR
-            sF = self._get_sF_inside_tissues(msh, th, np.where(inside)[0], bar, center.shape[0])
+            sF = self._get_sF_inside_tissues(
+                msh, th, np.where(inside)[0], bar, center.shape[0]
+            )
 
         # Finally, fill in the unassigned values
         if np.any(~inside):
@@ -1224,11 +1474,15 @@ class FemTargetPointCloud:
                     elm_in_volume = msh.elm.elm_number[is_in]
                     m_in_volume = msh.crop_mesh(elements=elm_in_volume)
 
-                    _, nearest = m_in_volume.find_closest_element(center[~inside], return_index=True)
+                    _, nearest = m_in_volume.find_closest_element(
+                        center[~inside], return_index=True
+                    )
 
                     sF[np.where(~inside)[0], elm_in_volume[nearest - 1] - 1] = 1
                 else:
-                    _, nearest = msh.find_closest_element(center[~inside], return_index=True)
+                    _, nearest = msh.find_closest_element(
+                        center[~inside], return_index=True
+                    )
 
                     sF[np.where(~inside)[0], nearest - 1] = 1
 
@@ -1277,7 +1531,9 @@ class FemTargetPointCloud:
             is_t = tag1_inside == t
 
             if np.any(is_t):
-                logger.debug('points inside volume with tag1 = {}: {}'.format(t, np.sum(is_t)))
+                logger.debug(
+                    "points inside volume with tag1 = {}: {}".format(t, np.sum(is_t))
+                )
 
                 # 'm_tag' contains only the tetrahedra with 'elm_number == th_with_t'
                 m_tag = msh.crop_mesh(tags=t)
@@ -1328,8 +1584,9 @@ class FemTargetPointCloud:
 
         # Get the point in the outside surface
         points_outside = np.unique(msh.elm.get_outside_faces())
-        outside_points_mask = np.isin(msh.elm[msh.elm.tetrahedra],
-                                      points_outside).reshape(-1, 4)
+        outside_points_mask = np.isin(
+            msh.elm[msh.elm.tetrahedra], points_outside
+        ).reshape(-1, 4)
 
         th_indices = msh.elm.tetrahedra
         th_nodes = msh.elm[th_indices] - 1
@@ -1347,10 +1604,11 @@ class FemTargetPointCloud:
         A = np.empty((msh.nodes.nr + 1, 4, 4))
         for i in range(4):
             for j in range(i, 4):
-                A[:, i, j] = np.bincount(masked_th_nodes.reshape(-1),
-                                         np.repeat(baricenters[:, i], 4) *
-                                         np.repeat(baricenters[:, j], 4),
-                                         minlength=msh.nodes.nr + 1)
+                A[:, i, j] = np.bincount(
+                    masked_th_nodes.reshape(-1),
+                    np.repeat(baricenters[:, i], 4) * np.repeat(baricenters[:, j], 4),
+                    minlength=msh.nodes.nr + 1,
+                )
 
         # This here only ensures we can invert
         outside = np.isclose(A[:, 0, 0], 0)
@@ -1366,21 +1624,24 @@ class FemTargetPointCloud:
 
         Ainv = np.linalg.inv(A)
 
-        node_pos = np.hstack(
-            [np.ones((msh.nodes.nr, 1)), msh.nodes.node_coord])
+        node_pos = np.hstack([np.ones((msh.nodes.nr, 1)), msh.nodes.node_coord])
         # Added a dummy to the first position
         node_pos = np.vstack([np.ones((1, 4)), node_pos])
 
         M = sparse.csr_matrix((msh.nodes.nr + 1, msh.elm.nr))
         for i in range(4):
             M += sparse.csr_matrix(
-                (np.einsum(
-                    'bi, bij, bj -> b',
-                    node_pos[masked_th_nodes[:, i]],
-                    Ainv[masked_th_nodes[:, i]],
-                    baricenters),
-                 (masked_th_nodes[:, i], th_indices - 1)),
-                shape=M.shape)
+                (
+                    np.einsum(
+                        "bi, bij, bj -> b",
+                        node_pos[masked_th_nodes[:, i]],
+                        Ainv[masked_th_nodes[:, i]],
+                        baricenters,
+                    ),
+                    (masked_th_nodes[:, i], th_indices - 1),
+                ),
+                shape=M.shape,
+            )
 
         # Assigns the average value to the points in the outside surface
         th_nodes = msh.elm[th_indices] - 1
@@ -1390,21 +1651,21 @@ class FemTargetPointCloud:
 
         for i in range(4):
             M += sparse.csr_matrix(
-                (volumes, (masked_th_nodes[:, i], th_indices - 1)),
-                shape=M.shape)
+                (volumes, (masked_th_nodes[:, i], th_indices - 1)), shape=M.shape
+            )
 
         M = M[1:]
 
         node_vols = np.bincount(
-            th_nodes.reshape(-1),
-            np.repeat(volumes, 4),
-            minlength=msh.nodes.nr + 1)
+            th_nodes.reshape(-1), np.repeat(volumes, 4), minlength=msh.nodes.nr + 1
+        )
 
         normalization = np.ones(msh.nodes.nr)
-        normalization[points_outside - 1] = 1 / (node_vols[points_outside - 1] + np.finfo(float).eps)
+        normalization[points_outside - 1] = 1 / (
+            node_vols[points_outside - 1] + np.finfo(float).eps
+        )
 
-        D = sparse.dia_matrix(
-            (normalization, 0), shape=(msh.nodes.nr, msh.nodes.nr))
+        D = sparse.dia_matrix((normalization, 0), shape=(msh.nodes.nr, msh.nodes.nr))
         M = D.dot(M)
 
         # interpolate from the nodal values to the point values using linear interpolation
@@ -1416,6 +1677,7 @@ class FemTargetPointCloud:
         res = sS @ M
 
         return res
+
 
 def _get_local_distances(node_numbers, node_coordinates):
     """

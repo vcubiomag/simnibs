@@ -271,7 +271,7 @@ class TmsCoil(TcdElement):
             a_field += coil_element.get_a_field(points, coil_affine, eps)
 
         return a_field
-    
+
     def get_b_field(
         self,
         points: npt.NDArray[np.float_],
@@ -359,9 +359,11 @@ class TmsCoil(TcdElement):
                 include_casing=False,
                 apply_deformation=apply_deformations,
                 include_optimization_points=False,
-                include_coil_elements=not(self.version is not None and self.version.endswith('.o'))
+                include_coil_elements=not (
+                    self.version is not None and self.version.endswith(".o")
+                ),
             ),
-            add_logo=True
+            add_logo=True,
         )
         casings = self.get_mesh(
             apply_deformation=apply_deformations,
@@ -377,8 +379,8 @@ class TmsCoil(TcdElement):
         visualization.visibility = np.unique(visualization.mesh.elm.tag1)
 
         for i, key in enumerate(visualization.mesh.field.keys()):
-            #What is this for? O.O
-            if self.version is not None and self.version.endswith('.o'):
+            # What is this for? O.O
+            if self.version is not None and self.version.endswith(".o"):
                 continue
             if isinstance(self.elements[i], DipoleElements):
                 visualization.add_view(Visible=1, VectorType=2, CenterGlyphs=0)
@@ -447,8 +449,8 @@ class TmsCoil(TcdElement):
             os.remove(geo_file_name)
 
         for tag in np.unique(optimization_points.elm.tag1):
-            #What is this for? O.O
-            if self.version is not None and self.version.endswith('.o'):
+            # What is this for? O.O
+            if self.version is not None and self.version.endswith(".o"):
                 continue
             element_optimization_points = optimization_points.crop_mesh(tags=[tag])
             index = str(tag)[:-2]
@@ -510,12 +512,12 @@ class TmsCoil(TcdElement):
         msh_skin: Msh,
         coil_matrix: npt.NDArray[np.float_],
         visibility=1,
-        infix='',
-        axis_vectors=True
+        infix="",
+        axis_vectors=True,
     ):
         for i, element in enumerate(self.elements):
-            #And here again? *.*
-            if self.version is not None and self.version.endswith('.o'):
+            # And here again? *.*
+            if self.version is not None and self.version.endswith(".o"):
                 continue
             points = []
             vectors = []
@@ -526,7 +528,7 @@ class TmsCoil(TcdElement):
                     Visible=visibility, VectorType=2, CenterGlyphs=0, ShowScale=0
                 )
                 mesh_io.write_geo_vectors(
-                    points, vectors, goe_fn, name=f"{i+1}{infix}-dipoles", mode="ba"
+                    points, vectors, goe_fn, name=f"{i + 1}{infix}-dipoles", mode="ba"
                 )
             elif isinstance(element, LineSegmentElements):
                 points = element.get_points(coil_matrix)
@@ -545,7 +547,11 @@ class TmsCoil(TcdElement):
                     ArrowSizeMin=30,
                 )
                 mesh_io.write_geo_vectors(
-                    points, vectors, goe_fn, name=f"{i+1}{infix}-line_segments", mode="ba"
+                    points,
+                    vectors,
+                    goe_fn,
+                    name=f"{i + 1}{infix}-line_segments",
+                    mode="ba",
                 )
             elif isinstance(element, SampledGridPointElements):
                 y_axis = np.arange(1, 10, dtype=float)[:, None] * (0, 1, 0)
@@ -561,23 +567,26 @@ class TmsCoil(TcdElement):
                     points,
                     vectors,
                     goe_fn,
-                    name=f"{i+1}{infix}-sampled_grid_points",
+                    name=f"{i + 1}{infix}-sampled_grid_points",
                     mode="ba",
                 )
 
         if axis_vectors:
-            visualization.add_view(Visible=visibility, ShowScale=0,                     
-                    VectorType=4,
-                    CenterGlyphs=0,
-                    GlyphLocation=2,
-                    ArrowSizeMax=65,
-                    ArrowSizeMin=65,
-                    RangeType=2,
-                    CustomMin=0.999,
-                    CustomMax=3.001,
-                    SaturateValues=1,
-                    PointType=1, 
-                    PointSize=8.0)
+            visualization.add_view(
+                Visible=visibility,
+                ShowScale=0,
+                VectorType=4,
+                CenterGlyphs=0,
+                GlyphLocation=2,
+                ArrowSizeMax=65,
+                ArrowSizeMin=65,
+                RangeType=2,
+                CustomMin=0.999,
+                CustomMax=3.001,
+                SaturateValues=1,
+                PointType=1,
+                PointSize=8.0,
+            )
             mesh_io.write_geo_axis_vectors(
                 coil_matrix,
                 goe_fn,
@@ -597,7 +606,7 @@ class TmsCoil(TcdElement):
             for i, tag in enumerate(np.unique(casings.elm.tag1)):
                 casing = casings.crop_mesh(tags=[tag])
                 casing.elm.tag1[:] = 0
-                    
+
                 idx_inside = msh_skin.pts_inside_surface(casing.nodes[:])
                 if len(idx_inside):
                     idx_hlp = np.zeros((casing.nodes.nr, 1), dtype=bool)
@@ -610,7 +619,7 @@ class TmsCoil(TcdElement):
                     casing.nodes.node_coord,
                     goe_fn,
                     values=casing.elm.tag1,
-                    name=f"{i+index_offset}{infix}-coil_casing",
+                    name=f"{i + index_offset}{infix}-coil_casing",
                     mode="ba",
                 )
                 visualization.add_view(
@@ -695,7 +704,6 @@ class TmsCoil(TcdElement):
             elements_by_stimulators[element.stimulator] = [element]
 
         return elements_by_stimulators
-
 
     @classmethod
     def from_file(cls, fn: str):
@@ -1030,7 +1038,9 @@ class TmsCoil(TcdElement):
             Raised if validate is true and the dictionary is not valid to the tcd coil json schema
         """
         if validate:
-            with open(file_finder.templates.tcd_json_schema, "r", encoding="utf-8") as fid:
+            with open(
+                file_finder.templates.tcd_json_schema, "r", encoding="utf-8"
+            ) as fid:
                 tcd_schema = json.loads(fid.read())
 
             try:
@@ -1162,9 +1172,18 @@ class TmsCoil(TcdElement):
 
         limits = np.array(
             [
-                [affine[0][3], data.shape[0] * resolution[0] + affine[0][3] - resolution[0]],
-                [affine[1][3], data.shape[1] * resolution[1] + affine[1][3] - resolution[1]],
-                [affine[2][3], data.shape[2] * resolution[2] + affine[2][3] - resolution[2]],
+                [
+                    affine[0][3],
+                    data.shape[0] * resolution[0] + affine[0][3] - resolution[0],
+                ],
+                [
+                    affine[1][3],
+                    data.shape[1] * resolution[1] + affine[1][3] - resolution[1],
+                ],
+                [
+                    affine[2][3],
+                    data.shape[2] * resolution[2] + affine[2][3] - resolution[2],
+                ],
             ]
         )
 
@@ -1214,7 +1233,7 @@ class TmsCoil(TcdElement):
         fn: str,
         limits: Optional[npt.NDArray[np.float_]] = None,
         resolution: Optional[npt.NDArray[np.float_]] = None,
-        b_field: bool = False
+        b_field: bool = False,
     ):
         """Writes the A field of the coil in the NIfTI file format.
         If multiple stimulators are present, the NIfTI file will be 5D and containing vector data for each stimulator group.
@@ -1243,7 +1262,9 @@ class TmsCoil(TcdElement):
             raise ValueError("resolution needs to be set")
 
         stimulators_to_elements = self.get_elements_grouped_by_stimulators()
-        sample_positions, dims, new_limits = self.get_sample_positions(limits, resolution)
+        sample_positions, dims, new_limits = self.get_sample_positions(
+            limits, resolution
+        )
 
         data_per_stimulator = []
         for stimulator in stimulators_to_elements.keys():
@@ -1254,18 +1275,13 @@ class TmsCoil(TcdElement):
                 else:
                     stimulator_field += element.get_a_field(sample_positions, np.eye(4))
 
-
-            stimulator_field = stimulator_field.reshape(
-                (dims[0], dims[1], dims[2], 3)
-            )
+            stimulator_field = stimulator_field.reshape((dims[0], dims[1], dims[2], 3))
             data_per_stimulator.append(stimulator_field)
 
         data = np.stack(data_per_stimulator, axis=-2)
 
         if data.shape[3] == 1:
-            data = data.reshape(
-                (dims[0], dims[1], dims[2], 3)
-            )
+            data = data.reshape((dims[0], dims[1], dims[2], 3))
 
         affine = np.array(
             [
@@ -1295,7 +1311,7 @@ class TmsCoil(TcdElement):
         -------
         tuple[npt.NDArray[np.float_], list[int]]
             The sampled positions and the dimensions calculated using the limits and resolution of this TMS coil or the parameter if supplied
-            Also returns the limits which are updated if the limits are not dividable by the resolution. 
+            Also returns the limits which are updated if the limits are not dividable by the resolution.
 
         Raises
         ------
@@ -1310,7 +1326,7 @@ class TmsCoil(TcdElement):
         resolution = resolution if resolution is not None else self.resolution
         if resolution is None:
             raise ValueError("resolution needs to be set")
-        
+
         dx = np.spacing(1e4)
 
         x = np.arange(limits[0][0], limits[0][1] + resolution[0] - dx, resolution[0])
@@ -1319,13 +1335,15 @@ class TmsCoil(TcdElement):
 
         dims = [len(x), len(y), len(z)]
 
-        new_limits = np.array([
-            [x[0], x[-1]],
-            [y[0], y[-1]],
-            [z[0], z[-1]]
-        ])
+        new_limits = np.array([[x[0], x[-1]], [y[0], y[-1]], [z[0], z[-1]]])
 
-        return np.array(np.meshgrid(x, y, z, indexing="ij")).reshape((3, -1)).T.astype(np.float64), dims, new_limits
+        return (
+            np.array(np.meshgrid(x, y, z, indexing="ij"))
+            .reshape((3, -1))
+            .T.astype(np.float64),
+            dims,
+            new_limits,
+        )
 
     def as_sampled(
         self,
@@ -1373,7 +1391,9 @@ class TmsCoil(TcdElement):
             ]
         )
 
-        sample_positions, dims, new_limits = self.get_sample_positions(limits, resolution)
+        sample_positions, dims, new_limits = self.get_sample_positions(
+            limits, resolution
+        )
 
         sampled_coil_elements = []
         for coil_element in self.elements:
@@ -1454,7 +1474,9 @@ class TmsCoil(TcdElement):
             ]
         )
 
-        sample_positions, dims, new_limits = self.get_sample_positions(limits, resolution)
+        sample_positions, dims, new_limits = self.get_sample_positions(
+            limits, resolution
+        )
         stimulator_to_elements = self.get_elements_grouped_by_stimulators()
 
         sampled_coil_elements = []

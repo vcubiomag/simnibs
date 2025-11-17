@@ -1,22 +1,23 @@
 # -*- coding: utf-8 -*-\
 """
-    Find templates and segmentation files of SimNIBS
-    Please check on www.simnibs.org how to cite our work in publications.
+Find templates and segmentation files of SimNIBS
+Please check on www.simnibs.org how to cite our work in publications.
 
-    Copyright (C) 2019, 2020 Guilherme B Saturnino
+Copyright (C) 2019, 2020 Guilherme B Saturnino
 
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or any later version.
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or any later version.
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
+
 from pathlib import Path
 from typing import Union
 import sys
@@ -102,7 +103,8 @@ class Templates:
 
         # Electrode mask of valid skin region in MNI space
         self.mni_volume_upper_head_mask = os.path.join(
-            self._resources, 'templates', 'MNI152_T1_1mm_upper_head_mask.nii.gz')
+            self._resources, "templates", "MNI152_T1_1mm_upper_head_mask.nii.gz"
+        )
 
         # labeling_LUT
         self.labeling_LUT = os.path.join(
@@ -143,7 +145,9 @@ class Templates:
             raise FileNotFoundError
         return f
 
+
 templates = Templates()
+
 
 def get_atlas(atlas_name, hemi="both"):
     """Loads a brain atlas based of the FreeSurfer fsaverage template
@@ -208,9 +212,7 @@ def get_atlas(atlas_name, hemi="both"):
         raise ValueError("Invalid hemisphere name")
 
 
-def get_reference_surf(
-    region, surf_type, resolution: Union[None, int] = None
-):
+def get_reference_surf(region, surf_type, resolution: Union[None, int] = None):
     """Gets the file name of a reference surface
 
     Parameters
@@ -230,7 +232,9 @@ def get_reference_surf(
     FileNotFoundError if the specified reference surface is not found
 
     """
-    assert resolution in fs_resolutions, f"{resolution} is not a valid fsaverage resolution; please choose one of {fs_resolutions}"
+    assert resolution in fs_resolutions, (
+        f"{resolution} is not a valid fsaverage resolution; please choose one of {fs_resolutions}"
+    )
     fn_surf = os.path.join(
         getattr(templates, f"freesurfer_templates{fs_res_mapper[resolution]}"),
         f"{region}.{surf_type}.gii",
@@ -473,9 +477,7 @@ class SubjectFiles:
         self.template_coregistered = os.path.join(
             self.segmentation_folder, "template_coregistered.mgz"
         )
-        self.t1_synth = os.path.join(
-            self.segmentation_folder, "T1_synth.nii.gz"
-        )
+        self.t1_synth = os.path.join(self.segmentation_folder, "T1_synth.nii.gz")
 
         # labels
 
@@ -505,16 +507,21 @@ class SubjectFiles:
         self.hemispheres = HEMISPHERES
 
         self._standard_surfaces = ("central", "pial", "white", "sphere", "sphere.reg")
-        self.surfaces = {s: {h: self.get_surface(h, s) for h in self.hemispheres} for s in self._standard_surfaces}
+        self.surfaces = {
+            s: {h: self.get_surface(h, s) for h in self.hemispheres}
+            for s in self._standard_surfaces
+        }
 
-        self._standard_morph_data = tuple() # e.g., "thickness",
-        self.morph_data = {d: {h: self.get_morph_data(h, d) for h in self.hemispheres} for d in self._standard_morph_data}
+        self._standard_morph_data = tuple()  # e.g., "thickness",
+        self.morph_data = {
+            d: {h: self.get_morph_data(h, d) for h in self.hemispheres}
+            for d in self._standard_morph_data
+        }
 
         # eeg
 
         self.eeg_cap_folder = os.path.join(self.subpath, "eeg_positions")
         self.eeg_cap_1010 = self.get_eeg_cap()
-
 
     def get_eeg_cap(self, cap_name: str = "EEG10-10_UI_Jurak_2007.csv") -> str:
         """Gets the name of an EEG cap for this subject
@@ -538,8 +545,8 @@ class SubjectFiles:
 
     def get_surface(self, hemi, surface, subsampling=None):
         """Get surface files, e.g., central, pial, sphere, sphere.reg"""
-        if surface == 'sphere_reg':
-            surface = 'sphere.reg' # keep backwards compatible
+        if surface == "sphere_reg":
+            surface = "sphere.reg"  # keep backwards compatible
         subsampling = self._parse_subsampling(subsampling)
         return Path(self.surface_folder) / subsampling / f"{hemi}.{surface}.gii"
 
@@ -552,6 +559,7 @@ class SubjectFiles:
     def _parse_subsampling(subsampling: Union[None, int]) -> str:
         return str(subsampling) if subsampling else ""
 
+
 class FreeSurferSubject:
     def __init__(self, subject_dir) -> None:
         self.hemispheres = HEMISPHERES
@@ -560,7 +568,6 @@ class FreeSurferSubject:
         self.mri = self.root / "mri"
         self.surf = self.root / "surf"
         self.label = self.root / "label"
-
 
     def get_volume(self, name: str):
         """Get volume.
@@ -571,31 +578,25 @@ class FreeSurferSubject:
         """
         return self.mri / f"{name}.mgz"
 
-
     def get_surface(self, hemi: str, name: str):
         """Get surface for a single hemisphere."""
         return self.surf / f"{hemi}.{name}"
-
 
     def get_surfaces(self, name: str):
         """Get surfaces for both hemispheres."""
         return {hemi: self.get_surface(hemi, name) for hemi in self.hemispheres}
 
-
     def get_annot(self, hemi: str, name: str):
         """Get annotation for a single hemisphere."""
         return self.label / f"{hemi}.{name}.annot"
-
 
     def get_annots(self, name: str):
         """Get annotation for both hemispheres."""
         return {hemi: self.get_annot(hemi, name) for hemi in self.hemispheres}
 
-
     def get_label(self, hemi: str, name: str):
         """Get label for a single hemisphere."""
         return self.label / f"{hemi}.{name}.label"
-
 
     def get_labels(self, name: str):
         """Get label for both hemispheres."""

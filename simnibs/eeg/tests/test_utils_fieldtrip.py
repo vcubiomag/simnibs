@@ -9,19 +9,19 @@ import pytest
 from simnibs.utils import csv_reader, spatial_transform
 from simnibs.eeg import utils_fieldtrip
 
-@pytest.mark.parametrize('use_trans', [False, True])
+
+@pytest.mark.parametrize("use_trans", [False, True])
 def test_prepare_montage(use_trans):
-    """Create a MAT file with some electrode data, convert to CSV, and check.
-    """
+    """Create a MAT file with some electrode data, convert to CSV, and check."""
     rng = np.random.default_rng(0)
 
     n = 10
     # data for creating a MAT file
     elec = dict(
-        elecpos = rng.random((n,3)),
-        chantype = np.array([["eeg"]] * n, dtype=object),
-        label = np.array(list(map(str, range(n))), dtype=object, ndmin=2).T,
-        unit = "mm",
+        elecpos=rng.random((n, 3)),
+        chantype=np.array([["eeg"]] * n, dtype=object),
+        label=np.array(list(map(str, range(n))), dtype=object, ndmin=2).T,
+        unit="mm",
     )
 
     trans = spatial_transform.matrix_from_params(0.1, 0.2, 0.3) if use_trans else None
@@ -42,14 +42,14 @@ def test_prepare_montage(use_trans):
 
         utils_fieldtrip.prepare_montage(montage_file, elec_file, trans_file)
 
-        elec_type, elec_pos, _, elec_name, _, _ = csv_reader.read_csv_positions(montage_file)
-
-        np.testing.assert_allclose(pos, elec_pos)
-        np.testing.assert_array_equal(elec["label"].squeeze().astype(str), np.array(elec_name))
-        np.testing.assert_array_equal(
-            elec["chantype"].squeeze() == "eeg",
-            np.array(elec_type) == "Electrode"
+        elec_type, elec_pos, _, elec_name, _, _ = csv_reader.read_csv_positions(
+            montage_file
         )
 
-
-
+        np.testing.assert_allclose(pos, elec_pos)
+        np.testing.assert_array_equal(
+            elec["label"].squeeze().astype(str), np.array(elec_name)
+        )
+        np.testing.assert_array_equal(
+            elec["chantype"].squeeze() == "eeg", np.array(elec_type) == "Electrode"
+        )

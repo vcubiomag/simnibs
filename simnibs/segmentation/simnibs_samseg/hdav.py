@@ -1,7 +1,13 @@
 import numpy as np
 import pyqtgraph as pg
 from PyQt5 import QtCore, QtGui
-from PyQt5.QtWidgets import QApplication, QTreeWidget, QTreeWidgetItem, QHBoxLayout, QWidget
+from PyQt5.QtWidgets import (
+    QApplication,
+    QTreeWidget,
+    QTreeWidgetItem,
+    QHBoxLayout,
+    QWidget,
+)
 
 
 app = QApplication([])
@@ -9,21 +15,35 @@ windows = {}
 
 
 def view_arrays(arrays, *args, **kwargs):
-    layers = [{'data': array, 'name': str(i), 'visible': True} for i, array in enumerate(arrays)]
+    layers = [
+        {"data": array, "name": str(i), "visible": True}
+        for i, array in enumerate(arrays)
+    ]
     view(layers, *args, **kwargs)
 
 
-def view(layers, window_id=0, interactive=False, user_keys_callback=None, title=None,
-         legend_width=None, handle_events=True):
-    shape = layers[0]['data'].shape
-    if not all(layer['data'].shape == shape for layer in layers):
+def view(
+    layers,
+    window_id=0,
+    interactive=False,
+    user_keys_callback=None,
+    title=None,
+    legend_width=None,
+    handle_events=True,
+):
+    shape = layers[0]["data"].shape
+    if not all(layer["data"].shape == shape for layer in layers):
         raise ValueError("All data entries must have the same shape.")
     elif window_id in windows:
         windows[window_id].update_layers(layers)
-    elif layers[0]['data'].ndim == 2:
-        windows[window_id] = HdavWindow2d(layers, user_keys_callback=user_keys_callback, legend_width=legend_width)
-    elif layers[0]['data'].ndim == 3:
-        windows[window_id] = HdavWindow3d(layers, user_keys_callback=user_keys_callback, legend_width=legend_width)
+    elif layers[0]["data"].ndim == 2:
+        windows[window_id] = HdavWindow2d(
+            layers, user_keys_callback=user_keys_callback, legend_width=legend_width
+        )
+    elif layers[0]["data"].ndim == 3:
+        windows[window_id] = HdavWindow3d(
+            layers, user_keys_callback=user_keys_callback, legend_width=legend_width
+        )
     else:
         raise ValueError("All data entries must have 2 or 3 dimensions.")
     if title is not None:
@@ -34,6 +54,7 @@ def view(layers, window_id=0, interactive=False, user_keys_callback=None, title=
             QtGui.QApplication.processEvents()
         else:
             QtGui.QApplication.exec_()
+
 
 class HdavWindow(QWidget):
     OVERLAY_KEYS = [
@@ -91,8 +112,8 @@ class HdavWindow(QWidget):
         self.legend.setItemsExpandable(False)
         self.legend.setHeaderHidden(True)
         self.legend.setColumnCount(2)
-        for i, layer in enumerate(layers[:self.MAX_LAYER_COUNT]):
-            item = QTreeWidgetItem([self.OVERLAY_KEY_LABEL[i], layer['name']])
+        for i, layer in enumerate(layers[: self.MAX_LAYER_COUNT]):
+            item = QTreeWidgetItem([self.OVERLAY_KEY_LABEL[i], layer["name"]])
             self.legend.addTopLevelItem(item)
         layout = QHBoxLayout(self)
         layout.addWidget(self.legend)
@@ -108,22 +129,22 @@ class HdavWindow(QWidget):
             index = HdavWindow.OVERLAY_KEYS.index(key)
             if index < len(self.layers):
                 ev.accept()
-                self.layers[index]['visible'] = not self.layers[index]['visible']
+                self.layers[index]["visible"] = not self.layers[index]["visible"]
                 self.draw()
 
     @property
     def shape(self):
         if self.layers:
-            return self.layers[0]['data'].shape
+            return self.layers[0]["data"].shape
         else:
             return None
 
     def update_layers(self, layers):
         old_shape = self.shape
-        old_visibility = [layer['visible'] for layer in self.layers]
+        old_visibility = [layer["visible"] for layer in self.layers]
         self.layers = layers
         for visibility, layer in zip(old_visibility, self.layers):
-            layer['visible'] = visibility
+            layer["visible"] = visibility
         new_shape = self.shape
         if old_shape != new_shape:
             self.update_cursor(old_shape, new_shape)
@@ -149,12 +170,12 @@ class HdavWindow2d(HdavWindow):
         self.viewbox.clear()
 
         for layer in self.layers:
-            image = pg.ImageItem(layer['data'])
-            if 'cmap' in layer and layer['cmap'] is not None:
-                start, stop = layer['cmap'].pos[0], layer['cmap'].pos[-1]
-                lut = layer['cmap'].getLookupTable(start=start, stop=stop)
+            image = pg.ImageItem(layer["data"])
+            if "cmap" in layer and layer["cmap"] is not None:
+                start, stop = layer["cmap"].pos[0], layer["cmap"].pos[-1]
+                lut = layer["cmap"].getLookupTable(start=start, stop=stop)
                 image.setLookupTable(lut)
-            if layer['visible']:
+            if layer["visible"]:
                 self.viewbox.addItem(image)
 
 
@@ -169,9 +190,9 @@ class HdavWindow3d(HdavWindow):
         self.views.addItem(self.viewbox_coronal)
         self.views.addItem(self.viewbox_sagittal)
 
-        x_pen = pg.mkPen('r')
-        y_pen = pg.mkPen('g')
-        z_pen = pg.mkPen('b')
+        x_pen = pg.mkPen("r")
+        y_pen = pg.mkPen("g")
+        z_pen = pg.mkPen("b")
         self.cursor_axial_x = pg.InfiniteLine(angle=0, pen=x_pen)
         self.cursor_axial_y = pg.InfiniteLine(angle=90, pen=y_pen)
         self.cursor_coronal_x = pg.InfiniteLine(angle=0, pen=x_pen)
@@ -184,12 +205,15 @@ class HdavWindow3d(HdavWindow):
 
     def update_cursor(self, old_shape, new_shape):
         self.set_clipped_cursor(
-            [new_shape[dim] * value / old_shape[dim] for dim, value in enumerate(self.cursor_pos)])
+            [
+                new_shape[dim] * value / old_shape[dim]
+                for dim, value in enumerate(self.cursor_pos)
+            ]
+        )
 
     def move_cursor(self, pos):
         self.set_clipped_cursor(pos)
         self.draw()
-
 
     def set_clipped_cursor(self, pos):
         min_pos = np.zeros(3, dtype=int)
@@ -202,19 +226,19 @@ class HdavWindow3d(HdavWindow):
         self.viewbox_sagittal.clear()
 
         for layer in self.layers:
-            axial = layer['data'][:, :, int(self.cursor_pos[2])]
-            coronal = layer['data'][:, int(self.cursor_pos[1]), :]
-            sagittal = layer['data'][int(self.cursor_pos[0]), :, :]
+            axial = layer["data"][:, :, int(self.cursor_pos[2])]
+            coronal = layer["data"][:, int(self.cursor_pos[1]), :]
+            sagittal = layer["data"][int(self.cursor_pos[0]), :, :]
             image_axial = pg.ImageItem(axial)
             image_coronal = pg.ImageItem(coronal)
             image_sagittal = pg.ImageItem(sagittal)
-            if 'cmap' in layer and layer['cmap'] is not None:
-                start, stop = layer['cmap'].pos[0], layer['cmap'].pos[-1]
-                lut = layer['cmap'].getLookupTable(start=start, stop=stop)
+            if "cmap" in layer and layer["cmap"] is not None:
+                start, stop = layer["cmap"].pos[0], layer["cmap"].pos[-1]
+                lut = layer["cmap"].getLookupTable(start=start, stop=stop)
                 image_axial.setLookupTable(lut)
                 image_coronal.setLookupTable(lut)
                 image_sagittal.setLookupTable(lut)
-            if layer['visible']:
+            if layer["visible"]:
                 self.viewbox_axial.addItem(image_axial)
                 self.viewbox_coronal.addItem(image_coronal)
                 self.viewbox_sagittal.addItem(image_sagittal)
@@ -238,8 +262,8 @@ class HdavWindow3d(HdavWindow):
 
 class HdavViewBox(pg.ViewBox):
     def __init__(self, hdav_window, **kwargs):
-        kwargs.setdefault('lockAspect', True)
-        kwargs.setdefault('border', 'w')
+        kwargs.setdefault("lockAspect", True)
+        kwargs.setdefault("border", "w")
         super().__init__(**kwargs)
         self.hdav_window = hdav_window
 

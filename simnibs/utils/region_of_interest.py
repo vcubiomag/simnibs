@@ -14,15 +14,14 @@ from .file_finder import SubjectFiles
 from .transformations import mni2subject_coords
 
 
-
 class RegionOfInterest:
     """A class describing a region of Interest in a volume mesh or a surface mesh.
-    
+
     Parameters:
     ------------------------
     settings_dict: (optional) dict
         Dictionary containing parameter as key value pairs
-            
+
     method: str
         The method to create the ROI {"manual", "custom", "surface", "volume", "volume_from_surface", "mesh+mask"}
 
@@ -64,11 +63,11 @@ class RegionOfInterest:
     surface_inclusion_radius: float | None
         Only for method = "volume_from_surface" -> The radius from the surface nodes at which the volume elements should be included in mm (example: 5)
 
-    node_mask: list[bool] | None  
+    node_mask: list[bool] | None
         Only for method = "mesh+mask" -> a boolean node mask (exclusive with elm_mask) (example: [True, ..., False])
-    elm_mask: list[bool] | None  
+    elm_mask: list[bool] | None
         Only for method = "mesh+mask" -> a boolean node mask (exclusive with node_mask) (example: [True, ..., False])
-   
+
     """
 
     method: str
@@ -112,9 +111,9 @@ class RegionOfInterest:
     surface_inclusion_radius: float | None
     """ Only for method = "volume_from_surface" -> The radius from the surface nodes at which the volume elements should be included in mm (example: 5)"""
 
-    node_mask: list[bool] | None  
+    node_mask: list[bool] | None
     """ Only for method = "mesh+mask" -> a boolean node mask (exclusive with elm_mask) (example: [True, ..., False])"""
-    elm_mask: list[bool] | None  
+    elm_mask: list[bool] | None
     """ Only for method = "mesh+mask" -> a boolean node mask (exclusive with node_mask) (example: [True, ..., False])"""
 
     def __init__(self, settings_dict=None):
@@ -144,11 +143,11 @@ class RegionOfInterest:
 
         self.node_mask = None
         self.elm_mask = None
-        
+
         self._prepared = False
 
         if settings_dict:
-           self.from_dict(settings_dict)
+            self.from_dict(settings_dict)
 
     def _prepare(self):
         """Prepares the Region of Interest based on the scripting parameters of the class.
@@ -254,7 +253,7 @@ class RegionOfInterest:
         self._prepared = True
 
     def to_dict(self) -> dict:
-        """ Makes a dictionary storing all settings as key value pairs
+        """Makes a dictionary storing all settings as key value pairs
 
         Returns
         --------------------
@@ -263,21 +262,22 @@ class RegionOfInterest:
         """
         # Generate dict from instance variables (excluding variables starting with _ or __)
         settings = {
-            key:value for key, value in self.__dict__.items() 
-            if not key.startswith('__')
-            and not key.startswith('_')
-            and not callable(value) 
+            key: value
+            for key, value in self.__dict__.items()
+            if not key.startswith("__")
+            and not key.startswith("_")
+            and not callable(value)
             and not callable(getattr(value, "__get__", None))
             and value is not None
         }
 
         # Add class name as type (type is protected in python so it cannot be a instance variable)
-        settings['type'] = 'RegionOfInterest'
+        settings["type"] = "RegionOfInterest"
 
         return settings
-    
+
     def from_dict(self, settings: dict) -> "RegionOfInterest":
-        """ Reads parameters from a dict
+        """Reads parameters from a dict
 
         Parameters
         ----------
@@ -290,7 +290,12 @@ class RegionOfInterest:
             Self with applied settings
         """
         for key, value in self.__dict__.items():
-            if key.startswith('__') or key.startswith('_') or callable(value) or callable(getattr(value, "__get__", None)):
+            if (
+                key.startswith("__")
+                or key.startswith("_")
+                or callable(value)
+                or callable(getattr(value, "__get__", None))
+            ):
                 continue
             setattr(self, key, settings.get(key, value))
 
@@ -373,7 +378,7 @@ class RegionOfInterest:
                 return self._mesh.crop_mesh(elements=elm_indexes)
             case _:
                 raise ValueError("No mesh or surface was loaded")
-            
+
     def get_roi_element_types(self) -> list[int]:
         """Returns the element types that are present in the masked mesh
 
@@ -389,8 +394,14 @@ class RegionOfInterest:
         """
         match self._mask_type:
             case "node":
-                masked_nodes_in_elm_mask = np.isin(self._mesh.elm.node_number_list, self._mesh.nodes.node_number[self._mask])
-                elm_mask = np.all(masked_nodes_in_elm_mask | (self._mesh.elm.node_number_list == -1), axis = 1)
+                masked_nodes_in_elm_mask = np.isin(
+                    self._mesh.elm.node_number_list,
+                    self._mesh.nodes.node_number[self._mask],
+                )
+                elm_mask = np.all(
+                    masked_nodes_in_elm_mask | (self._mesh.elm.node_number_list == -1),
+                    axis=1,
+                )
                 return list(np.unique(self._mesh.elm.elm_type[elm_mask]))
             case "elm_center":
                 return list(np.unique(self._mesh.elm.elm_type[self._mask]))
@@ -557,7 +568,7 @@ class RegionOfInterest:
             surface = surface.join_mesh(surfaces[1])
         self._mesh = surface
         self._mask_type = "node"
-        #self._mask = np.zeros((self._mesh.nodes.nr), dtype=np.bool_)
+        # self._mask = np.zeros((self._mesh.nodes.nr), dtype=np.bool_)
         self._mask = np.ones((self._mesh.nodes.nr), dtype=np.bool_)
         if self.surface_type is None:
             self.surface_type = surface_type
@@ -591,7 +602,7 @@ class RegionOfInterest:
             raise ValueError(f"mesh or subpath needs to be set (was {mesh}, {subpath})")
 
         self._mask_type = "elm_center"
-        #self._mask = np.zeros((self._mesh.elm.nr), dtype=np.bool_)
+        # self._mask = np.zeros((self._mesh.elm.nr), dtype=np.bool_)
         self._mask = np.ones((self._mesh.elm.nr), dtype=np.bool_)
 
     def apply_surface_mask(
@@ -656,7 +667,7 @@ class RegionOfInterest:
                 mask_value = [mask_value] * len(mask_path)
 
             if mask_operator is None:
-                #mask_operator = "union"
+                # mask_operator = "union"
                 mask_operator = "intersection"
 
             if isinstance(mask_operator, str):
@@ -815,7 +826,7 @@ class RegionOfInterest:
                 mask_value = [mask_value] * len(mask_path)
 
             if mask_operator is None:
-                #mask_operator = "union"
+                # mask_operator = "union"
                 mask_operator = "intersection"
 
             if isinstance(mask_operator, str):
@@ -886,7 +897,7 @@ class RegionOfInterest:
             )
 
         if surface_roi_operator is None:
-            #surface_roi_operator = "union"
+            # surface_roi_operator = "union"
             surface_roi_operator = "intersection"
 
         kd_tree = scipy.spatial.cKDTree(self._mesh.elements_baricenters().value)
@@ -972,7 +983,7 @@ class RegionOfInterest:
                 roi_sphere_center_space = [roi_sphere_center_space]
 
             if roi_sphere_operator is None:
-                #roi_sphere_operator = "union"
+                # roi_sphere_operator = "union"
                 roi_sphere_operator = "intersection"
 
             if isinstance(roi_sphere_operator, str):
@@ -1049,14 +1060,21 @@ class RegionOfInterest:
             tissues = [tissues]
 
         if tissue_mask_operator is None:
-            #tissue_mask_operator = "union"
+            # tissue_mask_operator = "union"
             tissue_mask_operator = "intersection"
 
         tissues = np.array(tissues)
 
         match self._mask_type:
             case "node":
-                node_indexes = np.unique(self._mesh.elm.node_number_list[np.isin(self._mesh.elm.tag1, tissues)]) - 1
+                node_indexes = (
+                    np.unique(
+                        self._mesh.elm.node_number_list[
+                            np.isin(self._mesh.elm.tag1, tissues)
+                        ]
+                    )
+                    - 1
+                )
                 node_indexes = node_indexes[node_indexes >= 0]
                 self._mask = combine_mask(
                     self._mask,
@@ -1066,12 +1084,12 @@ class RegionOfInterest:
             case "elm_center":
                 self._mask = combine_mask(
                     self._mask,
-                    self._mesh.elm.elm_number[np.isin(self._mesh.elm.tag1, tissues)] - 1,
+                    self._mesh.elm.elm_number[np.isin(self._mesh.elm.tag1, tissues)]
+                    - 1,
                     tissue_mask_operator,
                 )
             case _:
                 raise ValueError("No mesh or surface was loaded")
-        
 
     def apply_element_type_mask(
         self,
@@ -1101,7 +1119,14 @@ class RegionOfInterest:
 
         match self._mask_type:
             case "node":
-                node_indexes = np.unique(self._mesh.elm.node_number_list[np.isin(self._mesh.elm.elm_type, element_types)]) - 1
+                node_indexes = (
+                    np.unique(
+                        self._mesh.elm.node_number_list[
+                            np.isin(self._mesh.elm.elm_type, element_types)
+                        ]
+                    )
+                    - 1
+                )
                 node_indexes = node_indexes[node_indexes >= 0]
                 self._mask = combine_mask(
                     self._mask,
@@ -1111,7 +1136,10 @@ class RegionOfInterest:
             case "elm_center":
                 self._mask = combine_mask(
                     self._mask,
-                    self._mesh.elm.elm_number[np.isin(self._mesh.elm.elm_type, element_types)] - 1,
+                    self._mesh.elm.elm_number[
+                        np.isin(self._mesh.elm.elm_type, element_types)
+                    ]
+                    - 1,
                     element_type_mask_operator,
                 )
             case _:
@@ -1120,14 +1148,16 @@ class RegionOfInterest:
     def invert(self):
         """Inverts the current mask"""
         self._mask = ~self._mask
-        
+
     def run(self, cpus=1):
         """writes visualization for visual control"""
         if self.fname_visu is None:
             raise ValueError(
-                    'fname_visu (mesh filename for ROI visualization) has to be set'
+                "fname_visu (mesh filename for ROI visualization) has to be set"
             )
-        folder_path, base_file_name = os.path.split(os.path.abspath(os.path.expanduser(self.fname_visu)))
+        folder_path, base_file_name = os.path.split(
+            os.path.abspath(os.path.expanduser(self.fname_visu))
+        )
         base_file_name = os.path.splitext(base_file_name)[0]
         self.write_visualization(folder_path, base_file_name)
 

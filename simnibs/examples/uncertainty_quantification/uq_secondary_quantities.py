@@ -1,20 +1,21 @@
-''' 
-    example for  determining auxiliary results from a gPC-based uncertainty quantification
+"""
+example for  determining auxiliary results from a gPC-based uncertainty quantification
 
-    Copyright (c) 2019 SimNIBS developers. Licensed under the GPL v3.
-'''
+Copyright (c) 2019 SimNIBS developers. Licensed under the GPL v3.
+"""
 
 import numpy as np
 import simnibs
 from simnibs.simulation import gpc
 
 
-fn_hdf5 = 'tdcs_uq/ernie_TDCS_1_gpc.hdf5'
+fn_hdf5 = "tdcs_uq/ernie_TDCS_1_gpc.hdf5"
 # Read the regression object from the HDF5 file
 regression = gpc.gPC_regression.read_hdf5(fn_hdf5)
 # Read the mesh ROI from the HDF5 file
-mesh = simnibs.Msh.read_hdf5(fn_hdf5, 'mesh_roi')
+mesh = simnibs.Msh.read_hdf5(fn_hdf5, "mesh_roi")
 # Define the function to be used for the expansion
+
 
 def percentile_99(Es):
     # The function will receive the electric field in a format
@@ -25,6 +26,7 @@ def percentile_99(Es):
         prc[i] = simnibs.ElementData(E, mesh=mesh).get_percentiles(99)[0]
 
     return prc
+
 
 # Calculate the gPC coefficients
 gpc_coeffs = regression.expand_quantity(percentile_99)

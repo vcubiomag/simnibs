@@ -557,7 +557,6 @@ class LayoutElectrode:
         node_idx=None,
         node_coords=None,
     ):
-
         if (ele_voltage is not None and ele_current is not None) or (
             node_voltage is not None and node_current is not None
         ):
@@ -676,9 +675,9 @@ class LayoutElectrode:
     @node_current.setter
     def node_current(self, value):
         if value is not None:
-            assert (
-                len(value) == self.n_nodes
-            ), "Number of node currents does not match total number of nodes!"
+            assert len(value) == self.n_nodes, (
+                "Number of node currents does not match total number of nodes!"
+            )
 
             self._node_current = value
 
@@ -707,9 +706,9 @@ class LayoutElectrode:
     @node_voltage.setter
     def node_voltage(self, value):
         if value is not None:
-            assert (
-                len(value) == self.n_nodes
-            ), "Number of node voltages does not match total number of nodes!"
+            assert len(value) == self.n_nodes, (
+                "Number of node voltages does not match total number of nodes!"
+            )
 
             self._node_voltage = value
 
@@ -881,21 +880,21 @@ class ElectrodeArray:
         else:
             self.current = current
 
-        assert (
-            center.shape[0] == self.n_ele
-        ), "Number of elements in 'center' does not match number of electrodes!"
-        assert (
-            len(radius) == self.n_ele
-        ), "Number of elements in 'radius' does not match number of electrodes!"
-        assert (
-            len(length_x) == self.n_ele
-        ), "Number of elements in 'length_x' does not match number of electrodes!"
-        assert (
-            len(length_y) == self.n_ele
-        ), "Number of elements in 'length_y' does not match number of electrodes!"
-        assert (
-            len(self.current) == self.n_ele
-        ), "Number of elements in 'current' does not match number of electrodes!"
+        assert center.shape[0] == self.n_ele, (
+            "Number of elements in 'center' does not match number of electrodes!"
+        )
+        assert len(radius) == self.n_ele, (
+            "Number of elements in 'radius' does not match number of electrodes!"
+        )
+        assert len(length_x) == self.n_ele, (
+            "Number of elements in 'length_x' does not match number of electrodes!"
+        )
+        assert len(length_y) == self.n_ele, (
+            "Number of elements in 'length_y' does not match number of electrodes!"
+        )
+        assert len(self.current) == self.n_ele, (
+            "Number of elements in 'current' does not match number of electrodes!"
+        )
 
         for i_ele in range(self.n_ele):
             self.distance[i_ele] = np.linalg.norm(center[i_ele, :] - self.array_center)
@@ -990,17 +989,16 @@ class ElectrodeArray:
 
         prop_cycle = plt.rcParams["axes.prop_cycle"]
         colors = prop_cycle.by_key()["color"]
-            
+
         if usesDirichlet:
             channel_idx = self.channel_id
         else:
             channel_idx = self.ele_id
 
         if len(colors) < np.max(channel_idx):
-            colors = list(np.tile(colors, 
-                                  int(np.ceil(np.max(channel_idx) / len(colors)))
-                                  )
-                         )
+            colors = list(
+                np.tile(colors, int(np.ceil(np.max(channel_idx) / len(colors))))
+            )
         plt.ioff()
         fig = plt.figure()
         ax = fig.add_subplot(111)
@@ -1042,14 +1040,14 @@ class ElectrodeArray:
         ax.set_axisbelow(True)
         ax.set_xlim(
             (
-                np.min(self.center - 1.5 * np.max((self.radius, self.length_x/2))),
-                np.max(self.center + 1.5 * np.max((self.radius, self.length_x/2))),
+                np.min(self.center - 1.5 * np.max((self.radius, self.length_x / 2))),
+                np.max(self.center + 1.5 * np.max((self.radius, self.length_x / 2))),
             )
         )
         ax.set_ylim(
             (
-                np.min(self.center - 1.5 * np.max((self.radius, self.length_y/2))),
-                np.max(self.center + 1.5 * np.max((self.radius, self.length_y/2))),
+                np.min(self.center - 1.5 * np.max((self.radius, self.length_y / 2))),
+                np.max(self.center + 1.5 * np.max((self.radius, self.length_y / 2))),
             )
         )
         ax.set_aspect("equal", "box")
@@ -1143,10 +1141,9 @@ class ElectrodeArrayPair(ElectrodeLayout):
         self._prepared = False
 
         if settings_dict:
-           self.from_dict(settings_dict)
+            self.from_dict(settings_dict)
 
     def _prepare(self):
-
         if self.dirichlet_correction_detailed:
             self.dirichlet_correction = True
 
@@ -1200,7 +1197,7 @@ class ElectrodeArrayPair(ElectrodeLayout):
 
         if self.length_x_bounds is not None and np.sum(self.length_x_bounds) != 0:
             assert len(self.length_x_bounds) == 2, (
-                "Dimension mismatch! " "Please provide [min, max] values for length_x."
+                "Dimension mismatch! Please provide [min, max] values for length_x."
             )
             self._length_x_free = True
             self.length_x_bounds = self.length_x_bounds
@@ -1214,7 +1211,7 @@ class ElectrodeArrayPair(ElectrodeLayout):
 
         if self.length_y_bounds is not None and np.sum(self.length_y_bounds) != 0:
             assert len(self.length_y_bounds) == 2, (
-                "Dimension mismatch! " "Please provide [min, max] values for length_y."
+                "Dimension mismatch! Please provide [min, max] values for length_y."
             )
             self._length_y_free = True
             self.length_y_bounds = self.length_y_bounds
@@ -1419,7 +1416,7 @@ class ElectrodeArrayPair(ElectrodeLayout):
         """
         if center is not None:
             self.center = center
-        
+
         if radius is not None:
             if not hasattr(radius, "__len__"):
                 radius = np.array([radius])
@@ -1479,7 +1476,7 @@ class CircularArray(ElectrodeLayout):
         Has to sum up to zero net current.
     current_estimator_method : str, optional, default: "linear"
         Method to estimate the electrode currents:
-        
+
         - "linear": linear regression
         - "gpc": generalized polynomial chaos
     dirichlet_correction : bool, optional, default: True
@@ -1523,10 +1520,9 @@ class CircularArray(ElectrodeLayout):
         self._prepared = False
 
         if settings_dict:
-           self.from_dict(settings_dict)
+            self.from_dict(settings_dict)
 
     def _prepare(self):
-
         if self.dirichlet_correction_detailed:
             self.dirtichlet_correction = True
 
@@ -1877,9 +1873,17 @@ class CircularArray(ElectrodeLayout):
         ]
 
 
-def create_tdcs_session_from_array(electrode_array, fnamehead, pathfem, thickness=None,
-                                   plug_center=None, plug_dimensions=None, rubber_size=None,
-                                   sigma_rubber=None, sigma_saline=None):
+def create_tdcs_session_from_array(
+    electrode_array,
+    fnamehead,
+    pathfem,
+    thickness=None,
+    plug_center=None,
+    plug_dimensions=None,
+    rubber_size=None,
+    sigma_rubber=None,
+    sigma_saline=None,
+):
     """
     Create a sim_struct.SESSION including a TDCSLIST object with ELECTRODE instances for regular TDCS
     simulations including electrode meshing etc. for reference simulations.
@@ -1938,46 +1942,59 @@ def create_tdcs_session_from_array(electrode_array, fnamehead, pathfem, thicknes
         tdcslist.cond[499].value = sigma_saline
 
     # Set currents
-    if electrode_array.dirichlet_correction == True or electrode_array.dirichlet_correction_detailed == True:
+    if (
+        electrode_array.dirichlet_correction == True
+        or electrode_array.dirichlet_correction_detailed == True
+    ):
         # this corresponds to several electrodes sharing a common channel
         tdcslist.currents = electrode_array._current_channel
     else:
         # each electrode has its own channel
         tdcslist.currents = electrode_array.current
         channel_idx = np.arange(len(electrode_array.current))
-        
+
     # Initialize the electrodes
     counter = 0
     for i_array, _electrode_array in enumerate(electrode_array._electrode_arrays):
         for i_ele, _electrode in enumerate(_electrode_array.electrodes):
-                        
             # add new electrode
             electrode = tdcslist.add_electrode()
 
             if _electrode.type == "spherical":
                 # Circular shape
-                electrode.shape = 'ellipse'
+                electrode.shape = "ellipse"
 
                 # Electrode (rubber) and Sponge dimension
                 if len(thickness) == 3:
-                    electrode.dimensions_sponge = [2 * _electrode.radius, 2 * _electrode.radius]
+                    electrode.dimensions_sponge = [
+                        2 * _electrode.radius,
+                        2 * _electrode.radius,
+                    ]
                     electrode.dimensions = rubber_size[i_ele]
                 else:
-                    electrode.dimensions = [2*_electrode.radius, 2*_electrode.radius]
+                    electrode.dimensions = [
+                        2 * _electrode.radius,
+                        2 * _electrode.radius,
+                    ]
 
             elif _electrode.type == "rectangular":
                 # Rectangular shape
-                electrode.shape = 'rect'
+                electrode.shape = "rect"
 
                 # Electrode (rubber) and Sponge dimension
                 if len(thickness) == 3:
-                    electrode.dimensions_sponge = [_electrode.length_x, _electrode.length_y]
+                    electrode.dimensions_sponge = [
+                        _electrode.length_x,
+                        _electrode.length_y,
+                    ]
                     electrode.dimensions = rubber_size[i_ele]
                 else:
                     electrode.dimensions = [_electrode.length_x, _electrode.length_y]
 
             else:
-                raise AssertionError("Electrodes have to be either 'spherical' or 'rectangular'")
+                raise AssertionError(
+                    "Electrodes have to be either 'spherical' or 'rectangular'"
+                )
 
             # add plug
             if plug_center is not None:
@@ -1990,7 +2007,10 @@ def create_tdcs_session_from_array(electrode_array, fnamehead, pathfem, thicknes
                     plug.dimensions = plug_dimensions
 
             # Connect electrode to its channel
-            if electrode_array.dirichlet_correction == True or electrode_array.dirichlet_correction_detailed == True:
+            if (
+                electrode_array.dirichlet_correction == True
+                or electrode_array.dirichlet_correction_detailed == True
+            ):
                 electrode.channelnr = _electrode.channel_id
             else:
                 electrode.channelnr = channel_idx[counter]
@@ -2002,8 +2022,8 @@ def create_tdcs_session_from_array(electrode_array, fnamehead, pathfem, thicknes
             electrode.centre = _electrode.posmat[:3, 3]
 
             # Electrode direction
-            electrode.pos_ydir = electrode.centre + 20*_electrode.posmat[:3, 1]
-            
+            electrode.pos_ydir = electrode.centre + 20 * _electrode.posmat[:3, 1]
+
             counter += 1
-        
+
     return s

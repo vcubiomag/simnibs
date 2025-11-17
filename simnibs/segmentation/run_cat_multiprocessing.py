@@ -6,36 +6,59 @@ Created on Thu Sep 17 16:28:21 2020
 """
 
 from simnibs.segmentation.brain_surface import createCS, expandCS
-from simnibs.mesh_tools.mesh_io import read_gifti_surface, read_curv, write_gifti_surface
+from simnibs.mesh_tools.mesh_io import (
+    read_gifti_surface,
+    read_curv,
+    write_gifti_surface,
+)
 import functools
 import multiprocessing
 import os
 
 
 def expandCS_wrapper(actualsurf, surffolder, debug):
-
-    Pcentral = os.path.join(surffolder,actualsurf+'.central.gii')
-    Ppial = os.path.join(surffolder,actualsurf+'.pial.gii')
-    Pthickness = os.path.join(surffolder,actualsurf+'.thickness')
+    Pcentral = os.path.join(surffolder, actualsurf + ".central.gii")
+    Ppial = os.path.join(surffolder, actualsurf + ".pial.gii")
+    Pthickness = os.path.join(surffolder, actualsurf + ".thickness")
 
     m = read_gifti_surface(Pcentral)
     thickness = read_curv(Pthickness)
-    m.nodes.node_coord = expandCS(m.nodes[:], m.elm[:,:3]-1, thickness/2,
-                                  ensure_distance=0.2, nsteps=5,
-                                  deform="expand", smooth_mesh=True,
-                                  skip_lastsmooth=True, smooth_mm2move=True,
-                                  despike_nonmove=True, fix_faceflips=True,
-                                  actualsurf=actualsurf, debug=debug)
+    m.nodes.node_coord = expandCS(
+        m.nodes[:],
+        m.elm[:, :3] - 1,
+        thickness / 2,
+        ensure_distance=0.2,
+        nsteps=5,
+        deform="expand",
+        smooth_mesh=True,
+        skip_lastsmooth=True,
+        smooth_mm2move=True,
+        despike_nonmove=True,
+        fix_faceflips=True,
+        actualsurf=actualsurf,
+        debug=debug,
+    )
     write_gifti_surface(m, Ppial)
     return Ppial
 
 
-def run_cat_multiprocessing(Ymf, Yleft, Ymaskhemis,
-                            vox2mm, surface_folder, fsavgDir, vdist,
-                            voxsize_pbt, voxsize_refineCS, th_initial,
-                            no_selfintersections, surf, pial = [],
-                            nprocesses = 0, debug=False):
-
+def run_cat_multiprocessing(
+    Ymf,
+    Yleft,
+    Ymaskhemis,
+    vox2mm,
+    surface_folder,
+    fsavgDir,
+    vdist,
+    voxsize_pbt,
+    voxsize_refineCS,
+    th_initial,
+    no_selfintersections,
+    surf,
+    pial=[],
+    nprocesses=0,
+    debug=False,
+):
     Pcentral_all = []
     Pspherereg_all = []
     Pthick_all = []
@@ -45,14 +68,24 @@ def run_cat_multiprocessing(Ymf, Yleft, Ymaskhemis,
 
     processes = len(surf)
     if nprocesses > 0:
-        processes=min(nprocesses,processes)
+        processes = min(nprocesses, processes)
 
     with multiprocessing.Pool(processes=processes) as pool:
         partial_create_cs = functools.partial(
-            createCS, Ymf, Yleft, Ymaskhemis, vox2mm,
-            surffolder=surface_folder, fsavgDir=fsavgDir, vdist=vdist,
-            voxsize_pbt=voxsize_pbt, voxsize_refineCS=voxsize_refineCS,
-            th_initial=th_initial, no_selfintersections=no_selfintersections, debug=debug)
+            createCS,
+            Ymf,
+            Yleft,
+            Ymaskhemis,
+            vox2mm,
+            surffolder=surface_folder,
+            fsavgDir=fsavgDir,
+            vdist=vdist,
+            voxsize_pbt=voxsize_pbt,
+            voxsize_refineCS=voxsize_refineCS,
+            th_initial=th_initial,
+            no_selfintersections=no_selfintersections,
+            debug=debug,
+        )
 
         # call pool.map to run in parallel
         results = pool.map(partial_create_cs, surf)
@@ -65,7 +98,9 @@ def run_cat_multiprocessing(Ymf, Yleft, Ymaskhemis,
 
         if len(pial) > 0:
             assert all(elem in surf for elem in pial)
-            partial_expand_cs = functools.partial(expandCS_wrapper, surffolder=surface_folder, debug=debug)
+            partial_expand_cs = functools.partial(
+                expandCS_wrapper, surffolder=surface_folder, debug=debug
+            )
 
             # call pool.map to run in parallel
             results = pool.map(partial_expand_cs, pial)
@@ -73,34 +108,34 @@ def run_cat_multiprocessing(Ymf, Yleft, Ymaskhemis,
                 Ppial_all.append(r[0])
 
 
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     import argparse
     import nibabel as nib
 
     argument_parser = argparse.ArgumentParser()
     argument_parser.add_argument("--Ymf_path", nargs="+", type=str)
-    argument_parser.add_argument('--Yleft_path', nargs='+', type=str)
-    argument_parser.add_argument('--Ymaskhemis_path', nargs='+', type=str)
-    argument_parser.add_argument('--surface_folder', nargs='+', type=str)
-    argument_parser.add_argument('--fsavgdir', nargs='+', type=str)
-    argument_parser.add_argument('--vdist', nargs='+', type=float,
-                                 default=[1.0, 0.75])
-    argument_parser.add_argument('--voxsize_pbt', nargs='+', type=float,
-                                 default=[0.5, 0.25])
-    argument_parser.add_argument('--voxsizeCS', nargs='+', type=float,
-                                 default=[0.75, 0.5])
-    argument_parser.add_argument('--th_initial', nargs='+', type=float,
-                                 default=[0.714])
-    argument_parser.add_argument('--no_intersect', nargs='+', type=bool, default=[True])
-    argument_parser.add_argument('--surf', nargs='+',
-                                 default=['lh', 'rh', 'lc', 'rc'])
-    argument_parser.add_argument('--pial', nargs='+',
-                                 default=['lh', 'rh', 'lc', 'rc'])
-    argument_parser.add_argument('--nprocesses', nargs='+', type=int,
-                                 default=[0])
-    argument_parser.add_argument('--debug', action='store_true', default=False,
-        help="""Write results from intermediate steps to disk.""")
+    argument_parser.add_argument("--Yleft_path", nargs="+", type=str)
+    argument_parser.add_argument("--Ymaskhemis_path", nargs="+", type=str)
+    argument_parser.add_argument("--surface_folder", nargs="+", type=str)
+    argument_parser.add_argument("--fsavgdir", nargs="+", type=str)
+    argument_parser.add_argument("--vdist", nargs="+", type=float, default=[1.0, 0.75])
+    argument_parser.add_argument(
+        "--voxsize_pbt", nargs="+", type=float, default=[0.5, 0.25]
+    )
+    argument_parser.add_argument(
+        "--voxsizeCS", nargs="+", type=float, default=[0.75, 0.5]
+    )
+    argument_parser.add_argument("--th_initial", nargs="+", type=float, default=[0.714])
+    argument_parser.add_argument("--no_intersect", nargs="+", type=bool, default=[True])
+    argument_parser.add_argument("--surf", nargs="+", default=["lh", "rh", "lc", "rc"])
+    argument_parser.add_argument("--pial", nargs="+", default=["lh", "rh", "lc", "rc"])
+    argument_parser.add_argument("--nprocesses", nargs="+", type=int, default=[0])
+    argument_parser.add_argument(
+        "--debug",
+        action="store_true",
+        default=False,
+        help="""Write results from intermediate steps to disk.""",
+    )
 
     parsed = argument_parser.parse_args()
 
@@ -119,7 +154,20 @@ if __name__ == '__main__':
     nprocesses = parsed.nprocesses[0]
     debug = parsed.debug
 
-    run_cat_multiprocessing(Ymf.get_fdata(), Yleft.get_fdata(), Yhemis.get_fdata(),
-                            Ymf.affine, surf_folder, fsavgdir, vdist,
-                            voxsize_pbt, voxsize_refineCS, th_initial,
-                            no_selfintersections, surf, pial, nprocesses, debug)
+    run_cat_multiprocessing(
+        Ymf.get_fdata(),
+        Yleft.get_fdata(),
+        Yhemis.get_fdata(),
+        Ymf.affine,
+        surf_folder,
+        fsavgdir,
+        vdist,
+        voxsize_pbt,
+        voxsize_refineCS,
+        th_initial,
+        no_selfintersections,
+        surf,
+        pial,
+        nprocesses,
+        debug,
+    )

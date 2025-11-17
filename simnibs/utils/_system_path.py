@@ -32,24 +32,37 @@
 # Helper script for adding and removing entries in the
 # Windows system path from the NSIS installer.
 
-__all__ = ['remove_from_system_path', 'add_to_system_path', 'broadcast_environment_settings_change']
+__all__ = [
+    "remove_from_system_path",
+    "add_to_system_path",
+    "broadcast_environment_settings_change",
+]
 
 import sys
 import os, ctypes
 from os import path
 from ctypes import wintypes
+
 if sys.version_info[0] >= 3:
     import winreg as reg
 else:
     import _winreg as reg
 
-HWND_BROADCAST = 0xffff
+HWND_BROADCAST = 0xFFFF
 WM_SETTINGCHANGE = 0x001A
 SMTO_ABORTIFHUNG = 0x0002
 SendMessageTimeout = ctypes.windll.user32.SendMessageTimeoutW
-SendMessageTimeout.restype = None #wintypes.LRESULT
-SendMessageTimeout.argtypes = [wintypes.HWND, wintypes.UINT, wintypes.WPARAM,
-            wintypes.LPCWSTR, wintypes.UINT, wintypes.UINT, ctypes.POINTER(wintypes.DWORD)]
+SendMessageTimeout.restype = None  # wintypes.LRESULT
+SendMessageTimeout.argtypes = [
+    wintypes.HWND,
+    wintypes.UINT,
+    wintypes.WPARAM,
+    wintypes.LPCWSTR,
+    wintypes.UINT,
+    wintypes.UINT,
+    ctypes.POINTER(wintypes.DWORD),
+]
+
 
 def sz_expand(value, value_type):
     if value_type == reg.REG_EXPAND_SZ:
@@ -57,26 +70,30 @@ def sz_expand(value, value_type):
     else:
         return value
 
-def remove_from_system_path(pathname, allusers=True, path_env_var='PATH'):
+
+def remove_from_system_path(pathname, allusers=True, path_env_var="PATH"):
     """Removes all entries from the path which match the value in 'pathname'
 
-       You must call broadcast_environment_settings_change() after you are finished
-       manipulating the environment with this and other functions.
+    You must call broadcast_environment_settings_change() after you are finished
+    manipulating the environment with this and other functions.
 
-       For example,
-         # Remove Anaconda from PATH
-         remove_from_system_path(r'C:\Anaconda')
-         broadcast_environment_settings_change()
+    For example,
+      # Remove Anaconda from PATH
+      remove_from_system_path(r'C:\Anaconda')
+      broadcast_environment_settings_change()
     """
     pathname = path.normcase(path.normpath(pathname))
 
-    envkeys = [(reg.HKEY_CURRENT_USER, r'Environment')]
+    envkeys = [(reg.HKEY_CURRENT_USER, r"Environment")]
     if allusers:
-        envkeys.append((reg.HKEY_LOCAL_MACHINE,
-            r'SYSTEM\CurrentControlSet\Control\Session Manager\Environment'))
+        envkeys.append(
+            (
+                reg.HKEY_LOCAL_MACHINE,
+                r"SYSTEM\CurrentControlSet\Control\Session Manager\Environment",
+            )
+        )
     for root, keyname in envkeys:
-        key = reg.OpenKey(root, keyname, 0,
-                reg.KEY_QUERY_VALUE|reg.KEY_SET_VALUE)
+        key = reg.OpenKey(root, keyname, 0, reg.KEY_QUERY_VALUE | reg.KEY_SET_VALUE)
         reg_value = None
         try:
             reg_value = reg.QueryValueEx(key, path_env_var)
@@ -107,11 +124,12 @@ def remove_from_system_path(pathname, allusers=True, path_env_var='PATH'):
             # user), continue on to try the next root/keyname pair
             reg.CloseKey(key)
 
-def add_to_system_path(paths, allusers=True, path_env_var='PATH'):
+
+def add_to_system_path(paths, allusers=True, path_env_var="PATH"):
     """Adds the requested paths to the system PATH variable.
 
-       You must call broadcast_environment_settings_change() after you are finished
-       manipulating the environment with this and other functions.
+    You must call broadcast_environment_settings_change() after you are finished
+    manipulating the environment with this and other functions.
 
     """
     # Make sure it's a list
@@ -125,8 +143,7 @@ def add_to_system_path(paths, allusers=True, path_env_var='PATH'):
         p = path.abspath(p)
         if not path.isdir(p):
             raise RuntimeError(
-                'Directory "%s" does not exist, '
-                'cannot add it to the path' % p
+                'Directory "%s" does not exist, cannot add it to the path' % p
             )
         if new_paths:
             new_paths = new_paths + os.pathsep + p
@@ -135,14 +152,15 @@ def add_to_system_path(paths, allusers=True, path_env_var='PATH'):
 
     if allusers:
         # All Users
-        root, keyname = (reg.HKEY_LOCAL_MACHINE,
-            r'SYSTEM\CurrentControlSet\Control\Session Manager\Environment')
+        root, keyname = (
+            reg.HKEY_LOCAL_MACHINE,
+            r"SYSTEM\CurrentControlSet\Control\Session Manager\Environment",
+        )
     else:
         # Just Me
-        root, keyname = (reg.HKEY_CURRENT_USER, r'Environment')
+        root, keyname = (reg.HKEY_CURRENT_USER, r"Environment")
 
-    key = reg.OpenKey(root, keyname, 0,
-            reg.KEY_QUERY_VALUE|reg.KEY_SET_VALUE)
+    key = reg.OpenKey(root, keyname, 0, reg.KEY_QUERY_VALUE | reg.KEY_SET_VALUE)
 
     reg_type = None
     reg_value = None
@@ -173,14 +191,22 @@ def add_to_system_path(paths, allusers=True, path_env_var='PATH'):
     finally:
         reg.CloseKey(key)
 
+
 def broadcast_environment_settings_change():
     """Broadcasts to the system indicating that master environment variables have changed.
 
     This must be called after using the other functions in this module to
     manipulate environment variables.
     """
-    SendMessageTimeout(HWND_BROADCAST, WM_SETTINGCHANGE, 0, u'Environment',
-                SMTO_ABORTIFHUNG, 5000, ctypes.pointer(wintypes.DWORD()))
+    SendMessageTimeout(
+        HWND_BROADCAST,
+        WM_SETTINGCHANGE,
+        0,
+        "Environment",
+        SMTO_ABORTIFHUNG,
+        5000,
+        ctypes.pointer(wintypes.DWORD()),
+    )
 
 
 def main():
@@ -189,16 +215,17 @@ def main():
     elif len(sys.argv) > 3:
         sys.exit("Too many arguments: {}".format(sys.argv))
 
-    if sys.argv[1] == 'add':
+    if sys.argv[1] == "add":
         add_to_system_path(sys.argv[2])
-    elif sys.argv[1] == 'add_user':
+    elif sys.argv[1] == "add_user":
         add_to_system_path(sys.argv[2], allusers=False)
-    elif sys.argv[1] == 'remove':
+    elif sys.argv[1] == "remove":
         remove_from_system_path(sys.argv[2])
-    elif sys.argv[1] == 'remove_user':
+    elif sys.argv[1] == "remove_user":
         remove_from_system_path(sys.argv[2], allusers=False)
 
     broadcast_environment_settings_change()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

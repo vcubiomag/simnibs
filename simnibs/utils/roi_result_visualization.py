@@ -144,8 +144,8 @@ class RoiResultVisualization:
                     surface_names_to_surface[surface_name]
                 )
 
-        self._head_mesh_data_index_to_opt_index = {'ed': {}, 'nd': {}}
-        self._surface_mesh_data_index_to_opt_index = {'ed': {}, 'nd': {}}
+        self._head_mesh_data_index_to_opt_index = {"ed": {}, "nd": {}}
+        self._surface_mesh_data_index_to_opt_index = {"ed": {}, "nd": {}}
         self._elm_field_count_per_file = []
         self._node_field_count_per_file = []
         for i, filename in enumerate(self.sim_result_filenames):
@@ -154,10 +154,9 @@ class RoiResultVisualization:
                 result_mesh = result_mesh.crop_mesh(
                     tags=np.unique(self.head_mesh.elm.tag1)
                 )
-            
+
             self._elm_field_count_per_file.append(len(result_mesh.elmdata))
             self._node_field_count_per_file.append(len(result_mesh.nodedata))
-
 
             for k, node_data in enumerate(result_mesh.nodedata):
                 if self.head_mesh is not None:
@@ -165,7 +164,9 @@ class RoiResultVisualization:
                         node_data.value[: self.head_mesh.nodes.nr],
                         f"{self.result_prefixes[i]}{node_data.field_name}",
                     )
-                    self._head_mesh_data_index_to_opt_index['nd'][len(self.head_mesh.nodedata) - 1] = (i, k)
+                    self._head_mesh_data_index_to_opt_index["nd"][
+                        len(self.head_mesh.nodedata) - 1
+                    ] = (i, k)
 
                 if self.surface_mesh is not None:
                     self.surface_mesh.add_node_field(
@@ -174,8 +175,9 @@ class RoiResultVisualization:
                         ),
                         f"{self.result_prefixes[i]}{node_data.field_name}",
                     )
-                    self._surface_mesh_data_index_to_opt_index['nd'][len(self.surface_mesh.nodedata) - 1] = (i, k)
-
+                    self._surface_mesh_data_index_to_opt_index["nd"][
+                        len(self.surface_mesh.nodedata) - 1
+                    ] = (i, k)
 
             for k, elm_data in enumerate(result_mesh.elmdata):
                 if self.head_mesh is not None:
@@ -183,7 +185,9 @@ class RoiResultVisualization:
                         elm_data.value[: self.head_mesh.elm.nr],
                         f"{self.result_prefixes[i]}{elm_data.field_name}",
                     )
-                    self._head_mesh_data_index_to_opt_index['ed'][len(self.head_mesh.elmdata) - 1] = (i, len(result_mesh.nodedata) + k)
+                    self._head_mesh_data_index_to_opt_index["ed"][
+                        len(self.head_mesh.elmdata) - 1
+                    ] = (i, len(result_mesh.nodedata) + k)
 
                 # Surface always uses node data
                 if self.surface_mesh is not None:
@@ -193,7 +197,9 @@ class RoiResultVisualization:
                         ),
                         f"{self.result_prefixes[i]}{elm_data.field_name}",
                     )
-                    self._surface_mesh_data_index_to_opt_index['nd'][len(self.surface_mesh.nodedata) - 1] = (i, len(result_mesh.nodedata) + k)
+                    self._surface_mesh_data_index_to_opt_index["nd"][
+                        len(self.surface_mesh.nodedata) - 1
+                    ] = (i, len(result_mesh.nodedata) + k)
 
     def has_surface_mesh(self) -> bool:
         return self.surface_mesh is not None
@@ -212,17 +218,21 @@ class RoiResultVisualization:
             return self.head_mesh
         else:
             raise AttributeError()
-        
+
     def remove_field_from_surface_mesh(self, field_name: str):
         if self.surface_mesh is not None:
-            RoiResultVisualization._remove_field(self.surface_mesh, self.surface_mesh_opt, field_name)
+            RoiResultVisualization._remove_field(
+                self.surface_mesh, self.surface_mesh_opt, field_name
+            )
 
     def remove_field_from_head_mesh(self, field_name: str):
         if self.head_mesh is not None:
-            RoiResultVisualization._remove_field(self.head_mesh, self.head_mesh_opt, field_name)
-    
+            RoiResultVisualization._remove_field(
+                self.head_mesh, self.head_mesh_opt, field_name
+            )
+
     @staticmethod
-    def _remove_field(mesh:Msh, gmsh_options: gmsh_view.Visualization, field_name):
+    def _remove_field(mesh: Msh, gmsh_options: gmsh_view.Visualization, field_name):
         view_index = 0
         found = False
         for node_data_field in mesh.nodedata:
@@ -275,7 +285,7 @@ class RoiResultVisualization:
                     self.head_mesh,
                     self.head_mesh_opt,
                     self.head_mesh_data_name_to_gmsh_view,
-                    self._head_mesh_data_index_to_opt_index
+                    self._head_mesh_data_index_to_opt_index,
                 )
             )
 
@@ -291,40 +301,43 @@ class RoiResultVisualization:
                     self.surface_mesh,
                     self.surface_mesh_opt,
                     self.surface_mesh_data_name_to_gmsh_view,
-                    self._surface_mesh_data_index_to_opt_index
+                    self._surface_mesh_data_index_to_opt_index,
                 )
             )
 
-        for mesh, mesh_opt, mesh_data_name_to_gmsh_view, data_index_to_opt_index in meshes_and_opt:
+        for (
+            mesh,
+            mesh_opt,
+            mesh_data_name_to_gmsh_view,
+            data_index_to_opt_index,
+        ) in meshes_and_opt:
             for i, node_data in enumerate(mesh.nodedata):
-                if i in data_index_to_opt_index['nd']:
-                    opt = gmsh_options[data_index_to_opt_index['nd'][i][0]]
+                if i in data_index_to_opt_index["nd"]:
+                    opt = gmsh_options[data_index_to_opt_index["nd"][i][0]]
                     view: gmsh_view.View = deepcopy(
-                        opt.View[data_index_to_opt_index['nd'][i][1]]
+                        opt.View[data_index_to_opt_index["nd"][i][1]]
                     )
                     mesh_opt.View.append(view)
                     view.indx = len(mesh_opt.View) - 1
-                    mesh_data_name_to_gmsh_view[node_data.field_name] = view  
+                    mesh_data_name_to_gmsh_view[node_data.field_name] = view
                 else:
                     mesh_opt.add_view()
-                    mesh_data_name_to_gmsh_view[node_data.field_name] = (
-                        mesh_opt.View[-1]
-                    )
+                    mesh_data_name_to_gmsh_view[node_data.field_name] = mesh_opt.View[
+                        -1
+                    ]
 
             for i, elm_data in enumerate(mesh.elmdata):
-                if i in data_index_to_opt_index['ed']:
-                    opt = gmsh_options[data_index_to_opt_index['ed'][i][0]]
+                if i in data_index_to_opt_index["ed"]:
+                    opt = gmsh_options[data_index_to_opt_index["ed"][i][0]]
                     view: gmsh_view.View = deepcopy(
-                        opt.View[data_index_to_opt_index['ed'][i][1]]
+                        opt.View[data_index_to_opt_index["ed"][i][1]]
                     )
                     mesh_opt.View.append(view)
                     view.indx = len(mesh_opt.View) - 1
-                    mesh_data_name_to_gmsh_view[elm_data.field_name] = view  
+                    mesh_data_name_to_gmsh_view[elm_data.field_name] = view
                 else:
                     mesh_opt.add_view()
-                    mesh_data_name_to_gmsh_view[elm_data.field_name] = (
-                        mesh_opt.View[-1]
-                    )
+                    mesh_data_name_to_gmsh_view[elm_data.field_name] = mesh_opt.View[-1]
 
         # add roi view settings
         if self.head_mesh is not None:
@@ -347,8 +360,12 @@ class RoiResultVisualization:
 
         geo_filenames = []
         for sim_result_filename in self.sim_result_filenames:
-            tms_geo_file_name = f"{'_'.join(sim_result_filename.split('_')[:-1])}_coil_pos.geo"
-            tdcs_geo_file_name = f"{'_'.join(sim_result_filename.split('_')[:-1])}_el_currents.geo"
+            tms_geo_file_name = (
+                f"{'_'.join(sim_result_filename.split('_')[:-1])}_coil_pos.geo"
+            )
+            tdcs_geo_file_name = (
+                f"{'_'.join(sim_result_filename.split('_')[:-1])}_el_currents.geo"
+            )
             if os.path.isfile(tms_geo_file_name):
                 geo_filenames.append(tms_geo_file_name)
             elif os.path.isfile(tdcs_geo_file_name):
@@ -369,18 +386,20 @@ class RoiResultVisualization:
                     if geo_view_name not in added_views:
                         added_views.append(geo_view_name)
                         post_geo_content.append(geo_views[geo_view_name])
-                        post_added_geo_views_indexes.append([i,j])
+                        post_added_geo_views_indexes.append([i, j])
                 else:
                     new_geo_view_name = f"{self.result_prefixes[i]}{geo_view_name}"
                     added_views.append(new_geo_view_name)
-                    geo_content.append(geo_views[geo_view_name].replace(
-                        geo_view_name, new_geo_view_name
-                    ))
-                    added_geo_views_indexes.append([i,j])
-        
-        self.geo_content = ''.join(geo_content) + ''.join(post_geo_content)
+                    geo_content.append(
+                        geo_views[geo_view_name].replace(
+                            geo_view_name, new_geo_view_name
+                        )
+                    )
+                    added_geo_views_indexes.append([i, j])
+
+        self.geo_content = "".join(geo_content) + "".join(post_geo_content)
         added_geo_views_indexes.extend(post_added_geo_views_indexes)
-        
+
         for idx_fn, idx_v in added_geo_views_indexes:
             view = gmsh_options[idx_fn].View[
                 self._node_field_count_per_file[idx_fn]
@@ -391,7 +410,7 @@ class RoiResultVisualization:
                 view2: gmsh_view.View = deepcopy(view)
                 view2.indx = self.head_mesh_opt.View[-1].indx + 1
                 self.head_mesh_opt.View.append(view2)
-                
+
             if self.surface_mesh is not None:
                 view2: gmsh_view.View = deepcopy(view)
                 view2.indx = self.surface_mesh_opt.View[-1].indx + 1
@@ -458,7 +477,7 @@ class RoiResultVisualization:
             views[current_view_name].append(line)
 
             if line.startswith("};"):
-                views[current_view_name] = ''.join(views[current_view_name])
+                views[current_view_name] = "".join(views[current_view_name])
                 current_view_name = None
 
         return views
@@ -493,8 +512,8 @@ class RoiResultVisualization:
                 pattern = r"General\.([A-Za-z0-9_\.]+) = ([^;]+);"
                 match = re.search(pattern, line)
                 if match is not None:
-                    if match.group(1).startswith('Color.'):
-                        hlpKey = match.group(1).split('Color.')[1]
+                    if match.group(1).startswith("Color."):
+                        hlpKey = match.group(1).split("Color.")[1]
                         opt.General.Color[hlpKey] = match.group(2)
                     else:
                         setattr(opt.General, match.group(1), match.group(2))
@@ -505,10 +524,14 @@ class RoiResultVisualization:
                 pattern = r"Mesh\.([A-Za-z0-9_\.]+) = ([^;]+);"
                 match = re.search(pattern, line)
                 if match is not None:
-                    if line.startswith('Mesh.Color'):
+                    if line.startswith("Mesh.Color"):
                         data_str = match.group(2).strip("{}")
                         data_list = list(map(int, data_str.split(",")))
-                        setattr(opt.Mesh.Color, match.group(1).removeprefix('Color.'), data_list)
+                        setattr(
+                            opt.Mesh.Color,
+                            match.group(1).removeprefix("Color."),
+                            data_list,
+                        )
                     else:
                         setattr(opt.Mesh, match.group(1), match.group(2))
                 else:

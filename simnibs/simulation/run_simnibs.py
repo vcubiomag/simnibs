@@ -27,6 +27,6 @@ def run_simnibs(simnibs_struct, cpus=1):
 
 def run_simulation(simnibs_struct, cpus=1):
     warnings.warn(
-        'run_simulation deprecated, please use run_simnibs instead',
-        DeprecationWarning)
+        "run_simulation deprecated, please use run_simnibs instead", DeprecationWarning
+    )
     run_simnibs(simnibs_struct, cpus=cpus)

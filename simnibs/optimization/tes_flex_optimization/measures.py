@@ -109,7 +109,7 @@ def ROC(e1, e2, threshold, focal=False):
     dist : float
         Distance of the ROC value to the optimal solution (optimality depends on "focal" flag)
     """
-    if (type(threshold) != list and type(threshold) != np.ndarray):
+    if type(threshold) != list and type(threshold) != np.ndarray:
         threshold = [threshold, threshold]
 
     if len(threshold) == 1:
@@ -137,14 +137,14 @@ def ROC(e1, e2, threshold, focal=False):
     # get sensitivity and specificity_inv value where threshold conditions are fulfilled
     sens_idx_tmp = np.where(threshold_array >= threshold[1])[0]
     if len(sens_idx_tmp) == 0:
-        sens_thresh = 0.
+        sens_thresh = 0.0
     else:
         sens_idx = sens_idx_tmp[0]
         sens_thresh = sensitivity[sens_idx]
 
     spec_inv_idx_tmp = np.where(threshold_array <= threshold[0])[0]
     if len(spec_inv_idx_tmp) == 0:
-        spec_inv_thresh = 1.
+        spec_inv_thresh = 1.0
     else:
         spec_inv_idx = spec_inv_idx_tmp[-1]
         spec_inv_thresh = specificity_inv[spec_inv_idx]

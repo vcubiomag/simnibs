@@ -71,14 +71,16 @@ class TmsWaveform:
             if self.fit is not None and len(self.fit) > 0:
                 tcd_waveform["fit"] = self.fit.tolist()
         else:
-            tcd_waveform["time"] = base64.b64encode(zlib.compress(self.time.tobytes())).decode("ascii")
-            tcd_waveform["signal"] = base64.b64encode(zlib.compress(self.signal.tobytes())).decode(
-                "ascii"
-            )
+            tcd_waveform["time"] = base64.b64encode(
+                zlib.compress(self.time.tobytes())
+            ).decode("ascii")
+            tcd_waveform["signal"] = base64.b64encode(
+                zlib.compress(self.signal.tobytes())
+            ).decode("ascii")
             if self.fit is not None and len(self.fit) > 0:
-                tcd_waveform["fit"] = base64.b64encode(zlib.compress(self.fit.tobytes())).decode(
-                    "ascii"
-                )
+                tcd_waveform["fit"] = base64.b64encode(
+                    zlib.compress(self.fit.tobytes())
+                ).decode("ascii")
 
         return tcd_waveform
 
@@ -95,7 +97,8 @@ class TmsWaveform:
 
         if isinstance(tcd_element["signal"], str):
             signal = np.frombuffer(
-                zlib.decompress(base64.b64decode(tcd_element["signal"])), dtype=np.float64
+                zlib.decompress(base64.b64decode(tcd_element["signal"])),
+                dtype=np.float64,
             )
         else:
             signal = np.array(tcd_element["signal"])
@@ -103,7 +106,9 @@ class TmsWaveform:
         if tcd_element.get("fit") is None:
             fit = None
         elif isinstance(tcd_element["fit"], str):
-            fit = np.frombuffer(zlib.decompress(base64.b64decode(tcd_element["fit"])), dtype=np.float64)
+            fit = np.frombuffer(
+                zlib.decompress(base64.b64decode(tcd_element["fit"])), dtype=np.float64
+            )
         else:
             fit = np.array(tcd_element["fit"])
 

@@ -1,7 +1,7 @@
 """
-    TMS optimization using ADM
-    
-    Copyright (c) 2020 SimNIBS developers. Licensed under the GPL v3.
+TMS optimization using ADM
+
+Copyright (c) 2020 SimNIBS developers. Licensed under the GPL v3.
 """
 
 import os
@@ -10,15 +10,15 @@ from simnibs import opt_struct, mni2subject_coords
 # Initialize structure
 tms_opt = opt_struct.TMSoptimize()
 # Subject folder
-tms_opt.subpath = 'm2m_ernie'
+tms_opt.subpath = "m2m_ernie"
 # Select output folder
-tms_opt.pathfem = 'tms_optimization_adm'
+tms_opt.pathfem = "tms_optimization_adm"
 # Select the coil model
 # The ADM method requires a '.ccd' coil model or a '.tcd' coil model that only contains dipole elements
-tms_opt.fnamecoil = os.path.join('legacy_and_other','Magstim_70mm_Fig8.ccd')
+tms_opt.fnamecoil = os.path.join("legacy_and_other", "Magstim_70mm_Fig8.ccd")
 # Select a target for the optimization
-tms_opt.target = mni2subject_coords([-37, -21, 58], 'm2m_ernie')
+tms_opt.target = mni2subject_coords([-37, -21, 58], "m2m_ernie")
 # Use the ADM method
-tms_opt.method = 'ADM'
+tms_opt.method = "ADM"
 # Run optimization
-opt_pos=tms_opt.run()
+opt_pos = tms_opt.run()

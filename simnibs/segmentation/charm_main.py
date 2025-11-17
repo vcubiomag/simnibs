@@ -36,6 +36,7 @@ from ..utils import cond_utils
 from ..utils import html_writer
 from simnibs.segmentation import brain_surface
 
+
 def run(
     subject_dir: str,
     T1=None,
@@ -51,7 +52,7 @@ def run(
     use_transform=None,
     force_qform=False,
     force_sform=False,
-    fs_dir = None,
+    fs_dir=None,
     options_str=None,
     debug=False,
 ):
@@ -106,7 +107,9 @@ def run(
     sub_files = file_finder.SubjectFiles(subpath=subject_dir)
 
     if force_qform and force_sform:
-        raise ValueError("Can't force both q- and s-forms, please use only one of the flags.")
+        raise ValueError(
+            "Can't force both q- and s-forms, please use only one of the flags."
+        )
 
     _setup_logger(sub_files.charm_log)
     logger.info(f"simnibs version {__version__}")
@@ -126,7 +129,14 @@ def run(
         use_transform = _read_transform(use_transform)
 
     _prepare_t1(T1, sub_files.reference_volume, force_qform, force_sform)
-    _prepare_t2(sub_files.reference_volume, T2, registerT2, sub_files.T2_reg, force_qform, force_sform)
+    _prepare_t2(
+        sub_files.reference_volume,
+        T2,
+        registerT2,
+        sub_files.T2_reg,
+        force_qform,
+        force_sform,
+    )
 
     # -------------------------PIPELINE STEPS---------------------------------
     # TODO: denoise T1 here with the sanlm filter, T2 denoised after coreg.
@@ -188,7 +198,6 @@ def run(
                 logger.info("Affine initialization type unknown. Defaulting to 'atlas'")
                 trans_mat = None
 
-
         charm_utils._register_atlas_to_input_affine(
             inputT1,
             template_name,
@@ -214,7 +223,9 @@ def run(
         # for further post-processing
         # The bias field kernel size has to be changed based on input
         input_images = []
-        input_images.append(sub_files.T1_denoised if do_denoise else sub_files.reference_volume)
+        input_images.append(
+            sub_files.T1_denoised if do_denoise else sub_files.reference_volume
+        )
         if os.path.exists(sub_files.T2_reg):
             input_images.append(
                 sub_files.T2_reg_denoised if do_denoise else sub_files.T2_reg
@@ -230,7 +241,11 @@ def run(
             segment_settings,
             gmm_parameters,
             visualizer,
-            parameter_filename = os.path.join(sub_files.segmentation_folder, "parameters.p") if debug else None,
+            parameter_filename=os.path.join(
+                sub_files.segmentation_folder, "parameters.p"
+            )
+            if debug
+            else None,
         )
 
         # Okay now the parameters have been estimated, and we can segment the
@@ -341,9 +356,9 @@ def run(
             logger.info(f"FreeSurfer subject directory is {fs_sub.root.resolve()}")
 
             surfaces = {
-                "white" : load_freesurfer_surfaces(fs_sub, "white", coord="ras"),
-                "sphere" : load_freesurfer_surfaces(fs_sub, "sphere"),
-                "sphere.reg" : load_freesurfer_surfaces(fs_sub, "sphere.reg"),
+                "white": load_freesurfer_surfaces(fs_sub, "white", coord="ras"),
+                "sphere": load_freesurfer_surfaces(fs_sub, "sphere"),
+                "sphere.reg": load_freesurfer_surfaces(fs_sub, "sphere.reg"),
             }
             surfaces["pial"] = _load_freesurfer_pial_surface(fs_sub)
 
@@ -422,7 +437,8 @@ def run(
             # fmt: on
 
             proc = subprocess.run(
-                [sys.executable] + multithreading_script + argslist, stderr=subprocess.PIPE
+                [sys.executable] + multithreading_script + argslist,
+                stderr=subprocess.PIPE,
             )  # stderr: standard stream for simnibs logger
             logger.debug(proc.stderr.decode("ASCII", errors="ignore").replace("\r", ""))
             proc.check_returncode()
@@ -438,7 +454,9 @@ def run(
                 if debug:
                     shutil.copyfile(
                         sub_files.tissue_labeling_upsampled,
-                        os.path.join(sub_files.label_prep_folder, "before_surfmorpho.nii.gz"),
+                        os.path.join(
+                            sub_files.label_prep_folder, "before_surfmorpho.nii.gz"
+                        ),
                     )
 
                 label_nii = nib.load(sub_files.tissue_labeling_upsampled)
@@ -454,9 +472,13 @@ def run(
                     # GM central surfaces
                     m = Msh()
                     if "lh" in surf:
-                        m = m.join_mesh(read_gifti_surface(sub_files.get_surface("lh", "central")))
+                        m = m.join_mesh(
+                            read_gifti_surface(sub_files.get_surface("lh", "central"))
+                        )
                     if "rh" in surf:
-                        m = m.join_mesh(read_gifti_surface(sub_files.get_surface("rh", "central")))
+                        m = m.join_mesh(
+                            read_gifti_surface(sub_files.get_surface("rh", "central"))
+                        )
                         # fill in GM and save updated mask
                     if m.nodes.nr > 0:
                         label_img = charm_utils._fillin_gm_layer(
@@ -479,9 +501,7 @@ def run(
                     # GM pial surfaces
                     m = Msh()
                     if "lh" in pial:
-                        m2 = read_gifti_surface(
-                            sub_files.get_surface("lh", "pial")
-                        )
+                        m2 = read_gifti_surface(sub_files.get_surface("lh", "pial"))
                         # remove self-intersections using meshfix
                         with tempfile.NamedTemporaryFile(suffix=".off") as f:
                             mesh_fn = f.name
@@ -494,9 +514,7 @@ def run(
                         if os.path.isfile("meshfix_log.txt"):
                             os.remove("meshfix_log.txt")
                     if "rh" in pial:
-                        m2 = read_gifti_surface(
-                            sub_files.get_surface("rh", "pial")
-                        )
+                        m2 = read_gifti_surface(sub_files.get_surface("rh", "pial"))
                         # remove self-intersections using meshfix
                         with tempfile.NamedTemporaryFile(suffix=".off") as f:
                             mesh_fn = f.name
@@ -564,7 +582,7 @@ def run(
         mmg_noinsert = mesh_settings["mmg_noinsert"]
 
         logger.info(f"Using skin tag: {skin_tag}")
-        
+
         # Meshing
 
         debug_path = None
@@ -593,7 +611,7 @@ def run(
             num_threads=num_threads,
             mmg_noinsert=mmg_noinsert,
             debug_path=debug_path,
-            debug=debug
+            debug=debug,
         )
 
         logger.info("Writing mesh")
@@ -612,14 +630,14 @@ def run(
         for fn in cap_files:
             fn_out = os.path.splitext(os.path.basename(fn))[0]
             fn_out = os.path.join(sub_files.eeg_cap_folder, fn_out)
-            transformations.warp_coordinates( 
+            transformations.warp_coordinates(
                 fn,
                 sub_files.subpath,
                 transformation_direction="mni2subject",
                 out_name=fn_out + ".csv",
                 out_geo=fn_out + ".geo",
                 mesh_in=mesh,
-                skin_tag=skin_tag
+                skin_tag=skin_tag,
             )
 
         logger.info("Write label image from mesh")
@@ -766,12 +784,16 @@ def _prepare_t2(T1, T2, registerT2, T2_reg, force_qform, force_sform):
 def _check_q_and_s_form(scan, force_qform=False, force_sform=False):
     # If the q-form code is zero there is likely something wrong
     if not scan.get_qform(coded=True)[1] > 0 and force_sform is False:
-        raise ValueError("The qform_code is 0. Please check the header of the input scan. You can use the sform instead by running charm with the --forcesform option.")
+        raise ValueError(
+            "The qform_code is 0. Please check the header of the input scan. You can use the sform instead by running charm with the --forcesform option."
+        )
 
     # Even if the qform code is okay, check if the matrices are close
     if not np.allclose(scan.get_qform(), scan.get_sform(), rtol=1e-5, atol=1e-6):
         if not (force_qform or force_sform):
-            raise ValueError("The qform and sform matrices do not match. Please run charm with the --forceqform (preferred) or --forcesform option")
+            raise ValueError(
+                "The qform and sform matrices do not match. Please run charm with the --forceqform (preferred) or --forcesform option"
+            )
         elif force_qform:
             # Force both the matrix *and* the code
             (qmat, qcode) = scan.get_qform(coded=True)
@@ -780,7 +802,9 @@ def _check_q_and_s_form(scan, force_qform=False, force_sform=False):
         elif force_sform:
             # Check that sform code is not zero
             if not scan.get_sform(coded=True)[1] > 0:
-                raise ValueError("The sform_code is 0, but you are forcing it. Please fix the sform_code or use the qform instead.")
+                raise ValueError(
+                    "The sform_code is 0, but you are forcing it. Please fix the sform_code or use the qform instead."
+                )
             # Force both the matrix and the code.
             # NOTE: set_qform will strip shears silently per nibabel documentation
             else:
@@ -823,7 +847,9 @@ def _setup_atlas(samseg_settings, T2_reg, usesettings):
         settings_dir = os.path.dirname(usesettings)
         gmm_parameters = os.path.join(settings_dir, custom_gmm_parameters)
         if not os.path.exists(gmm_parameters):
-            raise FileNotFoundError(f"Could not find gmm parameter file: {gmm_parameters}")
+            raise FileNotFoundError(
+                f"Could not find gmm parameter file: {gmm_parameters}"
+            )
 
     return (
         template_name,
@@ -844,6 +870,7 @@ def _denoise_inputs(T1, T2, sub_files):
         logger.info("Denoising the registered T2 and saving.")
         charm_utils._denoise_input_and_save(sub_files.T2_reg, sub_files.T2_reg_denoised)
 
+
 def _read_transform(transform_file):
     transform = np.loadtxt(transform_file)
     assert transform.shape == (
@@ -862,9 +889,9 @@ def _load_freesurfer_pial_surface(fs_sub):
     # seem to work currently, hence this workaround
     try:
         m = load_freesurfer_surfaces(fs_sub, "pial", coord="ras")
-    except OSError: # invalid argument
+    except OSError:  # invalid argument
         try:
             m = load_freesurfer_surfaces(fs_sub, "pial.T2", coord="ras")
-        except FileNotFoundError: # -T2pial was not used
+        except FileNotFoundError:  # -T2pial was not used
             m = load_freesurfer_surfaces(fs_sub, "pial.T1", coord="ras")
     return m

@@ -17,6 +17,10 @@ version = CommandLineArgument(
 )
 
 debug = CommandLineArgument(
-    ['--debug'],
-    dict(action='store_true', default=False,
-        help="""Write results from intermediate steps to disk."""))
+    ["--debug"],
+    dict(
+        action="store_true",
+        default=False,
+        help="""Write results from intermediate steps to disk.""",
+    ),
+)

@@ -1,4 +1,3 @@
-
 import numpy as np
 from simnibs.mesh_tools import mesh_io
 from simnibs.utils.mesh_element_properties import ElementTags
@@ -22,36 +21,36 @@ def _get_sorted_eigenv(tensors):
 
 def _form_tensors(eigval, eigvec):
     # What we are doing: eig_vec[0].dot((ls[0, None] * eig_vec[0]).T)
-    tensors = np.einsum('aij,akj -> aik',
-                        eigvec, eigval[:, None] * eigvec)
+    tensors = np.einsum("aij,akj -> aik", eigvec, eigval[:, None] * eigvec)
     return tensors
 
 
 def _adjust_excentricity(eig_val, scaling):
-    '''' Tensor excentricity '''
-    if scaling >= 1. or scaling < 0.:
-        raise ValueError('Invalid scaling factor for '
-                         'tensor excentricity: {0}'.format(scaling))
+    """' Tensor excentricity"""
+    if scaling >= 1.0 or scaling < 0.0:
+        raise ValueError(
+            "Invalid scaling factor for tensor excentricity: {0}".format(scaling)
+        )
 
     if np.any(eig_val) < 0:
-        raise ValueError('Found a negative eigenvalue!')
+        raise ValueError("Found a negative eigenvalue!")
     if np.any(np.isclose(eig_val, 0)):
-        raise ValueError('Found a zero eigenvalue!')
+        raise ValueError("Found a zero eigenvalue!")
     # Excentricity
-    ex = np.sqrt(1 - (eig_val[:, [1, 2, 2]]/eig_val[:, [0, 0, 1]]) ** 2)
+    ex = np.sqrt(1 - (eig_val[:, [1, 2, 2]] / eig_val[:, [0, 0, 1]]) ** 2)
     # Scale excentricity
-    if scaling < .5:
+    if scaling < 0.5:
         es = 2.0 * ex * scaling
-    elif scaling > .5:
+    elif scaling > 0.5:
         es = 2.0 * (1 - ex) * scaling + 2 * ex - 1
     else:
         es = ex
     # New eigenvalues
     ls = np.ones_like(eig_val)
-    ls[:, 1] = np.sqrt(1 - es[:, 0]**2)
-    ls[:, 2] = np.sqrt(1 - es[:, 1]**2)
+    ls[:, 1] = np.sqrt(1 - es[:, 0] ** 2)
+    ls[:, 2] = np.sqrt(1 - es[:, 1] ** 2)
     # Scale the new eigenvalues so that they keep the volume of the tensor
-    ls *= (np.prod(eig_val, axis=1)/np.prod(ls, axis=1))[:, None]**(1.0/3.0)
+    ls *= (np.prod(eig_val, axis=1) / np.prod(ls, axis=1))[:, None] ** (1.0 / 3.0)
     # If the tensor is isotropic, don't scale it
     iso = np.isclose(eig_val[:, 0], eig_val[:, 2], rtol=1e-2)
     ls[iso] = eig_val[iso]
@@ -61,13 +60,16 @@ def _adjust_excentricity(eig_val, scaling):
 def _fix_zeros(tensors, c):
     tensors = tensors.reshape(-1, 9)
     negative = np.all(np.isclose(tensors, 0), axis=1)
-    frac = np.sum(negative)/len(tensors)
-    if frac > .1:
+    frac = np.sum(negative) / len(tensors)
+    if frac > 0.1:
         log = logger.critical
     else:
         log = logger.info
-    log('Found {0} ({1:.1%}) Zero tensors in the volume. '
-        ' Fixing it.'.format(np.sum(negative), frac))
+    log(
+        "Found {0} ({1:.1%}) Zero tensors in the volume.  Fixing it.".format(
+            np.sum(negative), frac
+        )
+    )
     tensors[negative] = c * np.eye(3).reshape(-1)
     tensors = tensors.reshape(-1, 3, 3)
     return tensors
@@ -75,45 +77,62 @@ def _fix_zeros(tensors, c):
 
 def _fix_eigv(eig_val, max_value, max_ratio, c):
     negative = np.all(eig_val <= 0.0, axis=1)
-    negative += np.all(np.isclose(eig_val, 0),axis=1)
+    negative += np.all(np.isclose(eig_val, 0), axis=1)
     eig_val[negative] = c
-    frac = np.sum(negative)/len(eig_val)
-    if frac > .1:
+    frac = np.sum(negative) / len(eig_val)
+    if frac > 0.1:
         log = logger.critical
     else:
         log = logger.info
-    log('Found {0} ({1:.1%}) Negative Semi-definite tensors in the volume. '
-        ' Fixing it.'.format(np.sum(negative), frac))
+    log(
+        "Found {0} ({1:.1%}) Negative Semi-definite tensors in the volume. "
+        " Fixing it.".format(np.sum(negative), frac)
+    )
 
     large = eig_val > max_value
     eig_val[large] = max_value
 
-    frac = np.sum(large)/(3. * len(eig_val))
-    if frac > .1:
+    frac = np.sum(large) / (3.0 * len(eig_val))
+    if frac > 0.1:
         log = logger.critical
     else:
         log = logger.info
-    log('Found {0} ({1:.1%}) too large eigenvalues in the volume. '
-        ' Fixing it.'.format(np.sum(large), frac))
+    log(
+        "Found {0} ({1:.1%}) too large eigenvalues in the volume.  Fixing it.".format(
+            np.sum(large), frac
+        )
+    )
 
     small = eig_val < (eig_val[:, 0] / max_ratio)[:, None]
     eig_val[small[:, 1], 1] = eig_val[small[:, 1], 0] / max_ratio
     eig_val[small[:, 2], 2] = eig_val[small[:, 2], 0] / max_ratio
-    frac = np.sum(small)/(3 * len(eig_val))
-    if frac > .1:
+    frac = np.sum(small) / (3 * len(eig_val))
+    if frac > 0.1:
         log = logger.critical
     else:
         log = logger.info
-    log('Found {0} ({1:.1%}) too small or negative eigenvalues in the volume. '
-        ' Fixing it.'.format(np.sum(small), frac))
+    log(
+        "Found {0} ({1:.1%}) too small or negative eigenvalues in the volume. "
+        " Fixing it.".format(np.sum(small), frac)
+    )
 
     return eig_val
 
 
-def cond2elmdata(mesh, cond_list, anisotropy_volume=None, affine=None,
-                 aniso_tissues=[ElementTags.WM, ElementTags.GM], correct_FSL=True, normalize=False,
-                 excentricity_scaling=None, max_ratio=10, max_cond=2, correct_intensity=True):
-    """ Define conductivity ElementData from a conductivity list or anisotropy
+def cond2elmdata(
+    mesh,
+    cond_list,
+    anisotropy_volume=None,
+    affine=None,
+    aniso_tissues=[ElementTags.WM, ElementTags.GM],
+    correct_FSL=True,
+    normalize=False,
+    excentricity_scaling=None,
+    max_ratio=10,
+    max_cond=2,
+    correct_intensity=True,
+):
+    """Define conductivity ElementData from a conductivity list or anisotropy
     information
     Parameters
     ----------
@@ -163,19 +182,22 @@ def cond2elmdata(mesh, cond_list, anisotropy_volume=None, affine=None,
         try:
             c = float(v)
         except (TypeError, ValueError):
-            raise TypeError('The value {0} in cond_list is not numerical'.format(i))
+            raise TypeError("The value {0} in cond_list is not numerical".format(i))
         return c
 
     # Isotropic
     if anisotropy_volume is None:
-        cond = mesh_io.ElementData(np.zeros(mesh.elm.nr, dtype=float),
-                                'conductivity', mesh=mesh)
+        cond = mesh_io.ElementData(
+            np.zeros(mesh.elm.nr, dtype=float), "conductivity", mesh=mesh
+        )
         for t in vol_tags:
             if len(cond_list) < t:
-                raise ValueError('The cond_list size is too small'
-                                 ', should be at least of size {0}'
-                                 ''.format(np.max(vol_tags)))
-            c = test_numerical(cond_list[t-1], t-1)
+                raise ValueError(
+                    "The cond_list size is too small"
+                    ", should be at least of size {0}"
+                    "".format(np.max(vol_tags))
+                )
+            c = test_numerical(cond_list[t - 1], t - 1)
             cond.value[(mesh.elm.tag1 == t) * (mesh.elm.elm_type == 4)] = c
     # Anisotropic
     else:
@@ -184,11 +206,19 @@ def cond2elmdata(mesh, cond_list, anisotropy_volume=None, affine=None,
         assert anisotropy_volume.shape[-1] == 6
         assert anisotropy_volume.shape[-1] == 6
         if affine is None:
-            raise ValueError('Please define a 4x4 affine from the grid to the mesh space')
+            raise ValueError(
+                "Please define a 4x4 affine from the grid to the mesh space"
+            )
 
         cond = mesh_io.ElementData.from_data_grid(
-                    mesh, anisotropy_volume, affine, 'conductivities',
-                    order=1, cval=0.0, prefilter=True)
+            mesh,
+            anisotropy_volume,
+            affine,
+            "conductivities",
+            order=1,
+            cval=0.0,
+            prefilter=True,
+        )
         cond.value = cond.value[:, [0, 1, 2, 1, 3, 4, 2, 4, 5]]
         tensors = cond.value.reshape(-1, 3, 3)
         if correct_FSL:
@@ -201,36 +231,48 @@ def cond2elmdata(mesh, cond_list, anisotropy_volume=None, affine=None,
             tensors = M.dot(tensors.transpose(2, 1, 0)).transpose(2, 0, 1)
         cond.value = tensors.reshape(-1, 9)
         elm_vols = mesh.elements_volumes_and_areas().value
-        
+
         # VN type conductivities
         if normalize:
             for i, t in enumerate(vol_tags):
                 # If tissue is isotropic
                 if t not in aniso_tissues:
-                    c = test_numerical(cond_list[t-1], t-1)
-                    cond.value[(mesh.elm.tag1 == t) * (mesh.elm.elm_type == 4)] = \
-                        [c, 0, 0, 0, c, 0, 0, 0, c]
+                    c = test_numerical(cond_list[t - 1], t - 1)
+                    cond.value[(mesh.elm.tag1 == t) * (mesh.elm.elm_type == 4)] = [
+                        c,
+                        0,
+                        0,
+                        0,
+                        c,
+                        0,
+                        0,
+                        0,
+                        c,
+                    ]
 
                 # If tissue is to be normalized
                 else:
-                    c = test_numerical(cond_list[t-1], t-1)
-                    tensors = cond.value[(mesh.elm.tag1 == t) * (mesh.elm.elm_type == 4)]
+                    c = test_numerical(cond_list[t - 1], t - 1)
+                    tensors = cond.value[
+                        (mesh.elm.tag1 == t) * (mesh.elm.elm_type == 4)
+                    ]
                     tensors = tensors.reshape(-1, 3, 3)
                     tensors = _fix_zeros(tensors, c)
                     eigval, eigvec = _get_sorted_eigenv(tensors)
                     # Normalize
-                    eigval /= (np.abs(eigval).prod(axis=1) ** (1./3.))[:, None]
+                    eigval /= (np.abs(eigval).prod(axis=1) ** (1.0 / 3.0))[:, None]
                     # Fix
                     eigval = _fix_eigv(eigval, max_cond, max_ratio, c)
                     # Normalize again
-                    eigval /= (eigval.prod(axis=1) ** (1./3.))[:, None]
+                    eigval /= (eigval.prod(axis=1) ** (1.0 / 3.0))[:, None]
                     # Fix again
                     eigval = _fix_eigv(eigval, max_cond, max_ratio, c)
                     if excentricity_scaling is not None:
                         eigval = _adjust_excentricity(eigval, excentricity_scaling)
                     tensors = _form_tensors(eigval, eigvec)
-                    cond.value[(mesh.elm.tag1 == t) * (mesh.elm.elm_type == 4)] = \
+                    cond.value[(mesh.elm.tag1 == t) * (mesh.elm.elm_type == 4)] = (
                         tensors.reshape(-1, 9) * c
+                    )
 
         # MC / DIR type conductivities
         else:
@@ -240,13 +282,24 @@ def cond2elmdata(mesh, cond_list, anisotropy_volume=None, affine=None,
             for i, t in enumerate(vol_tags):
                 # If tissue is isotropic
                 if t not in aniso_tissues:
-                    c = test_numerical(cond_list[t-1], t-1)
-                    cond.value[(mesh.elm.tag1 == t) * (mesh.elm.elm_type == 4)] = \
-                        [c, 0, 0, 0, c, 0, 0, 0, c]
+                    c = test_numerical(cond_list[t - 1], t - 1)
+                    cond.value[(mesh.elm.tag1 == t) * (mesh.elm.elm_type == 4)] = [
+                        c,
+                        0,
+                        0,
+                        0,
+                        c,
+                        0,
+                        0,
+                        0,
+                        c,
+                    ]
 
                 else:
-                    c = test_numerical(cond_list[t-1], t-1)
-                    tensors = cond.value[(mesh.elm.tag1 == t) * (mesh.elm.elm_type == 4)]
+                    c = test_numerical(cond_list[t - 1], t - 1)
+                    tensors = cond.value[
+                        (mesh.elm.tag1 == t) * (mesh.elm.elm_type == 4)
+                    ]
                     tensors = tensors.reshape(-1, 3, 3)
                     eigval, eigvec = _get_sorted_eigenv(tensors)
                     if correct_intensity:
@@ -260,46 +313,54 @@ def cond2elmdata(mesh, cond_list, anisotropy_volume=None, affine=None,
                             eigval = _adjust_excentricity(eigval, excentricity_scaling)
                         tensors = _form_tensors(eigval, eigvec)
                         tensors = _fix_zeros(tensors, c)
-                        cond.value[(mesh.elm.tag1 == t) * (mesh.elm.elm_type == 4)] = \
+                        cond.value[(mesh.elm.tag1 == t) * (mesh.elm.elm_type == 4)] = (
                             tensors.reshape(-1, 9)
+                        )
                     vol_t = elm_vols[(mesh.elm.tag1 == t) * (mesh.elm.elm_type == 4)]
-                    mean_vol[i] = np.sum(eigval.prod(axis=1) * vol_t)/np.sum(vol_t)
-                    
+                    mean_vol[i] = np.sum(eigval.prod(axis=1) * vol_t) / np.sum(vol_t)
+
         # Correct the intensity
         if correct_intensity and not normalize:
             num = 0
             denom = 0
             for i, t in enumerate(vol_tags):
                 if t in aniso_tissues:
-                    c = test_numerical(cond_list[t-1], t-1)
-                    num += c * mean_vol[i] ** (1./3.)
-                    denom += mean_vol[i] ** (2./3.)
+                    c = test_numerical(cond_list[t - 1], t - 1)
+                    num += c * mean_vol[i] ** (1.0 / 3.0)
+                    denom += mean_vol[i] ** (2.0 / 3.0)
             s = num / denom
-            logger.info('Scaling the tensors with the factor: {0}'.format(s))
+            logger.info("Scaling the tensors with the factor: {0}".format(s))
             # We need to fix the eigenvalues a second time
             for i, t in enumerate(vol_tags):
                 if t in aniso_tissues:
-                    c = test_numerical(cond_list[t-1], t-1)
+                    c = test_numerical(cond_list[t - 1], t - 1)
                     eigval = s * eigval_list[i]
                     eigvec = eigvec_list[i]
                     eigval = _fix_eigv(eigval, max_cond, max_ratio, c)
                     vol_t = elm_vols[(mesh.elm.tag1 == t) * (mesh.elm.elm_type == 4)]
-                    mean_cond = np.sum(eigval.prod(axis=1) ** (1./3.) * vol_t)/np.sum(vol_t) 
-                    logger.info('Reference conductivity: {0} Mean conductivity: {1}'.format(
-                                c, mean_cond))
+                    mean_cond = np.sum(
+                        eigval.prod(axis=1) ** (1.0 / 3.0) * vol_t
+                    ) / np.sum(vol_t)
+                    logger.info(
+                        "Reference conductivity: {0} Mean conductivity: {1}".format(
+                            c, mean_cond
+                        )
+                    )
                     if excentricity_scaling is not None:
                         eigval = _adjust_excentricity(eigval, excentricity_scaling)
                     tensors = _form_tensors(eigval, eigvec)
                     tensors = _fix_zeros(tensors, c)
-                    cond.value[(mesh.elm.tag1 == t) * (mesh.elm.elm_type == 4)] = \
+                    cond.value[(mesh.elm.tag1 == t) * (mesh.elm.elm_type == 4)] = (
                         tensors.reshape(-1, 9)
+                    )
 
     cond.assign_triangle_values()
 
     return cond
 
+
 def visualize_tensor(cond, mesh, all_compoents=False):
-    ''' Creates a visualization of the tensors for plotting
+    """Creates a visualization of the tensors for plotting
     Parameters
     -----------
     cond: Nx9 numpy array
@@ -313,34 +374,37 @@ def visualize_tensor(cond, mesh, all_compoents=False):
     ---------
     data: list
         List with the fields for visualization
-    '''
-    assert cond.nr_comp == 9, 'This function can only be used with tensor conductivities'
+    """
+    assert cond.nr_comp == 9, (
+        "This function can only be used with tensor conductivities"
+    )
     tensors = cond.value.reshape(-1, 3, 3)
     eig_val, eig_vec = _get_sorted_eigenv(tensors)
-    mc = np.prod(eig_val, axis=1) ** (1.0/3.0)
+    mc = np.prod(eig_val, axis=1) ** (1.0 / 3.0)
     data = []
     data.append(
         mesh_io.ElementData(
-            eig_vec[:, :, 0] * eig_val[:, 0, None],
-            name='max_eig', mesh=mesh))
+            eig_vec[:, :, 0] * eig_val[:, 0, None], name="max_eig", mesh=mesh
+        )
+    )
     if all_compoents:
         data.append(
             mesh_io.ElementData(
-                eig_vec[:, :, 1] * eig_val[:, 1, None],
-                name='mid_eig', mesh=mesh))
+                eig_vec[:, :, 1] * eig_val[:, 1, None], name="mid_eig", mesh=mesh
+            )
+        )
         data.append(
             mesh_io.ElementData(
-                eig_vec[:, :, 2] * eig_val[:, 2, None],
-                name='min_eig', mesh=mesh))
+                eig_vec[:, :, 2] * eig_val[:, 2, None], name="min_eig", mesh=mesh
+            )
+        )
 
-        data.append(
-            mesh_io.ElementData(mc,
-                 name='mean_conductivity', mesh=mesh))
+        data.append(mesh_io.ElementData(mc, name="mean_conductivity", mesh=mesh))
     return data
 
 
 class COND(object):
-    """ conductivity information
+    """conductivity information
     Conductivity information for simulations
     Attributes:
     ---------------------
@@ -361,7 +425,7 @@ class COND(object):
     def __init__(self, matlab_struct=None):
         self.name = None  # e.g. WM, GM
         self.value = None  # in S/m
-        self.descrip = ''
+        self.descrip = ""
         self._distribution_type = None
         self.distribution_parameters = []
 
@@ -374,36 +438,36 @@ class COND(object):
 
     @distribution_type.setter
     def distribution_type(self, dist):
-        if dist == '':
+        if dist == "":
             dist = None
-        if dist in ['uniform', 'normal', 'beta', None]:
+        if dist in ["uniform", "normal", "beta", None]:
             self._distribution_type = dist
         else:
-            raise ValueError('Invalid distribution type: {0}'.format(dist))
+            raise ValueError("Invalid distribution type: {0}".format(dist))
 
     def read_mat_struct(self, c):
         try:
-            self.name = str(c['name'][0])
+            self.name = str(c["name"][0])
         except:
             pass
 
         try:
-            self.value = c['value'][0][0]
+            self.value = c["value"][0][0]
         except:
             self.value = None
 
         try:
-            self.descrip = str(c['descrip'][0])
+            self.descrip = str(c["descrip"][0])
         except:
             pass
 
         try:
-            self.distribution_type = str(c['distribution_type'][0])
+            self.distribution_type = str(c["distribution_type"][0])
         except:
             pass
 
         try:
-            self.distribution_parameters = c['distribution_parameters'][0]
+            self.distribution_parameters = c["distribution_parameters"][0]
         except:
             pass
 
@@ -415,7 +479,8 @@ class COND(object):
 
     def __str__(self):
         s = "name: {0}\nvalue: {1}\ndistribution: {2}\ndistribution parameters: {3}".format(
-            self.name, self.value, self.distribution_type, self.distribution_parameters)
+            self.name, self.value, self.distribution_type, self.distribution_parameters
+        )
         return s
 
 
@@ -426,9 +491,11 @@ def standard_cond():
 
     for tissue_tag in mesh_element_properties.tissue_tags:
         S[tissue_tag - 1].name = mesh_element_properties.tissue_names[tissue_tag]
-        S[tissue_tag - 1].value = mesh_element_properties.tissue_conductivities[tissue_tag]
-        S[tissue_tag - 1].desc  = mesh_element_properties.tissue_conductivity_descriptions[tissue_tag]
+        S[tissue_tag - 1].value = mesh_element_properties.tissue_conductivities[
+            tissue_tag
+        ]
+        S[
+            tissue_tag - 1
+        ].desc = mesh_element_properties.tissue_conductivity_descriptions[tissue_tag]
 
     return S
-
-

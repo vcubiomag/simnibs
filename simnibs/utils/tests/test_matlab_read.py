@@ -151,14 +151,14 @@ class TestMatlabStructToDict:
         test_dict = {
             "strings": ["a", "bc", "def", "ghij"],
             "nested_strings": [["a", "bc"], ["def", "ghij"]],
-            "first":{
+            "first": {
                 "strings1": ["a1", "bc1", "def1", "ghij1"],
                 "nested_strings1": [["a1", "bc1"], ["def1", "ghij1"]],
-                "second":{
+                "second": {
                     "strings2": ["a2", "bc2", "def2", "ghij2"],
                     "nested_strings1": [["a2", "bc2"], ["def2", "ghij2"]],
-                }
-            }
+                },
+            },
         }
 
         mat_path = os.path.join(tmp_path, "test.mat")
@@ -171,13 +171,10 @@ class TestMatlabStructToDict:
 
         assert test_dict == dict_from_matlab(dict_loaded)
 
-
     def test_list_of_dicts(self, tmp_path):
         test_dict = {
-            'test': [{"key1": 1}, {"key2": 2}, {"key3": 3}],
-            'test2':{
-                'test3': [{"key4": 4}, {"key5": 5}, {"key6": 6}]
-            }
+            "test": [{"key1": 1}, {"key2": 2}, {"key3": 3}],
+            "test2": {"test3": [{"key4": 4}, {"key5": 5}, {"key6": 6}]},
         }
 
         mat_path = os.path.join(tmp_path, "test.mat")

@@ -16,16 +16,17 @@ from simnibs.segmentation.brain_surface import fibonacci_sphere, fibonacci_spher
 
 from simnibs.simulation.tests.test_fem import rdm, mag
 
+
 @pytest.fixture
 def sphere3_msh():
     return mesh_io.read_msh(
         Path(SIMNIBSDIR) / "_internal_resources" / "testing_files" / "sphere3.msh"
     )
 
+
 # False gives large errors with this coarse mesh
 @pytest.mark.parametrize("point_electrodes", [True])
 def test_prepare_forward(point_electrodes, sphere3_msh):
-
     s = standard_cond()
     # Special tags for sphere3_msh
     s[2].value = 0.3  # gray matter
@@ -96,12 +97,16 @@ def test_prepare_forward(point_electrodes, sphere3_msh):
         for apply_average_proj in (False, True):
             lf = forward.prepare_forward(f_leadfield, apply_average_proj)
 
-            gain = lf["data"][..., 0] # dip_mom for x axis
+            gain = lf["data"][..., 0]  # dip_mom for x axis
 
             if apply_average_proj:
                 sol_ = sol - sol.mean(0)
             else:
                 sol_ = sol[1:] - sol[0]
 
-            assert np.all(rdm(sol_, gain) < 0.1), f"Unacceptable error using apply_average_proj={apply_average_proj}"
-            assert np.all(mag(sol_, gain) < 0.1), f"Unacceptable error using apply_average_proj={apply_average_proj}"
+            assert np.all(rdm(sol_, gain) < 0.1), (
+                f"Unacceptable error using apply_average_proj={apply_average_proj}"
+            )
+            assert np.all(mag(sol_, gain) < 0.1), (
+                f"Unacceptable error using apply_average_proj={apply_average_proj}"
+            )

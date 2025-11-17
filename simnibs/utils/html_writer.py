@@ -179,9 +179,7 @@ def _walk_through_dict_recursively(dict1, dict2, diff_dict=None):
         diff_dict = {}
 
     for key1, key2 in zip(dict1, dict2):
-
         if isinstance(dict1[key1], dict) and isinstance(dict2[key2], dict):
-
             if dict1[key1] == dict2[key2]:
                 continue
 
@@ -198,7 +196,6 @@ def _walk_through_dict_recursively(dict1, dict2, diff_dict=None):
             continue
 
         elif isinstance(dict1[key1], list) and isinstance(dict2[key2], list):
-
             flat_list1 = _explode_nested_list(dict1[key1])
             flat_list2 = _explode_nested_list(dict2[key2])
 
@@ -210,11 +207,9 @@ def _walk_through_dict_recursively(dict1, dict2, diff_dict=None):
         elif (isinstance(dict1[key1], list) and not isinstance(dict2[key2], list)) or (
             not isinstance(dict1[key1], list) and isinstance(dict2[key2], list)
         ):
-
             diff_dict[key1] = dict1[key1]
 
         elif _is_primitive(dict1[key1]) and _is_primitive(dict2[key2]):
-
             if dict1[key1] == dict2[key2]:
                 continue
             else:
@@ -273,7 +268,7 @@ def write_report(sub_files):
 
     # get simnibs logo
     im = Image.open(simnibs_logo)
-    imdata = 'data:image/webp;base64,' + _get_im_data(im)
+    imdata = "data:image/webp;base64," + _get_im_data(im)
 
     t1_text = "Charm was run on a T1-weighted scan"
     t1_t2_text = "Charm was run on a combination of T1- and T2-weighted scans"

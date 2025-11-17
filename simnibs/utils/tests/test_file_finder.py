@@ -11,45 +11,47 @@ class TestTemplates:
     def test_find(self):
         templates = file_finder.templates
         for k, fn in templates.__dict__.items():
-            if k not in ("fsaverage_resolutions", ):
+            if k not in ("fsaverage_resolutions",):
                 is_file = os.path.isfile(fn)
                 is_dir = os.path.isdir(fn)
                 assert is_file or is_dir
 
-@pytest.mark.parametrize('atlas_name', ['a2009s', 'DK40', 'HCP_MMP1'])
-@pytest.mark.parametrize('hemi', ['lh', 'rh', 'both'])
+
+@pytest.mark.parametrize("atlas_name", ["a2009s", "DK40", "HCP_MMP1"])
+@pytest.mark.parametrize("hemi", ["lh", "rh", "both"])
 def test_get_atlas(atlas_name, hemi):
     atlas = file_finder.get_atlas(atlas_name, hemi)
 
-    if atlas_name == 'a2009':
-        if hemi == 'both':
-            assert len(atlas) == 77*2
+    if atlas_name == "a2009":
+        if hemi == "both":
+            assert len(atlas) == 77 * 2
         else:
             assert len(atlas) == 77
-    elif atlas_name == 'DK40':
-        if hemi == 'both':
-            assert len(atlas) == 36*2
+    elif atlas_name == "DK40":
+        if hemi == "both":
+            assert len(atlas) == 36 * 2
         else:
             assert len(atlas) == 36
-    elif atlas_name == 'HCP_MMP1':
-        if hemi == 'both':
-            assert len(atlas) == 181*2
+    elif atlas_name == "HCP_MMP1":
+        if hemi == "both":
+            assert len(atlas) == 181 * 2
         else:
             assert len(atlas) == 181
 
     for name, mask in atlas.items():
-        if hemi in ['lh', 'rh']:
+        if hemi in ["lh", "rh"]:
             assert len(mask) == 163842
         else:
-            assert len(mask) == 2*163842
-            if name.startswith('lh'):
+            assert len(mask) == 2 * 163842
+            if name.startswith("lh"):
                 assert not np.any(mask[163842:])
-            if name.startswith('rh'):
+            if name.startswith("rh"):
                 assert not np.any(mask[:163842])
 
-@pytest.mark.parametrize('surf_type', file_finder.fs_surfaces + ["spheree"])
-@pytest.mark.parametrize('region', file_finder.HEMISPHERES + ["lhh"])
-@pytest.mark.parametrize('resolution', file_finder.fs_resolutions + [20])
+
+@pytest.mark.parametrize("surf_type", file_finder.fs_surfaces + ["spheree"])
+@pytest.mark.parametrize("region", file_finder.HEMISPHERES + ["lhh"])
+@pytest.mark.parametrize("resolution", file_finder.fs_resolutions + [20])
 def test_get_reference_surf(surf_type, region, resolution):
     if resolution not in file_finder.fs_resolutions:
         with pytest.raises(AssertionError):
@@ -66,43 +68,46 @@ def test_get_reference_surf(surf_type, region, resolution):
 
 class TestSubjectFiles:
     def test_define_fnamehead(self):
-        s = file_finder.SubjectFiles(
-            os.path.join('path', 'm2m_sub', 'sub.msh'))
-        assert s.fnamehead == os.path.join('path', 'm2m_sub', 'sub.msh')
-        assert s.subid == 'sub'
-        assert s.subpath == os.path.join('path', 'm2m_sub')
+        s = file_finder.SubjectFiles(os.path.join("path", "m2m_sub", "sub.msh"))
+        assert s.fnamehead == os.path.join("path", "m2m_sub", "sub.msh")
+        assert s.subid == "sub"
+        assert s.subpath == os.path.join("path", "m2m_sub")
 
     def test_define_subpath(self):
-        s = file_finder.SubjectFiles(subpath=os.path.join('path', 'to', 'm2m_sub'))
-        assert s.subpath == os.path.join('path', 'to', 'm2m_sub')
-        assert s.subid == 'sub'
-        assert s.fnamehead == os.path.join('path', 'to', 'm2m_sub', 'sub.msh')
+        s = file_finder.SubjectFiles(subpath=os.path.join("path", "to", "m2m_sub"))
+        assert s.subpath == os.path.join("path", "to", "m2m_sub")
+        assert s.subid == "sub"
+        assert s.fnamehead == os.path.join("path", "to", "m2m_sub", "sub.msh")
 
     def test_define_fnamehead_subpath(self):
         s = file_finder.SubjectFiles(
-            os.path.join('some', 'random', 'file.msh'),
-            subpath=os.path.join('path', 'to', 'm2m_sub'))
+            os.path.join("some", "random", "file.msh"),
+            subpath=os.path.join("path", "to", "m2m_sub"),
+        )
 
-        assert s.fnamehead == os.path.join('some', 'random', 'file.msh')
-        assert s.subid == 'sub'
-        assert s.subpath == os.path.join('path', 'to', 'm2m_sub')
+        assert s.fnamehead == os.path.join("some", "random", "file.msh")
+        assert s.subid == "sub"
+        assert s.subpath == os.path.join("path", "to", "m2m_sub")
 
     def test_tensor_file(self):
-        s = file_finder.SubjectFiles(os.path.join('path', 'm2m_sub', 'sub.msh'))
-        assert s.tensor_file == os.path.join('path', 'm2m_sub',
-                                             'DTI_coregT1_tensor.nii.gz')
+        s = file_finder.SubjectFiles(os.path.join("path", "m2m_sub", "sub.msh"))
+        assert s.tensor_file == os.path.join(
+            "path", "m2m_sub", "DTI_coregT1_tensor.nii.gz"
+        )
 
     def test_cap_files(self):
-        s = file_finder.SubjectFiles(os.path.join('path', 'm2m_sub', 'sub.msh'))
-        assert s.eeg_cap_folder == os.path.join('path', 'm2m_sub', 'eeg_positions')
-        assert s.eeg_cap_1010 == os.path.join('path', 'm2m_sub', 'eeg_positions',
-                                              'EEG10-10_UI_Jurak_2007.csv')
+        s = file_finder.SubjectFiles(os.path.join("path", "m2m_sub", "sub.msh"))
+        assert s.eeg_cap_folder == os.path.join("path", "m2m_sub", "eeg_positions")
+        assert s.eeg_cap_1010 == os.path.join(
+            "path", "m2m_sub", "eeg_positions", "EEG10-10_UI_Jurak_2007.csv"
+        )
 
-        assert s.get_eeg_cap('test.csv') == os.path.join(
-            'path', 'm2m_sub', 'eeg_positions', 'test.csv')
+        assert s.get_eeg_cap("test.csv") == os.path.join(
+            "path", "m2m_sub", "eeg_positions", "test.csv"
+        )
 
     def test_surfaces(self):
-        with tempfile.TemporaryDirectory(prefix='m2m_') as tmpdir:
+        with tempfile.TemporaryDirectory(prefix="m2m_") as tmpdir:
             m2m = file_finder.SubjectFiles(subpath=tmpdir)
             surface_folder = Path(m2m.surface_folder)
 
@@ -143,10 +148,9 @@ class TestSubjectFiles:
             #     s.get_surface('rc', 'sphere_reg')
             #     s.get_surface('lh', 'central', 20000)
 
-
-    @pytest.mark.parametrize('surface', ["central", "layer0"])
-    @pytest.mark.parametrize('hemi', ["lh", "rh"])
-    @pytest.mark.parametrize('subsampling', [None, 12345])
+    @pytest.mark.parametrize("surface", ["central", "layer0"])
+    @pytest.mark.parametrize("hemi", ["lh", "rh"])
+    @pytest.mark.parametrize("subsampling", [None, 12345])
     def test_get_surface(self, surface, hemi, subsampling):
         print(f"surface: {surface}")
         print(f"hemi: {hemi}")
@@ -160,9 +164,9 @@ class TestSubjectFiles:
         else:
             assert p == surface_dir / str(subsampling) / f"{hemi}.{surface}.gii"
 
-    @pytest.mark.parametrize('morph_data', ["thickness", "curv"])
-    @pytest.mark.parametrize('hemi', ["lh", "rh"])
-    @pytest.mark.parametrize('subsampling', [None, 12345])
+    @pytest.mark.parametrize("morph_data", ["thickness", "curv"])
+    @pytest.mark.parametrize("hemi", ["lh", "rh"])
+    @pytest.mark.parametrize("subsampling", [None, 12345])
     def test_get_morph_data(self, hemi, morph_data, subsampling):
         m2m = file_finder.SubjectFiles(subpath="/path/to/m2m_subid")
         surface_dir = Path(m2m.surface_folder)

@@ -10,54 +10,69 @@ from .. import charm_utils
 from ..charm_main import _check_q_and_s_form
 from ..simnibs_samseg import initVisualizer
 from ..simnibs_samseg.io import kvlReadSharedGMMParameters
-from ..simnibs_samseg.simnibs_segmentation_utils import writeBiasCorrectedImagesAndSegmentation
+from ..simnibs_samseg.simnibs_segmentation_utils import (
+    writeBiasCorrectedImagesAndSegmentation,
+)
 
-@pytest.fixture(scope='module')
+
+@pytest.fixture(scope="module")
 def testernie_nii():
     fn = os.path.join(
-        SIMNIBSDIR, '_internal_resources', 'testing_files', 'ernie_T1_ds5.nii.gz')
+        SIMNIBSDIR, "_internal_resources", "testing_files", "ernie_T1_ds5.nii.gz"
+    )
     return fn
 
-@pytest.fixture(scope='module')
+
+@pytest.fixture(scope="module")
 def testmni_nii():
     fn = os.path.join(
-        SIMNIBSDIR, '_internal_resources', 'testing_files', 'MNI_test_ds5.nii.gz')
+        SIMNIBSDIR, "_internal_resources", "testing_files", "MNI_test_ds5.nii.gz"
+    )
     return fn
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope="module")
 def testtemplate_nii():
     fn = os.path.join(
-        SIMNIBSDIR, 'segmentation', 'atlases', 'charm_atlas_mni', 'template.nii')
+        SIMNIBSDIR, "segmentation", "atlases", "charm_atlas_mni", "template.nii"
+    )
     return fn
 
-@pytest.fixture(scope='module')
+
+@pytest.fixture(scope="module")
 def testaffinemesh_msh():
     fn = os.path.join(
-        SIMNIBSDIR, 'segmentation', 'atlases', 'charm_atlas_mni', 'affine_no_neck.txt.gz')
+        SIMNIBSDIR,
+        "segmentation",
+        "atlases",
+        "charm_atlas_mni",
+        "affine_no_neck.txt.gz",
+    )
     return fn
 
-@pytest.fixture(scope='module')
+
+@pytest.fixture(scope="module")
 def testcubenoise_nii():
     fn = os.path.join(
-        SIMNIBSDIR, '_internal_resources', 'testing_files', 'cube_noise.nii.gz')
+        SIMNIBSDIR, "_internal_resources", "testing_files", "cube_noise.nii.gz"
+    )
     return fn
 
-@pytest.fixture(scope='module')
+
+@pytest.fixture(scope="module")
 def testcube_nii():
-    fn = os.path.join(
-        SIMNIBSDIR, '_internal_resources', 'testing_files', 'cube.nii.gz')
+    fn = os.path.join(SIMNIBSDIR, "_internal_resources", "testing_files", "cube.nii.gz")
     return fn
 
-@pytest.fixture(scope='module')
+
+@pytest.fixture(scope="module")
 def testcubeatlas_path():
-    fn = os.path.join(
-        SIMNIBSDIR, '_internal_resources', 'testing_files', 'cube_atlas')
+    fn = os.path.join(SIMNIBSDIR, "_internal_resources", "testing_files", "cube_atlas")
     return fn
 
 
 def _calc_dice(vol1, vol2):
-    return np.sum(vol2[vol1])*2.0 / (np.sum(vol1) + np.sum(vol2))
+    return np.sum(vol2[vol1]) * 2.0 / (np.sum(vol1) + np.sum(vol2))
 
 
 def generate_label_arr(ndim=2):
@@ -103,6 +118,7 @@ def test_label_unassigned_elements(
         ),
     )
 
+
 def test_sanlm(tmpdir, testernie_nii):
     denoised_scan = tmpdir.mkdir("denoised").join("denoised.nii.gz")
     input_scan = nib.load(testernie_nii)
@@ -112,70 +128,78 @@ def test_sanlm(tmpdir, testernie_nii):
     output_data = output_scan.get_fdata()
     assert input_data.var() > output_data.var()
 
+
 def test_mni_affine(tmpdir, testmni_nii):
     trans_scan_name = tmpdir.mkdir("shifted").join("shifted_MNI.nii.gz")
     input_scan = nib.load(testmni_nii)
     trans_mat = np.eye(4)
     trans_mat[:3, 3] = -10
-    trans_affine = trans_mat@input_scan.affine
+    trans_affine = trans_mat @ input_scan.affine
     trans_mni = nib.Nifti1Image(input_scan.get_fdata(), trans_affine)
     nib.save(trans_mni, trans_scan_name)
-    trans_settings = {"translation_scale": -100,
-                      "max_iter": 10,
-                      "num_histogram_bins": 64,
-                      "shrink_factors": [0],
-                      "bg_value": 0,
-                      "smoothing_factors": [4.0],
-                      "center_of_mass": True,
-                      "samp_factor": 1.0,
-                      "intepolator": "b"}
+    trans_settings = {
+        "translation_scale": -100,
+        "max_iter": 10,
+        "num_histogram_bins": 64,
+        "shrink_factors": [0],
+        "bg_value": 0,
+        "smoothing_factors": [4.0],
+        "center_of_mass": True,
+        "samp_factor": 1.0,
+        "intepolator": "b",
+    }
     RAS2LPS = np.diag([-1, -1, 1, 1])
-    estimated_trans_mat = charm_utils._init_atlas_affine(str(trans_scan_name),
-                                                         testmni_nii,
-                                                         trans_settings)
-    np.testing.assert_allclose(trans_mat,
-                               RAS2LPS@estimated_trans_mat@RAS2LPS, atol=1e-2, rtol=1e-6)
+    estimated_trans_mat = charm_utils._init_atlas_affine(
+        str(trans_scan_name), testmni_nii, trans_settings
+    )
+    np.testing.assert_allclose(
+        trans_mat, RAS2LPS @ estimated_trans_mat @ RAS2LPS, atol=1e-2, rtol=1e-6
+    )
 
 
 def test_atlas_affine(tmpdir, testmni_nii, testtemplate_nii, testaffinemesh_msh):
     trans_scan_name = tmpdir.mkdir("shifted").join("shifted_MNI.nii.gz")
-    template_coregistered_name = tmpdir.join('template_coregistered.mgz')
+    template_coregistered_name = tmpdir.join("template_coregistered.mgz")
     input_scan = nib.load(testmni_nii)
     trans_mat = np.eye(4)
     trans_mat[:3, 3] = -10
-    trans_affine = trans_mat@input_scan.affine
+    trans_affine = trans_mat @ input_scan.affine
     trans_mni = nib.Nifti1Image(input_scan.get_fdata(), trans_affine)
     nib.save(trans_mni, trans_scan_name)
-    init_atlas_settings = {"affine_scales": [[1.0, 1.0, 1.0]],
-                           "affine_rotations": [0],
-                           "affine_horizontal_shifts": [0],
-                           "affine_vertical_shifts": [0],
-                           "neck_search_bounds": [0, 0],
-                           "downsampling_factor_affine": 1.0}
+    init_atlas_settings = {
+        "affine_scales": [[1.0, 1.0, 1.0]],
+        "affine_rotations": [0],
+        "affine_horizontal_shifts": [0],
+        "affine_vertical_shifts": [0],
+        "neck_search_bounds": [0, 0],
+        "downsampling_factor_affine": 1.0,
+    }
     visualizer = initVisualizer(False, False)
-    charm_utils._register_atlas_to_input_affine(str(trans_scan_name),
-                                                testtemplate_nii,
-                                                testaffinemesh_msh,
-                                                testaffinemesh_msh,
-                                                testaffinemesh_msh,
-                                                str(tmpdir),
-                                                str(template_coregistered_name),
-                                                init_atlas_settings,
-                                                None,
-                                                visualizer,
-                                                True,
-                                                init_transform=None,
-                                                world_to_world_transform_matrix=None,
-                                                scaling_center=[0, 0, 0],
-                                                k_values=[100])
+    charm_utils._register_atlas_to_input_affine(
+        str(trans_scan_name),
+        testtemplate_nii,
+        testaffinemesh_msh,
+        testaffinemesh_msh,
+        testaffinemesh_msh,
+        str(tmpdir),
+        str(template_coregistered_name),
+        init_atlas_settings,
+        None,
+        visualizer,
+        True,
+        init_transform=None,
+        world_to_world_transform_matrix=None,
+        scaling_center=[0, 0, 0],
+        k_values=[100],
+    )
 
-    matrices = loadmat(str(tmpdir.join('coregistrationMatrices.mat')))
-    w2w = matrices['worldToWorldTransformMatrix']
-    #I wouldn't expect the match to be as good as for the mni-mni reg above,
-    #so relaxing the tolerances here
-    np.testing.assert_allclose(trans_mat[:2,3],
-                               w2w[:2,3], rtol=5e-2, atol=1)
-    np.testing.assert_allclose(trans_mat[:3,:3], w2w[:3, :3], rtol=5e-2, atol=5e-2)
+    matrices = loadmat(str(tmpdir.join("coregistrationMatrices.mat")))
+    w2w = matrices["worldToWorldTransformMatrix"]
+    # I wouldn't expect the match to be as good as for the mni-mni reg above,
+    # so relaxing the tolerances here
+    np.testing.assert_allclose(trans_mat[:2, 3], w2w[:2, 3], rtol=5e-2, atol=1)
+    np.testing.assert_allclose(trans_mat[:3, :3], w2w[:3, :3], rtol=5e-2, atol=5e-2)
+
 
 def test_T1T2(tmpdir, testmni_nii):
     trans_scan_name = tmpdir.mkdir("shifted").join("shifted_MNI.nii.gz")
@@ -183,43 +207,48 @@ def test_T1T2(tmpdir, testmni_nii):
     input_scan = nib.load(testmni_nii)
     trans_mat = np.eye(4)
     trans_mat[:3, 3] = -10
-    trans_affine = trans_mat@input_scan.affine
+    trans_affine = trans_mat @ input_scan.affine
     trans_mni = nib.Nifti1Image(input_scan.get_fdata(), trans_affine)
     nib.save(trans_mni, trans_scan_name)
-    charm_utils._registerT1T2(str(trans_scan_name),
-                              testmni_nii,
-                              str(registered_scan_name))
+    charm_utils._registerT1T2(
+        str(trans_scan_name), testmni_nii, str(registered_scan_name)
+    )
     reg_scan = nib.load(str(registered_scan_name))
-    assert (np.corrcoef(reg_scan.get_fdata().flatten(), trans_mni.get_fdata().flatten()))[0,1] > 0.99
+    assert (
+        np.corrcoef(reg_scan.get_fdata().flatten(), trans_mni.get_fdata().flatten())
+    )[0, 1] > 0.99
+
 
 def test_largest_components():
     se = ndimage.generate_binary_structure(3, 3)
-    test_array = np.zeros((5,5,5))
+    test_array = np.zeros((5, 5, 5))
     test_array[0:2, 0:2, 0:2] = 1
     test_array[3:5, 3:5, 3:5] = 2
 
     assert charm_utils._get_largest_components(test_array, se).sum() == 16
-    assert charm_utils._get_largest_components(test_array,se, vol_limit=9).sum() == 0
+    assert charm_utils._get_largest_components(test_array, se, vol_limit=9).sum() == 0
     assert charm_utils._get_largest_components(test_array, se, num_limit=1).sum() == 8
+
 
 def test_smoothfill():
     test_array = generate_label_arr(3)
     unass = np.zeros_like(test_array, dtype=bool)
-    unass[2:4,3:5,5:7] = True
-    unass[6,6,6] = True
+    unass[2:4, 3:5, 5:7] = True
+    unass[6, 6, 6] = True
     unass[7:9, 6:8, 1:3] = True
-    tissue_dict = {'bg': 0, 'first': 1, 'second': 2, 'WM': 3, 'fifth': 5}
+    tissue_dict = {"bg": 0, "first": 1, "second": 2, "WM": 3, "fifth": 5}
     expected_array = test_array.copy()
     test_array[unass] = 65535
     charm_utils._smoothfill(test_array, unass, tissue_dict)
     assert (test_array == 65535).sum() == 0
     np.testing.assert_allclose(expected_array == 3, test_array == 3)
 
+
 def test_fill_missing():
     test_array = generate_label_arr(3)
     unass = np.zeros_like(test_array, dtype=bool)
-    unass[2:4,3:5,5:7] = True
-    unass[6,6,6] = True
+    unass[2:4, 3:5, 5:7] = True
+    unass[6, 6, 6] = True
     unass[7:9, 6:8, 1:3] = True
     expected_array = test_array.copy()
     test_array[unass] = 65535
@@ -227,59 +256,67 @@ def test_fill_missing():
     assert (test_array == 65535).sum() == 0
     np.testing.assert_allclose(expected_array == 3, test_array == 3)
 
+
 def test_segmentation(tmpdir, testcube_nii, testcubenoise_nii, testcubeatlas_path):
     seg_dir = tmpdir.mkdir("segmentation")
 
-    seg_settings = {"downsampling_targets": 1.0,
-                    "bias_kernel_width": 100,
-                    "background_mask_sigma": 1.0,
-                    "background_mask_threshold": 0.001,
-                    "mesh_stiffness": 0.1,
-                    "diagonal_covariances": False}
+    seg_settings = {
+        "downsampling_targets": 1.0,
+        "bias_kernel_width": 100,
+        "background_mask_sigma": 1.0,
+        "background_mask_threshold": 0.001,
+        "mesh_stiffness": 0.1,
+        "diagonal_covariances": False,
+    }
 
     user_opts = {
         "multiResolutionSpecification": [
             {
-                "atlasFileName": os.path.join(testcubeatlas_path,'atlas.txt.gz'),
+                "atlasFileName": os.path.join(testcubeatlas_path, "atlas.txt.gz"),
                 "targetDownsampledVoxelSpacing": 1.0,
                 "maximumNuberOfIterations": 10,
-                "estimateBiasField": False
+                "estimateBiasField": False,
             }
         ]
     }
 
-    shared_gmm_params = kvlReadSharedGMMParameters(os.path.join(testcubeatlas_path, 'sharedGMMParameters.txt'))
+    shared_gmm_params = kvlReadSharedGMMParameters(
+        os.path.join(testcubeatlas_path, "sharedGMMParameters.txt")
+    )
     user_specs = {
-            "atlasFileName": os.path.join(testcubeatlas_path, "atlas.txt.gz"),
-            "biasFieldSmoothingKernelSize": seg_settings["bias_kernel_width"],
-            "brainMaskingSmoothingSigma": seg_settings["background_mask_sigma"],
-            "brainMaskingThreshold": seg_settings["background_mask_threshold"],
-            "K": seg_settings["mesh_stiffness"],
-            "useDiagonalCovarianceMatrices": seg_settings["diagonal_covariances"],
-            "sharedGMMParameters": shared_gmm_params,
+        "atlasFileName": os.path.join(testcubeatlas_path, "atlas.txt.gz"),
+        "biasFieldSmoothingKernelSize": seg_settings["bias_kernel_width"],
+        "brainMaskingSmoothingSigma": seg_settings["background_mask_sigma"],
+        "brainMaskingThreshold": seg_settings["background_mask_threshold"],
+        "K": seg_settings["mesh_stiffness"],
+        "useDiagonalCovarianceMatrices": seg_settings["diagonal_covariances"],
+        "sharedGMMParameters": shared_gmm_params,
     }
 
     visualizer = initVisualizer(False, False)
     param_estimates = charm_utils._estimate_parameters(
-                        str(seg_dir),
-                        os.path.join(testcubeatlas_path, 'template.nii.gz'),
-                        testcubeatlas_path,
-                        [testcubenoise_nii],
-                        seg_settings,
-                        os.path.join(testcubeatlas_path, 'sharedGMMParameters.txt'),
-                        visualizer,
-                        user_optimization_options=user_opts,
-                        user_model_specifications=user_specs)
+        str(seg_dir),
+        os.path.join(testcubeatlas_path, "template.nii.gz"),
+        testcubeatlas_path,
+        [testcubenoise_nii],
+        seg_settings,
+        os.path.join(testcubeatlas_path, "sharedGMMParameters.txt"),
+        visualizer,
+        user_optimization_options=user_opts,
+        user_model_specifications=user_specs,
+    )
 
-    bias_corr = os.path.join(str(seg_dir), 'bias_temp.nii.gz')
-    seg = os.path.join(str(seg_dir), 'seg.nii.gz')
+    bias_corr = os.path.join(str(seg_dir), "bias_temp.nii.gz")
+    seg = os.path.join(str(seg_dir), "seg.nii.gz")
     mock_tissue_settings = {"segmentation_tissues": {"CSF": -1}}
-    writeBiasCorrectedImagesAndSegmentation([bias_corr], seg, param_estimates, mock_tissue_settings, 1)
+    writeBiasCorrectedImagesAndSegmentation(
+        [bias_corr], seg, param_estimates, mock_tissue_settings, 1
+    )
 
     orig_cube = nib.load(testcube_nii)
     est_cube = nib.load(seg)
-    dice = _calc_dice(orig_cube.get_fdata()==1, est_cube.get_fdata()==1)
-    print("Dice score: "+str(dice))
+    dice = _calc_dice(orig_cube.get_fdata() == 1, est_cube.get_fdata() == 1)
+    print("Dice score: " + str(dice))
     assert dice > 0.95
 
 
@@ -289,22 +326,20 @@ def test_update_labeling_from_cortical_surfaces_():
     """
 
     # I do this in 2D so that I can plot it and see that it actually makes sense
-    shape = np.array([51,51])
-    protect = {
-        "gm_to_csf": [10],
-        "wm_to_gm": [11],
-        "gm_to_wm": [12],
-        "csf_to_gm": [13]
-    }
+    shape = np.array([51, 51])
+    protect = {"gm_to_csf": [10], "wm_to_gm": [11], "gm_to_wm": [12], "csf_to_gm": [13]}
     tissue_mapping = {"WM": 1, "GM": 2, "CSF": 3, "Compact_bone": 4, "Spongy_bone": 5}
 
     # For making segmentation and protection regions
-    center = np.array((shape-1)/2, dtype=int)
+    center = np.array((shape - 1) / 2, dtype=int)
     max_dist = np.sqrt(np.sum(center**2))
     radius = dict(
-        white=0.5*max_dist, pial=0.6*max_dist, csf=0.7*max_dist, bone=0.8*max_dist
+        white=0.5 * max_dist,
+        pial=0.6 * max_dist,
+        csf=0.7 * max_dist,
+        bone=0.8 * max_dist,
     )
-    grid = np.meshgrid(*[np.arange(-c, c+1) for c in center])
+    grid = np.meshgrid(*[np.arange(-c, c + 1) for c in center])
     grid = np.array(grid)
     dist_to_center = np.linalg.norm(grid, axis=0)
 
@@ -320,26 +355,26 @@ def test_update_labeling_from_cortical_surfaces_():
     gm_surf_mask = dist_to_center <= radius["pial"]
 
     # create some regions which need protection
-    protect_stuff = dist_to_center <= 0.2*max_dist
+    protect_stuff = dist_to_center <= 0.2 * max_dist
 
-    x0n = protect_stuff & (grid[0]<0)
-    x1n = protect_stuff & (grid[1]<0)
-    x1p = protect_stuff & (grid[1]>0)
+    x0n = protect_stuff & (grid[0] < 0)
+    x1n = protect_stuff & (grid[1] < 0)
+    x1p = protect_stuff & (grid[1] > 0)
 
     wm_outside_white = np.zeros(shape, dtype=bool)
     wm_outside_white[:4, -4:] = True
     gm_outside_pial = np.zeros(shape, dtype=bool)
     gm_outside_pial[:4, :4] = True
 
-    gm_inside_white = x0n & x1n # e.g., subcortical
-    csf_inside_gray = x0n & x1p # e.g., ventricle
+    gm_inside_white = x0n & x1n  # e.g., subcortical
+    csf_inside_gray = x0n & x1p  # e.g., ventricle
 
     # labels should map correctly to `protect`!
     fs_labeling = np.zeros_like(sm_labeling)
-    fs_labeling[gm_outside_pial] = 10 # gm to csf
-    fs_labeling[wm_outside_white] = 11 # wm to gm
-    fs_labeling[gm_inside_white] = 12 # gm to wm
-    fs_labeling[csf_inside_gray] = 13 # csf to gm
+    fs_labeling[gm_outside_pial] = 10  # gm to csf
+    fs_labeling[wm_outside_white] = 11  # wm to gm
+    fs_labeling[gm_inside_white] = 12  # gm to wm
+    fs_labeling[csf_inside_gray] = 13  # csf to gm
 
     sm_labeling_clean = sm_labeling.copy()
 
@@ -415,7 +450,7 @@ def test_update_labeling_from_cortical_surfaces_():
     # Errors due to the morphological operations on the masks...
     # these are due to the opening (smoothing) of, in this case, the gray
     # matter surface mask
-    OK_error1 = (10,10,40), (10,40,40)
+    OK_error1 = (10, 10, 40), (10, 40, 40)
     # these are due to the dilation of, in this case, the "protection" masks
     OK_error2 = (17, 22, 24, 25), (23, 18, 25, 19)
     OK_error_img = np.zeros_like(comp)
@@ -425,10 +460,11 @@ def test_update_labeling_from_cortical_surfaces_():
     # the correction worked, except for a few placed
     assert np.all(comp | OK_error_img)
 
+
 def test_q_and_sform():
-    tmp_vol = np.zeros((3,3,3))
+    tmp_vol = np.zeros((3, 3, 3))
     tmp_affine = np.eye(4)
-    tmp_im = nib.Nifti1Image(tmp_vol,tmp_affine)
+    tmp_im = nib.Nifti1Image(tmp_vol, tmp_affine)
     # It seems by default nibabel only set the sform and
     # also sets the sform code to 2.
     # Test that the code throws an error if qform_code is zero
@@ -452,16 +488,24 @@ def test_q_and_sform():
     tmp_im_copy = copy.deepcopy(tmp_im)
     tmp_im_copy.set_qform(tmp_im.get_qform(), code=1)
     scan_forced = _check_q_and_s_form(tmp_im, force_qform=True, force_sform=False)
-    assert np.equal(scan_forced.get_qform(coded=True)[1], scan_forced.get_sform(coded=True)[1]), "Q- and S-form codes should be the same but they're not!"
-    assert np.allclose(scan_forced.get_qform(), scan_forced.get_sform()), "Q- and S-form matrices should be the same but they're not!"
+    assert np.equal(
+        scan_forced.get_qform(coded=True)[1], scan_forced.get_sform(coded=True)[1]
+    ), "Q- and S-form codes should be the same but they're not!"
+    assert np.allclose(scan_forced.get_qform(), scan_forced.get_sform()), (
+        "Q- and S-form matrices should be the same but they're not!"
+    )
 
     # And the other way around (force sfrom), even if qform = 0
     tmp_im_copy = copy.deepcopy(tmp_im)
     tmp_im_copy.set_sform(tmp_im.get_sform(), code=1)
     tmp_im_copy.set_qform(tmp_im.get_qform(), code=0)
     scan_forced = _check_q_and_s_form(tmp_im, force_qform=False, force_sform=True)
-    assert np.equal(scan_forced.get_qform(coded=True)[1], scan_forced.get_sform(coded=True)[1]), "Q- and S-form codes should be the same but they're not!"
-    assert np.allclose(scan_forced.get_qform(), scan_forced.get_sform()), "Q- and S-form matrices should be the same but they're not!"
+    assert np.equal(
+        scan_forced.get_qform(coded=True)[1], scan_forced.get_sform(coded=True)[1]
+    ), "Q- and S-form codes should be the same but they're not!"
+    assert np.allclose(scan_forced.get_qform(), scan_forced.get_sform()), (
+        "Q- and S-form matrices should be the same but they're not!"
+    )
 
     # Finally if you force sform when q- and s-form matrices are different but the s-form code is zero this should throw
     scan_forced.set_sform(scan_forced.get_sform(), code=0)

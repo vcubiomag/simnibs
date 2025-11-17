@@ -1,20 +1,19 @@
-''' Example of a SimNIBS tDCS optimization in Python
-    Run with:
+"""Example of a SimNIBS tDCS optimization in Python
+Run with:
 
-    simnibs_python tdcs_optimize.py
+simnibs_python tdcs_optimize.py
 
-    Copyright (c) 2019 SimNIBS developers. Licensed under the GPL v3.
-'''
-
+Copyright (c) 2019 SimNIBS developers. Licensed under the GPL v3.
+"""
 
 import simnibs
 
 # Initialize structure
 opt = simnibs.opt_struct.TDCSoptimize()
 # Select the leadfield file
-opt.leadfield_hdf = 'leadfield/ernie_leadfield_EEG10-10_UI_Jurak_2007.hdf5'
+opt.leadfield_hdf = "leadfield/ernie_leadfield_EEG10-10_UI_Jurak_2007.hdf5"
 # Select a name for the optimization
-opt.name = 'optimization/single_target'
+opt.name = "optimization/single_target"
 
 # Select a maximum total current (in A)
 opt.max_total_current = 2e-3

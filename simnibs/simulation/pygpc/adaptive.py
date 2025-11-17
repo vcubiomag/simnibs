@@ -8,7 +8,7 @@ from .ni import reg
 
 
 def _expand_polynomial(active_set, old_set, to_expand, order_max, interaction_max):
-    ''' Algorithm by Gerstner and Griebel '''
+    """Algorithm by Gerstner and Griebel"""
     active_set = [tuple(a) for a in active_set]
     old_set = [tuple(o) for o in old_set]
     to_expand = tuple(to_expand)
@@ -25,24 +25,32 @@ def _expand_polynomial(active_set, old_set, to_expand, order_max, interaction_ma
                 predecessor[e2] -= 1
                 predecessor = tuple(predecessor)
                 has_predecessors *= predecessor in old_set
-        if has_predecessors and np.sum(np.abs(forward)) <= order_max \
-           and np.sum(forward > 0) <= interaction_max:
+        if (
+            has_predecessors
+            and np.sum(np.abs(forward)) <= order_max
+            and np.sum(forward > 0) <= interaction_max
+        ):
             expand += [tuple(forward)]
             active_set += [tuple(forward)]
 
     return active_set, old_set, expand
 
 
-def _choose_to_expand(poly_idx, active_set, old_set, coeffs, order_max, interaction_max):
+def _choose_to_expand(
+    poly_idx, active_set, old_set, coeffs, order_max, interaction_max
+):
     coeffs = np.linalg.norm(coeffs, axis=1)
     for idx in poly_idx[coeffs.argsort()[::-1]]:
         if tuple(idx) in active_set:
             _, _, expand = _expand_polynomial(
-                active_set, old_set, tuple(idx), order_max, interaction_max)
+                active_set, old_set, tuple(idx), order_max, interaction_max
+            )
             if len(expand) > 0:
                 return tuple(idx)
 
-    raise ValueError('Could not find a polynomial in the expansion and in the active set')
+    raise ValueError(
+        "Could not find a polynomial in the expansion and in the active set"
+    )
 
 
 def _relative_error(data, approx):
@@ -51,21 +59,20 @@ def _relative_error(data, approx):
     if approx.ndim == 1:
         approx = approx[None, :]
     err = np.average(
-        np.linalg.norm(data - approx, axis=1) /
-        np.linalg.norm(data, axis=1))
+        np.linalg.norm(data - approx, axis=1) / np.linalg.norm(data, axis=1)
+    )
     return err
 
 
 def _tikhonov(A, b, alpha):
-    '''Solves inv(A.T A + alpha*Id) * A.T b
+    """Solves inv(A.T A + alpha*Id) * A.T b
     based on the _solve_cholesky function from sklearn
-    '''
+    """
     n_samples, n_features = A.shape
     AtA = A.T.dot(A)
     Atb = A.T.dot(b)
-    AtA.flat[::n_features + 1] += alpha
-    return scipy.linalg.solve(AtA, Atb, assume_a="pos",
-                              overwrite_a=True)
+    AtA.flat[:: n_features + 1] += alpha
+    return scipy.linalg.solve(AtA, Atb, assume_a="pos", overwrite_a=True)
 
 
 def _k_fold_cv_regression(A, data, regression_function, error_eq=_relative_error, k=10):
@@ -94,27 +101,41 @@ def _k_fold_cv_regression(A, data, regression_function, error_eq=_relative_error
 
 
 class RegularizedRegression(reg):
-    ''' RegularizedRegression Regression
+    """RegularizedRegression Regression
     is a subclass of reg
-    '''
-    def __init__(self, pdftype, pdfshape, limits, order, order_max, interaction_order,
-                 grid, regularization_factors=np.logspace(-5, 3, 9)):
-        super().__init__(pdftype, pdfshape, limits, order, order_max, interaction_order, grid)
+    """
+
+    def __init__(
+        self,
+        pdftype,
+        pdfshape,
+        limits,
+        order,
+        order_max,
+        interaction_order,
+        grid,
+        regularization_factors=np.logspace(-5, 3, 9),
+    ):
+        super().__init__(
+            pdftype, pdfshape, limits, order, order_max, interaction_order, grid
+        )
         self.regularization_factors = regularization_factors
 
     def construct_gpc_matrix(self):
-        """ construct the gpc matrix A [N_samples x N_poly] """
+        """construct the gpc matrix A [N_samples x N_poly]"""
         A = np.zeros([self.N_grid, self.N_poly])
 
         for i_poly in range(self.N_poly):
             A1 = np.ones(self.N_grid)
             for i_DIM in range(self.DIM):
-                A1 *= self.poly[self.poly_idx[i_poly][i_DIM]][i_DIM](self.grid.coords_norm[:,i_DIM])
+                A1 *= self.poly[self.poly_idx[i_poly][i_DIM]][i_DIM](
+                    self.grid.coords_norm[:, i_DIM]
+                )
             A[:, i_poly] = A1
         return A
 
     def expand(self, data, return_error=True, return_reg_factor=False):
-        """ Determine the gPC coefficients by the regression method
+        """Determine the gPC coefficients by the regression method
         input:    data ... results from simulations with N_out output quantities,
         np.array() [N_samples x N_out]
         output: coeffs ... gPC coefficients, np.array() [N_coeffs x N_out]
@@ -124,7 +145,7 @@ class RegularizedRegression(reg):
 
         errors = np.zeros_like(self.regularization_factors, dtype=float)
         A = self.construct_gpc_matrix()
-        for i, reg_factor in enumerate(self.regularization_factors): 
+        for i, reg_factor in enumerate(self.regularization_factors):
             regression_fun = functools.partial(_tikhonov, alpha=reg_factor)
             errors[i] = _k_fold_cv_regression(A, data, regression_fun)
         min_error = np.argmin(errors)
@@ -141,9 +162,8 @@ class RegularizedRegression(reg):
                 ret += [selected_reg]
             return tuple(ret)
 
-
     def add_n_sampling_points(self, n):
-        ''' Adds a given number of sampling points
+        """Adds a given number of sampling points
 
         Parameters
         -----------
@@ -154,27 +174,41 @@ class RegularizedRegression(reg):
         --------
         sampling_points: ndarray
             The new points added
-        '''
-        newgridpoints = randomgrid(self.pdftype, self.pdfshape, self.limits,
-                                   int(np.ceil(n)))
-            
+        """
+        newgridpoints = randomgrid(
+            self.pdftype, self.pdfshape, self.limits, int(np.ceil(n))
+        )
+
         # append points to existing grid
         self.grid.coords = np.vstack([self.grid.coords, newgridpoints.coords])
-        self.grid.coords_norm = np.vstack([self.grid.coords_norm, newgridpoints.coords_norm])
+        self.grid.coords_norm = np.vstack(
+            [self.grid.coords_norm, newgridpoints.coords_norm]
+        )
         self.N_grid = self.grid.coords.shape[0]
 
         return newgridpoints.coords
 
 
-def run_reg_adaptive_grid(pdftype, pdfshape, limits, func, args=(),
-                          data_poly_ratio=2, max_iter=1000,
-                          order_max=None, interaction_max=None,
-                          eps=1E-3, regularization_factors=np.logspace(-5, 3, 9),
-                          min_iter=0, n_cpus=1, print_function=None):
-    """  
+def run_reg_adaptive_grid(
+    pdftype,
+    pdfshape,
+    limits,
+    func,
+    args=(),
+    data_poly_ratio=2,
+    max_iter=1000,
+    order_max=None,
+    interaction_max=None,
+    eps=1e-3,
+    regularization_factors=np.logspace(-5, 3, 9),
+    min_iter=0,
+    n_cpus=1,
+    print_function=None,
+):
+    """
     Adaptive regression approach based on leave one out cross validation error
     estimation
-    
+
     Parameters
     ----------
 
@@ -194,7 +228,7 @@ def run_reg_adaptive_grid(pdftype, pdfshape, limits, func, args=(),
     func : callable func(x,*args)
            The objective function to be minimized.
     args : tuple, optional
-           Extra arguments passed to func, i.e. f(x,*args).         
+           Extra arguments passed to func, i.e. f(x,*args).
     data_poly_ratio: float, optional
         Number of function evaluations per polynomial in the basis. Default: 1.5
     max_iter: int, optional
@@ -218,11 +252,11 @@ def run_reg_adaptive_grid(pdftype, pdfshape, limits, func, args=(),
        gpc object
     res: ndarray
        Function values at grid points of the N_out output variables
-       size: [N_samples x N_out]        
+       size: [N_samples x N_out]
     """
-    
+
     # initialize iterators
-    eps_gpc = eps+1
+    eps_gpc = eps + 1
     i_samples = 0
     i_iter = 0
     DIM = len(pdftype)
@@ -247,18 +281,23 @@ def run_reg_adaptive_grid(pdftype, pdfshape, limits, func, args=(),
         if i_iter == 1:
             grid_init = randomgrid(pdftype, pdfshape, limits, 0)
             regobj = RegularizedRegression(
-                pdftype, pdfshape, limits, order*np.ones(DIM),
-                order_max=order, interaction_order=DIM, grid=grid_init,
-                regularization_factors=regularization_factors
+                pdftype,
+                pdfshape,
+                limits,
+                order * np.ones(DIM),
+                order_max=order,
+                interaction_order=DIM,
+                grid=grid_init,
+                regularization_factors=regularization_factors,
             )
             RES = np.empty((0, 0))
 
         else:
             active_set, old_set, expand = _expand_polynomial(
-                active_set, old_set, to_expand, order_max, interaction_max)
+                active_set, old_set, to_expand, order_max, interaction_max
+            )
             # add polynomials to gpc expansion
-            regobj.enrich_polynomial_basis(
-                np.asarray(expand, dtype=int), form_A=False)
+            regobj.enrich_polynomial_basis(np.asarray(expand, dtype=int), form_A=False)
 
         n = int(np.ceil(data_poly_ratio * len(regobj.poly_idx) - RES.shape[0]))
         # This here will ensure we always use n_cpus
@@ -272,9 +311,9 @@ def run_reg_adaptive_grid(pdftype, pdfshape, limits, func, args=(),
             processes = []
             for s in range(i_samples, regobj.grid.coords.shape[0]):
                 if print_function:
-                    print_function("Performing simulation #{}".format(s+1))
+                    print_function("Performing simulation #{}".format(s + 1))
                 x = regobj.grid.coords[s, :]
-                processes.append(pool.apply_async(func, (x, ) + args))
+                processes.append(pool.apply_async(func, (x,) + args))
             if i_samples == 0:
                 RES = np.vstack([p.get() for p in processes])
             else:
@@ -283,7 +322,7 @@ def run_reg_adaptive_grid(pdftype, pdfshape, limits, func, args=(),
         else:
             for s in range(i_samples, regobj.grid.coords.shape[0]):
                 if print_function:
-                    print_function("Performing simulation #{}".format(s+1))
+                    print_function("Performing simulation #{}".format(s + 1))
                 # read random variables from grid
                 x = regobj.grid.coords[s, :]
                 # evaluate function at grid points
@@ -304,10 +343,11 @@ def run_reg_adaptive_grid(pdftype, pdfshape, limits, func, args=(),
 
         else:
             to_expand = _choose_to_expand(
-                regobj.poly_idx, active_set, old_set, coeffs, order_max, interaction_max)
+                regobj.poly_idx, active_set, old_set, coeffs, order_max, interaction_max
+            )
 
     if i_iter >= max_iter:
-        raise ValueError('Maximum number of iterations reached')
+        raise ValueError("Maximum number of iterations reached")
 
     if n_cpus > 1:
         pool.close()

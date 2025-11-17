@@ -53,7 +53,9 @@ def setup_source_space(
     # if surface is subsampled, add normals from original surface
     normals = (
         {
-            h: np.loadtxt(m2m.get_morph_data(h, "normals.csv", subsampling), delimiter=",")
+            h: np.loadtxt(
+                m2m.get_morph_data(h, "normals.csv", subsampling), delimiter=","
+            )
             for h in src_from
         }
         if subsampling
@@ -167,7 +169,6 @@ def make_forward(forward: dict, src: dict):
         leadfielddimord=r"{pos}_chan_ori",
         cfg=f"Created by SimNIBS {simnibs.__version__}",
     )
-
 
 
 def prepare_montage(

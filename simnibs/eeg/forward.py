@@ -57,7 +57,10 @@ def compute_tdcs_leadfield(
 
     m2m = SubjectFiles(subpath=str(m2m_dir))
 
-    if subsampling and not all(m2m.get_surface(h, "central", subsampling=subsampling).exists() for h in m2m.hemispheres):
+    if subsampling and not all(
+        m2m.get_surface(h, "central", subsampling=subsampling).exists()
+        for h in m2m.hemispheres
+    ):
         _ = subsample_surfaces(m2m_dir, n_points=subsampling)
 
     # The paths should be strings otherwise errors might occur when writing the
@@ -186,7 +189,7 @@ def prepare_forward(fwd_name: Union[Path, str], apply_average_proj: bool = True)
         n_channels=nchan,
         n_sources=nsrc,
         n_orientations=nori,
-        subsampling=interp_subsampling
+        subsampling=interp_subsampling,
     )
 
 

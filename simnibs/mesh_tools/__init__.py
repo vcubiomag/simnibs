@@ -1,5 +1,4 @@
-'''
+"""
 SimNIBS mesh handling functions
 
-'''
-
+"""

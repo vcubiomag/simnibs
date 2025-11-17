@@ -259,7 +259,7 @@ class TestMniMaskToSub:
 
         img = np.squeeze(mni_to_sub_final_tissues.get_fdata().astype(np.uint16))
         img_org = np.squeeze(sub_final_tissues.get_fdata().astype(np.uint16))
-        
+
         # as transformation is not perfect, and MNI head does not extend so far down,
         # only GM and WM are compared, and a low number of non-matching voxels are OK
         assert np.sum((img == 1) != (img_org == 1)) < 6000
@@ -820,8 +820,10 @@ class TestApplyTissueMask:
             surface_roi.get_roi_mesh().nodes.node_coord, cropped_sphere.nodes.node_coord
         )
         np.testing.assert_allclose(
-            surface_roi.get_roi_mesh().elm.node_number_list, cropped_sphere.elm.node_number_list
+            surface_roi.get_roi_mesh().elm.node_number_list,
+            cropped_sphere.elm.node_number_list,
         )
+
 
 class TestApplyElementTypeMask:
     def test_apply_element_mask_volume(self, sphere3_msh: Msh):
@@ -853,8 +855,10 @@ class TestApplyElementTypeMask:
             surface_roi.get_roi_mesh().nodes.node_coord, cropped_sphere.nodes.node_coord
         )
         np.testing.assert_allclose(
-            surface_roi.get_roi_mesh().elm.node_number_list, cropped_sphere.elm.node_number_list
+            surface_roi.get_roi_mesh().elm.node_number_list,
+            cropped_sphere.elm.node_number_list,
         )
+
 
 class TestRoiGetElementTypes:
     def test_get_mixed_element_types(self, sphere3_msh: Msh):
@@ -884,6 +888,7 @@ class TestRoiGetElementTypes:
         elm_types_in_roi = roi.get_roi_element_types()
         assert len(elm_types_in_roi) == 1
         assert 4 in elm_types_in_roi
+
 
 class TestApplyVolumeMask:
     def test_apply_simple_volume_mask(self, sphere3_msh, tmp_path):
@@ -1065,8 +1070,10 @@ class TestToFromDict:
         roi_loaded = RegionOfInterest(dict_from_matlab(scipy.io.loadmat(mat_path)))
         assert roi.__dict__ == roi_loaded.__dict__
 
-        scipy.io.savemat(mat_path, {'instance': roi.to_dict()})
-        roi_loaded = RegionOfInterest(dict_from_matlab(scipy.io.loadmat(mat_path)['instance']))
+        scipy.io.savemat(mat_path, {"instance": roi.to_dict()})
+        roi_loaded = RegionOfInterest(
+            dict_from_matlab(scipy.io.loadmat(mat_path)["instance"])
+        )
         assert roi.__dict__ == roi_loaded.__dict__
 
     def test_custom_roi_write_read_mat(self, tmp_path):
@@ -1082,8 +1089,10 @@ class TestToFromDict:
         roi_loaded = RegionOfInterest(dict_from_matlab(scipy.io.loadmat(mat_path)))
         assert roi.__dict__ == roi_loaded.__dict__
 
-        scipy.io.savemat(mat_path, {'instance': roi.to_dict()})
-        roi_loaded = RegionOfInterest(dict_from_matlab(scipy.io.loadmat(mat_path)['instance']))
+        scipy.io.savemat(mat_path, {"instance": roi.to_dict()})
+        roi_loaded = RegionOfInterest(
+            dict_from_matlab(scipy.io.loadmat(mat_path)["instance"])
+        )
         assert roi.__dict__ == roi_loaded.__dict__
 
     def test_volume_roi_write_read_mat(self, tmp_path):
@@ -1109,8 +1118,10 @@ class TestToFromDict:
         roi_loaded = RegionOfInterest(dict_from_matlab(scipy.io.loadmat(mat_path)))
         assert roi.__dict__ == roi_loaded.__dict__
 
-        scipy.io.savemat(mat_path, {'instance': roi.to_dict()})
-        roi_loaded = RegionOfInterest(dict_from_matlab(scipy.io.loadmat(mat_path)['instance']))
+        scipy.io.savemat(mat_path, {"instance": roi.to_dict()})
+        roi_loaded = RegionOfInterest(
+            dict_from_matlab(scipy.io.loadmat(mat_path)["instance"])
+        )
         assert roi.__dict__ == roi_loaded.__dict__
 
     def test_surface_to_volume_roi_write_read_mat(self, tmp_path):
@@ -1140,8 +1151,10 @@ class TestToFromDict:
         roi_loaded = RegionOfInterest(dict_from_matlab(scipy.io.loadmat(mat_path)))
         assert roi.__dict__ == roi_loaded.__dict__
 
-        scipy.io.savemat(mat_path, {'instance': roi.to_dict()})
-        roi_loaded = RegionOfInterest(dict_from_matlab(scipy.io.loadmat(mat_path)['instance']))
+        scipy.io.savemat(mat_path, {"instance": roi.to_dict()})
+        roi_loaded = RegionOfInterest(
+            dict_from_matlab(scipy.io.loadmat(mat_path)["instance"])
+        )
         assert roi.__dict__ == roi_loaded.__dict__
 
     def test_mesh_and_mask_node_roi_write_read_mat(self, tmp_path):
@@ -1157,8 +1170,10 @@ class TestToFromDict:
         roi_loaded = RegionOfInterest(dict_from_matlab(scipy.io.loadmat(mat_path)))
         assert roi.__dict__ == roi_loaded.__dict__
 
-        scipy.io.savemat(mat_path, {'instance': roi.to_dict()})
-        roi_loaded = RegionOfInterest(dict_from_matlab(scipy.io.loadmat(mat_path)['instance']))
+        scipy.io.savemat(mat_path, {"instance": roi.to_dict()})
+        roi_loaded = RegionOfInterest(
+            dict_from_matlab(scipy.io.loadmat(mat_path)["instance"])
+        )
         assert roi.__dict__ == roi_loaded.__dict__
 
     def test_mesh_and_mask_elm_roi_write_read_mat(self, tmp_path):
@@ -1174,6 +1189,8 @@ class TestToFromDict:
         roi_loaded = RegionOfInterest(dict_from_matlab(scipy.io.loadmat(mat_path)))
         assert roi.__dict__ == roi_loaded.__dict__
 
-        scipy.io.savemat(mat_path, {'instance': roi.to_dict()})
-        roi_loaded = RegionOfInterest(dict_from_matlab(scipy.io.loadmat(mat_path)['instance']))
+        scipy.io.savemat(mat_path, {"instance": roi.to_dict()})
+        roi_loaded = RegionOfInterest(
+            dict_from_matlab(scipy.io.loadmat(mat_path)["instance"])
+        )
         assert roi.__dict__ == roi_loaded.__dict__

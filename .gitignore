@@ -51,3 +51,4 @@ simnibs/ccd-files/README.md
 .DS_Store
 .vscode/
 .idea/
+.ruff_cache

@@ -11,7 +11,7 @@ from simnibs.utils.simnibs_logger import logger
 
 
 def read_ini(config_file):
-    """ read .ini-file and return its content as dictionary
+    """read .ini-file and return its content as dictionary
         left-hand side should be in JSON style
         int = 1
         float = 1.2
@@ -30,12 +30,12 @@ def read_ini(config_file):
     config: dict
         Nested dictionary with parsed values for each section
     """
-    logger.info("Reading settings from "+config_file)
+    logger.info("Reading settings from " + config_file)
     cfg = configparser.ConfigParser()
     fn = cfg.read(config_file)
     if not len(fn):
         logger.error("error when reading " + config_file)
-        raise IOError('error when reading config file')
+        raise IOError("error when reading config file")
 
     # convert settings from strings to bool, int, float, string, ...
     # Note: the entry bla = 1 will be converted to int, bla = 1.0 to float!
@@ -47,9 +47,8 @@ def read_ini(config_file):
                 config[section][key] = json.loads(cfg[section][key])
             except json.decoder.JSONDecodeError:
                 logger.error(
-                    f"error when formatting {section} {key}="
-                    f"{cfg[section][key]}"
+                    f"error when formatting {section} {key}={cfg[section][key]}"
                 )
-                raise IOError('error when parsing config file')
+                raise IOError("error when parsing config file")
 
     return config

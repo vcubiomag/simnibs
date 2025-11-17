@@ -1,24 +1,25 @@
-''' Refining the TMS optimization (via grid search)
+"""Refining the TMS optimization (via grid search)
 
 Copyright (c) 2020 SimNIBS developers. Licensed under the GPL v3.
-'''
+"""
+
 import os
 from simnibs import opt_struct
 
 # Initialize structure
 tms_opt = opt_struct.TMSoptimize()
 # Subject folder
-tms_opt.subpath = 'm2m_ernie'
+tms_opt.subpath = "m2m_ernie"
 # Select output folder
-tms_opt.pathfem = 'tms_optimization_refined/'
+tms_opt.pathfem = "tms_optimization_refined/"
 # Select the coil model
-tms_opt.fnamecoil = os.path.join('legacy_and_other','Magstim_70mm_Fig8.ccd')
+tms_opt.fnamecoil = os.path.join("legacy_and_other", "Magstim_70mm_Fig8.ccd")
 # Select a target for the optimization
 tms_opt.target = [-39.7, 7.5, 65.6]
 # Optional: Use the MKL PARDISO solver
 # Will make the simulations much faster
 # but has large (approx 12GB) memory usage
-tms_opt.solver_options = 'pardiso'
+tms_opt.solver_options = "pardiso"
 
 # Set the center of the search area
 tms_opt.centre = [-52.5, 8.8, 78.7]

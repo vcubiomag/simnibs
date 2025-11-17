@@ -1,20 +1,21 @@
-''' Example of a SimNIBS tDCS optimization with a distributed target in Python
-    Run with:
+"""Example of a SimNIBS tDCS optimization with a distributed target in Python
+Run with:
 
-    simnibs_python tdcs_optimize_distributed.py
+simnibs_python tdcs_optimize_distributed.py
 
-    Copyright (c) 2020 SimNIBS developers. Licensed under the GPL v3.
-'''
+Copyright (c) 2020 SimNIBS developers. Licensed under the GPL v3.
+"""
+
 import simnibs
 
 # Initialize structure
 opt = simnibs.opt_struct.TDCSDistributedOptimize()
 # Select the leadfield file
-opt.leadfield_hdf = 'leadfield/ernie_leadfield_EEG10-10_UI_Jurak_2007.hdf5'
+opt.leadfield_hdf = "leadfield/ernie_leadfield_EEG10-10_UI_Jurak_2007.hdf5"
 # Subject path
-opt.subpath = 'm2m_ernie/'
+opt.subpath = "m2m_ernie/"
 # Select a name for the optimization
-opt.name = 'optimization/distributed'
+opt.name = "optimization/distributed"
 
 # Select a maximum total current (in A)
 opt.max_total_current = 4e-3
@@ -24,8 +25,8 @@ opt.max_individual_current = 1e-3
 opt.max_active_electrodes = 10
 
 # Image with the field we want
-opt.target_image = 'ID03_MOTOR_ICA.nii.gz'
-opt.mni_space = True # set to False if target_image is in subject space
+opt.target_image = "ID03_MOTOR_ICA.nii.gz"
+opt.mni_space = True  # set to False if target_image is in subject space
 # Target electric field intensity
 opt.intensity = 0.1
 

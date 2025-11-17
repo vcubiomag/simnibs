@@ -33,8 +33,9 @@ def rotation(
     seq = "xyz"
     if ref_frame == "intrinsic":
         seq = seq.upper()
-    m[:3,:3] = Rotation.from_euler(seq, [ax, ay, az], degrees).as_matrix()
+    m[:3, :3] = Rotation.from_euler(seq, [ax, ay, az], degrees).as_matrix()
     return m
+
 
 def scaling(sx: float, sy: float, sz: float):
     return np.array([[sx, 0, 0, 0], [0, sy, 0, 0], [0, 0, sz, 0], [0, 0, 0, 1]])
@@ -54,7 +55,7 @@ def matrix_from_params(
     sx: float = 1.0,
     sy: float = 1.0,
     sz: float = 1.0,
-    ref_frame = "extrinsic",
+    ref_frame="extrinsic",
 ):
     """Build an affine transformation matrix from a set of parameters. Applies
     scaling, rotation, and translation in that order.
@@ -66,7 +67,10 @@ def matrix_from_params(
 
 
 def fit_matched_points_analytical(
-    src_pts, tgt_pts, scale: bool = False, return_matrix: bool = True,
+    src_pts,
+    tgt_pts,
+    scale: bool = False,
+    return_matrix: bool = True,
 ):
     """Estimate a transformation (rigid body with optional scaling) which moves
     `src_pts` to fit `tgt_pts` in a least squares sense.

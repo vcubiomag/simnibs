@@ -1,23 +1,24 @@
 # -*- coding: utf-8 -*-\
-'''
-    IO functions for Gmsh .msh files
-    This program is part of the SimNIBS package.
-    Please check on www.simnibs.org how to cite our work in publications.
+"""
+IO functions for Gmsh .msh files
+This program is part of the SimNIBS package.
+Please check on www.simnibs.org how to cite our work in publications.
 
-    Copyright (C) 2013-2020 Andre Antunes, Guilherme B Saturnino, Kristoffer H Madsen
+Copyright (C) 2013-2020 Andre Antunes, Guilherme B Saturnino, Kristoffer H Madsen
 
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or any later version.
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or any later version.
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-'''
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+"""
+
 from __future__ import division
 from __future__ import print_function
 import tempfile
@@ -50,7 +51,13 @@ from simnibs.utils.mesh_element_properties import ElementTags
 from ..utils.spawn_process import spawn_process
 from ..utils.transformations import nifti_transform
 from . import gmsh_view
-from ..utils.file_finder import HEMISPHERES, get_reference_surf, path2bin, SubjectFiles, FreeSurferSubject
+from ..utils.file_finder import (
+    HEMISPHERES,
+    get_reference_surf,
+    path2bin,
+    SubjectFiles,
+    FreeSurferSubject,
+)
 from . import cython_msh
 from . import cgal
 
@@ -60,29 +67,30 @@ class InvalidMeshError(ValueError):
 
 
 __all__ = [
-    'read_msh',
-    'write_msh',
-    'read_freesurfer_surface',
-    'write_freesurfer_surface',
-    'read_gifti_surface',
-    'write_gifti_surface',
-    'read_curv',
-    'write_curv',
-    'read_stl',
-    'write_stl',
-    'read_off',
-    'write_off',
-    'write_geo_spheres',
-    'write_geo_text',
-    'Msh',
-    'Nodes',
-    'Elements',
-    'ElementData',
-    'NodeData'
+    "read_msh",
+    "write_msh",
+    "read_freesurfer_surface",
+    "write_freesurfer_surface",
+    "read_gifti_surface",
+    "write_gifti_surface",
+    "read_curv",
+    "write_curv",
+    "read_stl",
+    "write_stl",
+    "read_off",
+    "write_off",
+    "write_geo_spheres",
+    "write_geo_text",
+    "Msh",
+    "Nodes",
+    "Elements",
+    "ElementData",
+    "NodeData",
 ]
 # =============================================================================
 # CLASSES
 # =============================================================================
+
 
 class Nodes:
     """class to handle the node information:
@@ -114,22 +122,22 @@ class Nodes:
 
     def __init__(self, node_coord=None):
         # gmsh fields
-        self.node_coord = np.array([], dtype='float64')
+        self.node_coord = np.array([], dtype="float64")
         if node_coord is not None:
             self.node_coord = node_coord
 
     @property
     def nr(self):
-        ''' Number of nodes '''
+        """Number of nodes"""
         return self.node_coord.shape[0]
 
     @property
     def node_number(self):
-        ''' Node numbers (1, ..., nr) '''
-        return np.array(range(1, self.nr + 1), dtype='int32')
+        """Node numbers (1, ..., nr)"""
+        return np.array(range(1, self.nr + 1), dtype="int32")
 
     def find_closest_node(self, querry_points, return_index=False):
-        """ Finds the closest node to each point in p
+        """Finds the closest node to each point in p
 
         Parameters
         --------------------------------
@@ -149,9 +157,9 @@ class Nodes:
 
         --------------------------------------
         The indices are in the mesh listing, that starts at one!
-       """
+        """
         if len(self.node_coord) == 0:
-            raise InvalidMeshError('Mesh has no nodes defined')
+            raise InvalidMeshError("Mesh has no nodes defined")
 
         kd_tree = scipy.spatial.cKDTree(self.node_coord)
         _, indexes = kd_tree.query(querry_points)
@@ -177,7 +185,7 @@ class Nodes:
 
 
 class Elements:
-    """ Mesh elements.
+    """Mesh elements.
 
     Can only handle triangles and tetrahedra!
 
@@ -214,76 +222,75 @@ class Elements:
 
     def __init__(self, triangles=None, tetrahedra=None, points=None, lines=None):
         # gmsh fields
-        self.elm_type = np.zeros(0, 'int8')
-        self.tag1 = np.zeros(0, dtype='int16')
-        self.tag2 = np.zeros(0, dtype='int16')
-        self.node_number_list = np.zeros((0, 4), dtype='int32')
+        self.elm_type = np.zeros(0, "int8")
+        self.tag1 = np.zeros(0, dtype="int16")
+        self.tag2 = np.zeros(0, dtype="int16")
+        self.node_number_list = np.zeros((0, 4), dtype="int32")
 
         if points is not None:
             assert len(points.shape) == 1
             assert np.all(points > 0), "Node count should start at 1"
-            self.node_number_list = np.zeros(
-                (points.shape[0], 4), dtype='int32')
-            self.node_number_list[:, 0] = points.astype('int32')
+            self.node_number_list = np.zeros((points.shape[0], 4), dtype="int32")
+            self.node_number_list[:, 0] = points.astype("int32")
             self.node_number_list[:, 1:] = -1
-            self.elm_type = np.ones((self.nr,), dtype='int32') * 15
+            self.elm_type = np.ones((self.nr,), dtype="int32") * 15
 
         if lines is not None:
             assert lines.shape[1] == 2
             assert np.all(lines > 0), "Node count should start at 1"
-            self.node_number_list = np.zeros(
-                (lines.shape[0], 4), dtype='int32')
-            self.node_number_list[:, :2] = lines.astype('int32')
+            self.node_number_list = np.zeros((lines.shape[0], 4), dtype="int32")
+            self.node_number_list[:, :2] = lines.astype("int32")
             self.node_number_list[:, 2:] = -1
-            self.elm_type = np.ones((self.nr,), dtype='int32') * 1
+            self.elm_type = np.ones((self.nr,), dtype="int32") * 1
 
         if triangles is not None:
             assert triangles.shape[1] == 3
             assert np.all(triangles > 0), "Node count should start at 1"
-            self.node_number_list = np.zeros(
-                (triangles.shape[0], 4), dtype='int32')
-            self.node_number_list[:, :3] = triangles.astype('int32')
+            self.node_number_list = np.zeros((triangles.shape[0], 4), dtype="int32")
+            self.node_number_list[:, :3] = triangles.astype("int32")
             self.node_number_list[:, 3] = -1
-            self.elm_type = np.ones((self.nr,), dtype='int32') * 2
+            self.elm_type = np.ones((self.nr,), dtype="int32") * 2
 
         if tetrahedra is not None:
             assert tetrahedra.shape[1] == 4
             assert np.all(tetrahedra > 0), "Node count should start at 1"
             if len(self.node_number_list) == 0:
-                self.node_number_list = tetrahedra.astype('int32')
-                self.elm_type = np.ones((self.nr,), dtype='int32') * 4
+                self.node_number_list = tetrahedra.astype("int32")
+                self.elm_type = np.ones((self.nr,), dtype="int32") * 4
             else:
                 self.node_number_list = np.vstack(
-                    (self.node_number_list, tetrahedra.astype('int32')))
+                    (self.node_number_list, tetrahedra.astype("int32"))
+                )
                 self.elm_type = np.append(
-                    self.elm_type, np.ones(len(tetrahedra), dtype='int32') * 4)
+                    self.elm_type, np.ones(len(tetrahedra), dtype="int32") * 4
+                )
 
         if len(self.node_number_list) > 0:
-            self.tag1 = np.ones((self.nr,), dtype='int32')
-            self.tag2 = np.ones((self.nr,), dtype='int32')
+            self.tag1 = np.ones((self.nr,), dtype="int32")
+            self.tag2 = np.ones((self.nr,), dtype="int32")
 
     @property
     def nr(self):
-        ''' Number of elements '''
+        """Number of elements"""
         return self.node_number_list.shape[0]
 
     @property
     def triangles(self):
-        ''' Triangle element numbers '''
+        """Triangle element numbers"""
         return self.elm_number[self.elm_type == 2]
 
     @property
     def tetrahedra(self):
-        ''' Tetrahedra element numbers '''
+        """Tetrahedra element numbers"""
         return self.elm_number[self.elm_type == 4]
 
     @property
     def elm_number(self):
-        ''' Element numbers (1, ..., nr) '''
-        return np.arange(1, self.nr + 1, dtype='int32')
+        """Element numbers (1, ..., nr)"""
+        return np.arange(1, self.nr + 1, dtype="int32")
 
     def find_all_elements_with_node(self, node_nr):
-        """ Finds all elements that have a given node
+        """Finds all elements that have a given node
 
         Parameters
         -----------------
@@ -296,14 +303,12 @@ class Elements:
             array with indices of element numbers
 
         """
-        elm_with_node = np.any(
-            np.isin(self.node_number_list, node_nr),
-            axis=1)
+        elm_with_node = np.any(np.isin(self.node_number_list, node_nr), axis=1)
 
         return self.elm_number[elm_with_node]
 
     def find_th_with_node(self, node_nr):
-        """ Finds tetrahedra that have a given node
+        """Finds tetrahedra that have a given node
 
         Parameters
         -----------------
@@ -316,17 +321,16 @@ class Elements:
             array with indices of tetrahedra numbers
 
         """
-        elm_with_node = np.any(
-            np.isin(self.node_number_list, node_nr),
-            axis=1)
+        elm_with_node = np.any(np.isin(self.node_number_list, node_nr), axis=1)
 
-        th_with_node = \
-            np.isin(self.elm_number[elm_with_node], self.elm_number[self.elm_type == 4])
+        th_with_node = np.isin(
+            self.elm_number[elm_with_node], self.elm_number[self.elm_type == 4]
+        )
 
         return self.elm_number[elm_with_node][th_with_node]
 
     def find_neighbouring_nodes(self, node_nr):
-        """ Finds the nodes that share an element with the specified node
+        """Finds the nodes that share an element with the specified node
 
         Parameters
         -----------------------------
@@ -346,8 +350,8 @@ class Elements:
 
         """
         elm_with_node = np.array(
-            sum(self.node_number_list[:, i] == node_nr for i in range(4)),
-            dtype=bool)
+            sum(self.node_number_list[:, i] == node_nr for i in range(4)), dtype=bool
+        )
         all_neighbours = self.node_number_list[elm_with_node, :].reshape(-1)
         all_neighbours = np.unique(all_neighbours)
         all_neighbours = all_neighbours[all_neighbours != node_nr]
@@ -355,7 +359,7 @@ class Elements:
         return np.array(all_neighbours, dtype=int)
 
     def get_faces(self, tetrahedra_indexes=None):
-        ''' Creates a list of nodes in each face and a list of faces in each tetrahedra
+        """Creates a list of nodes in each face and a list of faces in each tetrahedra
 
         Parameters
         ----------------
@@ -373,7 +377,7 @@ class Elements:
             List of tetrahedron adjacent to each face, filled with -1 if a face is in a
             single tetrahedron. Not in the normal element ordering, but only in the order
             the tetrahedra are presented
-        '''
+        """
         if tetrahedra_indexes is None:
             tetrahedra_indexes = self.tetrahedra
         th = self[tetrahedra_indexes]
@@ -384,11 +388,11 @@ class Elements:
             return_index=True,
             return_inverse=True,
             return_counts=True,
-            axis=0)
+            axis=0,
+        )
 
         if np.any(count > 2):
-            raise InvalidMeshError(
-                'Found a face with more than 2 adjacent tetrahedra!')
+            raise InvalidMeshError("Found a face with more than 2 adjacent tetrahedra!")
         face_adjacency_list = np.argsort(inv)
         # I extend the "inv" and link all the outside faces with an artificial tetrahedra
         out_faces = np.where(count == 1)[0]
@@ -398,14 +402,13 @@ class Elements:
         # Do a sorting here just for organizing the larger indexes to the right
         face_adjacency_list = np.sort(face_adjacency_list, axis=1)
         # Finally, remove the outside faces
-        face_adjacency_list[face_adjacency_list > len(th)-1] = -1
+        face_adjacency_list[face_adjacency_list > len(th) - 1] = -1
         # TODO: handling of cases wheren count > 2?
         # I can't return unique because order matters
         return faces[idx], inv.reshape(-1, 4), face_adjacency_list
 
-
     def get_outside_faces(self, tetrahedra_indexes=None):
-        ''' Creates a list of nodes in each face that are in the outer volume
+        """Creates a list of nodes in each face that are in the outer volume
 
         Parameters
         ----------------
@@ -416,7 +419,7 @@ class Elements:
         -------------
         faces: np.ndarray
             Outside faces
-        '''
+        """
         if tetrahedra_indexes is None:
             tetrahedra_indexes = self.tetrahedra
         th = self[tetrahedra_indexes]
@@ -424,21 +427,17 @@ class Elements:
         faces = faces.reshape(-1, 3)
 
         unique, idx, count = np.unique(
-            np.sort(faces, axis=1),
-            return_index=True,
-            return_counts=True,
-            axis=0)
+            np.sort(faces, axis=1), return_index=True, return_counts=True, axis=0
+        )
 
         if np.any(count > 2):
-            warnings.warn(
-                'Found a face with more than 2 adjacent tetrahedra!')
+            warnings.warn("Found a face with more than 2 adjacent tetrahedra!")
 
         outside_faces = faces[idx[count == 1]]
         return outside_faces
 
-
     def get_surface_outline(self, triangle_indices=None):
-        """ returns the outline of a non-closed surface
+        """returns the outline of a non-closed surface
 
         Parameters
         ----------------
@@ -454,25 +453,22 @@ class Elements:
         """
         if triangle_indices is None:
             triangle_indices = self.triangles
-        tr = self[triangle_indices][:,0:3]
+        tr = self[triangle_indices][:, 0:3]
 
         edges = tr[:, [[0, 1], [1, 2], [2, 0]]]
         edges = edges.reshape(-1, 2)
 
         _, idx, count = np.unique(
-                np.sort(edges, axis=1),
-                return_index=True,
-                return_counts=True,
-                axis=0)
+            np.sort(edges, axis=1), return_index=True, return_counts=True, axis=0
+        )
 
         if np.any(count > 2):
-            warnings.warn('Found an edge with more than 2 adjacent triangles!')
+            warnings.warn("Found an edge with more than 2 adjacent triangles!")
 
         return edges[idx[count == 1]]
 
-
     def nodes_with_tag(self, tags):
-        ''' Gets all nodes indexes that are part of at least one element with the given
+        """Gets all nodes indexes that are part of at least one element with the given
         tags
 
         Parameters
@@ -484,21 +480,20 @@ class Elements:
         -------------
         nodes: ndarray of integer
             Indexes of nodes with given tag
-        '''
+        """
         nodes = np.unique(self[np.isin(self.tag1, tags)].reshape(-1))
         nodes = nodes[nodes > 0]
         return nodes
 
-
     def find_adjacent_tetrahedra(self):
-        ''' Find the tetrahedra adjacent (sharing a face) to each element
+        """Find the tetrahedra adjacent (sharing a face) to each element
 
         Returns
         ---------
         adjacent_th: N_elm x 4 array
             List of adjacent tetrahedra to each element. 1-based. -1 marks no adjacent
             tetrahedra
-        '''
+        """
         faces, th_faces, adjacency_list = self.get_faces()
         adj_th = -np.ones((self.nr, 4), dtype=int)
         # Triangles
@@ -513,12 +508,14 @@ class Elements:
                 return_index=True,
                 return_inverse=True,
                 return_counts=True,
-                axis=0)
+                axis=0,
+            )
             corresponding_face = idx[inv[n_faces:]]
             # triangles without corresponding tetrahedra
             dangling = idx[inv[n_faces:]] >= n_faces
-            adj_th[self.triangles[~dangling] - 1, :2] = \
-                    adjacency_list[corresponding_face[~dangling]]
+            adj_th[self.triangles[~dangling] - 1, :2] = adjacency_list[
+                corresponding_face[~dangling]
+            ]
 
         if len(self.tetrahedra) > 0:
             # this one is easier
@@ -534,9 +531,8 @@ class Elements:
         adj_th[adj_th >= 0] = self.tetrahedra[adj_th[adj_th >= 0]]
         return adj_th
 
-
     def _get_tet_faces_and_adjacent_tets(self):
-        ''' reconstructs the triangle faces of the tetrahedra for further use
+        """reconstructs the triangle faces of the tetrahedra for further use
             by Msh.reconstruct_unique_surface() and during mesh despiking
 
         Returns
@@ -552,11 +548,11 @@ class Elements:
         ------
             * All returned indices are 0-based !!
             * The mesh must contain only tetrahedra
-        '''
-        assert np.all(self.elm_type==4)
+        """
+        assert np.all(self.elm_type == 4)
 
         faces, th_faces, adjacency_list = self.get_faces()
-        faces = np.sort(faces,axis=1)-1
+        faces = np.sort(faces, axis=1) - 1
 
         adj_th = -np.ones((self.nr, 4), dtype=int)
         th_indexing = np.tile(np.arange(self.nr), (2, 1)).T
@@ -566,9 +562,8 @@ class Elements:
 
         return faces, th_faces.astype(int), adj_th
 
-
     def connected_components(self, element_indexes=None):
-        ''' Finds connected components
+        """Finds connected components
 
         Parameters
         ----------------
@@ -580,7 +575,7 @@ class Elements:
         -------------
         connected_comp: list of np.ndarray
             List of arrays with the indices of the elements of each connected component
-        '''
+        """
         if element_indexes is None:
             elm = self[:]
             elm_type = self.elm_type
@@ -606,8 +601,7 @@ class Elements:
         for i in range(3):
             for j in range(3):
                 M += scipy.sparse.csc_matrix(
-                    (ones, (elm[tr, i], elm[tr, j])),
-                    shape=M.shape
+                    (ones, (elm[tr, i], elm[tr, j])), shape=M.shape
                 )
         # Add Tetrahedra
         th = elm_type == 4
@@ -615,8 +609,7 @@ class Elements:
         for i in range(4):
             for j in range(4):
                 M += scipy.sparse.csc_matrix(
-                    (ones, (elm[th, i], elm[th, j])),
-                    shape=M.shape
+                    (ones, (elm[th, i], elm[th, j])), shape=M.shape
                 )
         # Run connected component analysis
         n_comp, labels = scipy.sparse.csgraph.connected_components(M, directed=False)
@@ -631,36 +624,30 @@ class Elements:
         return components
 
     def node_elm_adjacency(self):
-        ''' Generates a sparse matrix with element indexes adjacent to each node
+        """Generates a sparse matrix with element indexes adjacent to each node
 
         Returns
         ----------
         M: scipy.sparse.csr_matrix
             Sparse matrix such that M[node_idx].data = adj_elm_index
-        '''
+        """
         n_nodes = np.max(self.node_number_list)
-        #indptr = np.zeros(n_nodes + 1, int)
+        # indptr = np.zeros(n_nodes + 1, int)
         M = scipy.sparse.csr_matrix((n_nodes + 1, self.nr + 1), dtype=int)
         tr = self[self.triangles, :3]
         tr_idx = self.triangles
         for i in range(3):
-            M += scipy.sparse.csr_matrix(
-                (tr_idx, (tr[:, i], tr_idx)),
-                shape=M.shape
-                )
+            M += scipy.sparse.csr_matrix((tr_idx, (tr[:, i], tr_idx)), shape=M.shape)
 
         th = self[self.tetrahedra]
         th_idx = self.tetrahedra
         for i in range(4):
-            M += scipy.sparse.csr_matrix(
-                (th_idx, (th[:, i], th_idx)),
-                shape=M.shape
-                )
+            M += scipy.sparse.csr_matrix((th_idx, (th[:, i], th_idx)), shape=M.shape)
 
         return M
 
     def add_triangles(self, triangles, tag):
-        ''' Add triangles to mesh in-place
+        """Add triangles to mesh in-place
 
         Parameters
         -----------
@@ -668,9 +655,9 @@ class Elements:
             Triangles to be added to mesh
         tags: int or (N,) array
             Tag to be used for these triangles
-        '''
+        """
         if triangles.shape[1] != 3:
-            raise ValueError('triangles should be a Nx3 array')
+            raise ValueError("triangles should be a Nx3 array")
         n_add = triangles.shape[0]
         try:
             n_tag = len(tag)
@@ -679,31 +666,17 @@ class Elements:
         else:
             if n_tag != n_add:
                 raise ValueError(
-                    'Number of tags show be the same as'
-                    ' the number of triangles'
+                    "Number of tags show be the same as the number of triangles"
                 )
             tag = np.reshape(tag, n_add)
             tag = tag.astype(int)
 
-        elm_type = 2*np.ones(n_add, dtype=int)
+        elm_type = 2 * np.ones(n_add, dtype=int)
         node_number_list = np.hstack((triangles, -np.ones((n_add, 1), dtype=int)))
-        self.node_number_list = np.vstack((
-            node_number_list,
-            self.node_number_list
-        ))
-        self.elm_type = np.hstack((
-            elm_type,
-            self.elm_type
-        ))
-        self.tag1 = np.hstack((
-            tag,
-            self.tag1
-        ))
-        self.tag2 = np.hstack((
-            tag,
-            self.tag2
-        ))
-
+        self.node_number_list = np.vstack((node_number_list, self.node_number_list))
+        self.elm_type = np.hstack((elm_type, self.elm_type))
+        self.tag1 = np.hstack((tag, self.tag1))
+        self.tag2 = np.hstack((tag, self.tag2))
 
     def __getitem__(self, index):
         return _getitem_one_indexed(self.node_number_list, index)
@@ -715,16 +688,16 @@ class Elements:
             return False
 
     def __str__(self):
-        s = ''
-        s += 'Nr elements: {0}\n'.format(self.nr)
-        s += 'elm types: {0}\n'.format(self.elm_type)
-        s += 'tags: {0}\n'.format(self.tag1)
-        s += 'node list: {0}'.format(self.node_number_list)
+        s = ""
+        s += "Nr elements: {0}\n".format(self.nr)
+        s += "elm types: {0}\n".format(self.elm_type)
+        s += "tags: {0}\n".format(self.tag1)
+        s += "node list: {0}".format(self.node_number_list)
         return s
 
 
 def make_surface_mesh(vertices, faces):
-    """Convenience function for constructing a triangulated surface mesh. """
+    """Convenience function for constructing a triangulated surface mesh."""
     return Msh(Nodes(vertices), Elements(faces))
 
 
@@ -758,14 +731,14 @@ class Msh:
         name of file
     binary: bool
         wheather or not the mesh was in binary format
-   """
+    """
 
-    def __init__(self, nodes:Nodes=None, elements:Elements=None, fn=None):
+    def __init__(self, nodes: Nodes = None, elements: Elements = None, fn=None):
         self.nodes = Nodes()
         self.elm = Elements()
         self.nodedata: list[NodeData] = []
         self.elmdata: list[ElementData] = []
-        self.fn = ''  # file name to save msh
+        self.fn = ""  # file name to save msh
 
         if nodes is not None:
             self.nodes = nodes
@@ -777,22 +750,21 @@ class Msh:
 
     @property
     def field(self):
-        '''Dictionary of fields indexed by their name'''
-        return dict(
-            [(data.field_name, data) for data in self.nodedata + self.elmdata])
+        """Dictionary of fields indexed by their name"""
+        return dict([(data.field_name, data) for data in self.nodedata + self.elmdata])
 
     def write(self, out_fn):
-        ''' Writes out the mesh as a ".msh" file
+        """Writes out the mesh as a ".msh" file
 
         Parameters
         ---------------
         out_fn: str
             Name of output file
-        '''
+        """
         write_msh(self, out_fn)
 
     def crop_mesh(self, tags=None, elm_type=None, nodes=None, elements=None):
-        """ Crops the specified tags from the mesh
+        """Crops the specified tags from the mesh
         Generates a new mesh, with only the specified tags
         The nodes are also reordered
 
@@ -828,7 +800,7 @@ class Msh:
         if tags is None and elm_type is None and nodes is None and elements is None:
             raise ValueError("At least one type of crop must be specified")
 
-        elm_keep = np.zeros((self.elm.nr, ), dtype=bool)
+        elm_keep = np.zeros((self.elm.nr,), dtype=bool)
 
         if tags is not None:
             elm_keep += np.isin(self.elm.tag1, tags)
@@ -837,7 +809,9 @@ class Msh:
             elm_keep += np.isin(self.elm.elm_type, elm_type)
 
         if nodes is not None:
-            elm_keep += np.any(np.isin(self.elm.node_number_list, nodes).reshape(-1, 4), axis=1)
+            elm_keep += np.any(
+                np.isin(self.elm.node_number_list, nodes).reshape(-1, 4), axis=1
+            )
 
         if elements is not None:
             elm_keep += np.isin(self.elm.elm_number, elements)
@@ -854,8 +828,8 @@ class Msh:
         nr_unique = np.size(unique_nodes)
 
         # creates a dictionary
-        nodes_dict = np.zeros(self.nodes.nr + 1, dtype='int')
-        nodes_dict[unique_nodes] = np.arange(1, 1 + nr_unique, dtype='int32')
+        nodes_dict = np.zeros(self.nodes.nr + 1, dtype="int")
+        nodes_dict[unique_nodes] = np.arange(1, 1 + nr_unique, dtype="int32")
 
         # Gets the new node numbers
         node_number_list = nodes_dict[self.elm.node_number_list[idx, :]]
@@ -885,14 +859,13 @@ class Msh:
 
         for ed in self.elmdata:
             cropped.elmdata.append(
-                ElementData(ed.value[idx],
-                            ed.field_name,
-                            mesh=cropped))
+                ElementData(ed.value[idx], ed.field_name, mesh=cropped)
+            )
 
         return cropped
 
     def join_mesh(self, other):
-        """ Join the current mesh with another
+        """Join the current mesh with another
 
         Parameters
         -----------
@@ -914,11 +887,13 @@ class Msh:
         joined.nodedata = []
         other = copy.deepcopy(other)
 
-        joined.nodes.node_coord = np.vstack([joined.nodes.node_coord,
-                                             other.nodes.node_coord])
+        joined.nodes.node_coord = np.vstack(
+            [joined.nodes.node_coord, other.nodes.node_coord]
+        )
         other_node_number_list = other.elm.node_number_list + self.nodes.nr
-        joined.elm.node_number_list = np.vstack([joined.elm.node_number_list,
-                                                 other_node_number_list])
+        joined.elm.node_number_list = np.vstack(
+            [joined.elm.node_number_list, other_node_number_list]
+        )
         joined.elm.tag1 = np.hstack([joined.elm.tag1, other.elm.tag1])
         joined.elm.tag2 = np.hstack([joined.elm.tag2, other.elm.tag2])
         joined.elm.elm_type = np.hstack([joined.elm.elm_type, other.elm.elm_type])
@@ -938,31 +913,43 @@ class Msh:
         for nd in self.nodedata:
             assert len(nd.value) == self.nodes.nr
             pad_length = [(0, other.nodes.nr)] + [(0, 0)] * (nd.value.ndim - 1)
-            new_values = np.pad(nd.value.astype(float), pad_length, 'constant', constant_values=np.nan)
+            new_values = np.pad(
+                nd.value.astype(float), pad_length, "constant", constant_values=np.nan
+            )
             joined.nodedata.append(NodeData(new_values, nd.field_name, mesh=joined))
 
         for ed in self.elmdata:
             assert len(ed.value) == self.elm.nr
             pad_length = [(0, other.elm.nr)] + [(0, 0)] * (ed.value.ndim - 1)
-            new_values = np.pad(ed.value.astype(float), pad_length, 'constant', constant_values=np.nan)
-            joined.elmdata.append(ElementData(new_values[new_elm_order], ed.field_name, mesh=joined))
+            new_values = np.pad(
+                ed.value.astype(float), pad_length, "constant", constant_values=np.nan
+            )
+            joined.elmdata.append(
+                ElementData(new_values[new_elm_order], ed.field_name, mesh=joined)
+            )
 
         for nd in other.nodedata:
             assert len(nd.value) == other.nodes.nr
             pad_length = [(self.nodes.nr, 0)] + [(0, 0)] * (nd.value.ndim - 1)
-            new_values = np.pad(nd.value.astype(float), pad_length, 'constant', constant_values=np.nan)
+            new_values = np.pad(
+                nd.value.astype(float), pad_length, "constant", constant_values=np.nan
+            )
             joined.nodedata.append(NodeData(new_values, nd.field_name, mesh=joined))
 
         for ed in other.elmdata:
             assert len(ed.value) == other.elm.nr
             pad_length = [(self.elm.nr, 0)] + [(0, 0)] * (ed.value.ndim - 1)
-            new_values = np.pad(ed.value.astype(float), pad_length, 'constant', constant_values=np.nan)
-            joined.elmdata.append(ElementData(new_values[new_elm_order], ed.field_name, mesh=joined))
+            new_values = np.pad(
+                ed.value.astype(float), pad_length, "constant", constant_values=np.nan
+            )
+            joined.elmdata.append(
+                ElementData(new_values[new_elm_order], ed.field_name, mesh=joined)
+            )
 
         return joined
 
     def remove_from_mesh(self, tags=None, elm_type=None, nodes=None, elements=None):
-        """ Removes the specified tags from the mesh
+        """Removes the specified tags from the mesh
         Generates a new mesh, with the specified tags removed
         The nodes are also reordered
 
@@ -1000,7 +987,7 @@ class Msh:
         if tags is None and elm_type is None and nodes is None and elements is None:
             raise ValueError("At least one type of crop must be specified")
 
-        elm_keep = np.ones((self.elm.nr, ), dtype=bool)
+        elm_keep = np.ones((self.elm.nr,), dtype=bool)
 
         if tags is not None:
             elm_keep *= ~np.isin(self.elm.tag1, tags)
@@ -1010,10 +997,8 @@ class Msh:
 
         if nodes is not None:
             elm_keep *= ~np.all(
-                np.isin(
-                    self.elm.node_number_list,
-                    np.append(nodes, -1)
-                ).reshape(-1, 4), axis=1
+                np.isin(self.elm.node_number_list, np.append(nodes, -1)).reshape(-1, 4),
+                axis=1,
             )
 
         if elements is not None:
@@ -1024,7 +1009,7 @@ class Msh:
         return mesh
 
     def elements_baricenters(self):
-        """ Calculates the baricenter of the elements
+        """Calculates the baricenter of the elements
 
         Returns
         ------------
@@ -1033,26 +1018,24 @@ class Msh:
 
         """
         bar = ElementData(
-            np.zeros((self.elm.nr, 3), dtype=float),
-            'baricenter', mesh=self)
+            np.zeros((self.elm.nr, 3), dtype=float), "baricenter", mesh=self
+        )
         bar.mesh = self
         th_indexes = self.elm.tetrahedra
         tr_indexes = self.elm.triangles
 
         if len(th_indexes) > 0:
-            bar[th_indexes] = np.average(
-                self.nodes[self.elm[th_indexes]],
-                axis=1)
+            bar[th_indexes] = np.average(self.nodes[self.elm[th_indexes]], axis=1)
 
         if len(tr_indexes) > 0:
             bar[tr_indexes] = np.average(
-                self.nodes[self.elm[tr_indexes][:, :3]],
-                axis=1)
+                self.nodes[self.elm[tr_indexes][:, :3]], axis=1
+            )
 
         return bar
 
     def elements_volumes_and_areas(self):
-        """ Calculates the volumes of tetrahedra and areas of triangles
+        """Calculates the volumes of tetrahedra and areas of triangles
 
         Returns
         ----------
@@ -1063,8 +1046,7 @@ class Msh:
         ------
             In the mesh's unit (normally mm)
         """
-        vol = ElementData(np.zeros(self.elm.nr, dtype=float),
-                          'volumes_and_areas')
+        vol = ElementData(np.zeros(self.elm.nr, dtype=float), "volumes_and_areas")
 
         tr_indexes = self.elm.triangles
         node_tr = self.nodes[self.elm[tr_indexes, :3]]
@@ -1076,14 +1058,19 @@ class Msh:
         th_indexes = self.elm.tetrahedra
         node_th = self.nodes[self.elm[th_indexes]]
         M = node_th[:, 1:] - node_th[:, 0, None]
-        vol[th_indexes] = np.abs(np.linalg.det(M)) / 6.
+        vol[th_indexes] = np.abs(np.linalg.det(M)) / 6.0
 
         return vol
 
-    def find_closest_element(self, querry_points, return_index=False,
-                             elements_of_interest=None,
-                             k=1, return_distance=False):
-        """ Finds the closest element to each point in p
+    def find_closest_element(
+        self,
+        querry_points,
+        return_index=False,
+        elements_of_interest=None,
+        k=1,
+        return_distance=False,
+    ):
+        """Finds the closest element to each point in p
 
         Parameters
         --------------------------------
@@ -1113,7 +1100,7 @@ class Msh:
 
         """
         if len(self.elm.node_number_list) == 0:
-            raise ValueError('Mesh has no elements defined')
+            raise ValueError("Mesh has no elements defined")
 
         baricenters = self.elements_baricenters()
         if elements_of_interest is not None:
@@ -1140,7 +1127,7 @@ class Msh:
             return coords
 
     def elm_node_coords(self, elm_nr=None, tag=None, elm_type=None):
-        """ Returns the position of each of the element's nodes
+        """Returns the position of each of the element's nodes
 
         Arguments
         -----------------------------
@@ -1157,30 +1144,31 @@ class Msh:
             Array with node position of every element
             For triangles, the fourth coordinates are 0,0,0
         """
-        elements_to_return = np.ones((self.elm.nr, ), dtype=bool)
+        elements_to_return = np.ones((self.elm.nr,), dtype=bool)
 
         if elm_nr is not None:
             elements_to_return[elm_nr] = True
 
         if elm_type is not None:
             elements_to_return = np.logical_and(
-                elements_to_return,
-                np.isin(self.elm.elm_type, elm_type))
+                elements_to_return, np.isin(self.elm.elm_type, elm_type)
+            )
 
         if tag is not None:
             elements_to_return = np.logical_and(
-                elements_to_return,
-                np.isin(self.elm.tag1, tag))
+                elements_to_return, np.isin(self.elm.tag1, tag)
+            )
 
         tmp_node_coord = np.vstack((self.nodes.node_coord, [0, 0, 0]))
 
-        elm_node_coords = \
-            tmp_node_coord[self.elm.node_number_list[elements_to_return, :] - 1]
+        elm_node_coords = tmp_node_coord[
+            self.elm.node_number_list[elements_to_return, :] - 1
+        ]
 
         return elm_node_coords
 
-    def write_hdf5(self, hdf5_fn, path='./', compression=None):
-        """ Writes a HDF5 file with mesh information
+    def write_hdf5(self, hdf5_fn, path="./", compression=None):
+        """Writes a HDF5 file with mesh information
 
         Parameters
         -----------
@@ -1192,33 +1180,37 @@ class Msh:
             compression strategy: "gzip", "lzf", "szip", None
 
         """
-        with h5py.File(hdf5_fn, 'a') as f:
+        with h5py.File(hdf5_fn, "a") as f:
             try:
                 g = f.create_group(path)
             except ValueError:
                 g = f[path]
-            if 'elm' in g.keys():
-                del g['elm']
-            if 'nodes' in g.keys():
-                del g['nodes']
-            if 'fields' in g.keys():
-                del g['fields']
-            g.attrs['fn'] = self.fn
-            elm = g.create_group('elm')
+            if "elm" in g.keys():
+                del g["elm"]
+            if "nodes" in g.keys():
+                del g["nodes"]
+            if "fields" in g.keys():
+                del g["fields"]
+            g.attrs["fn"] = self.fn
+            elm = g.create_group("elm")
             for key, value in vars(self.elm).items():
                 elm.create_dataset(key, data=value, compression=compression)
-            node = g.create_group('nodes')
+            node = g.create_group("nodes")
             for key, value in vars(self.nodes).items():
                 node.create_dataset(key, data=value, compression=compression)
-            elmdata = g.create_group('elmdata')
+            elmdata = g.create_group("elmdata")
             for d in self.elmdata:
-                elmdata.create_dataset(d.field_name, data=d.value, compression=compression)
-            nodedata = g.create_group('nodedata')
+                elmdata.create_dataset(
+                    d.field_name, data=d.value, compression=compression
+                )
+            nodedata = g.create_group("nodedata")
             for d in self.nodedata:
-                nodedata.create_dataset(d.field_name, data=d.value, compression=compression)
+                nodedata.create_dataset(
+                    d.field_name, data=d.value, compression=compression
+                )
 
     def find_shared_nodes(self, tags):
-        ''' Finds the nodes which are shared by all given tags
+        """Finds the nodes which are shared by all given tags
 
         Parameters
         -----------
@@ -1229,9 +1221,9 @@ class Msh:
         ---------
         shared_nodes: list of integers
             List of nodes which are shared by all tags
-        '''
+        """
         if len(tags) < 2:
-            raise ValueError('Tags should have at least 2 elements')
+            raise ValueError("Tags should have at least 2 elements")
         shared_nodes = None
         for t in tags:
             nt = np.unique(self.elm[self.elm.tag1 == t])
@@ -1247,8 +1239,8 @@ class Msh:
         return shared_nodes
 
     @classmethod
-    def read_hdf5(self, hdf5_fn, path='./', load_data=True):
-        """ Reads mesh information from an hdf5 file
+    def read_hdf5(self, hdf5_fn, path="./", load_data=True):
+        """Reads mesh information from an hdf5 file
 
         Parameters
         ----------
@@ -1258,40 +1250,45 @@ class Msh:
             path in the hdf5 file where the mesh is saved
         """
         import h5py
+
         self = self()
-        with h5py.File(hdf5_fn, 'r') as f:
+        with h5py.File(hdf5_fn, "r") as f:
             g = f[path]
             try:
-                self.fn = g.attrs['fn']
+                self.fn = g.attrs["fn"]
             except KeyError:
                 pass
             for key, value in self.elm.__dict__.items():
-                setattr(self.elm, key, np.squeeze(np.array(g['elm'][key])))
+                setattr(self.elm, key, np.squeeze(np.array(g["elm"][key])))
             for key, value in self.nodes.__dict__.items():
                 try:
-                    setattr(self.nodes, key, np.squeeze(np.array(g['nodes'][key])))
+                    setattr(self.nodes, key, np.squeeze(np.array(g["nodes"][key])))
                 except KeyError:
                     pass
             if load_data:
                 try:
-                    for field_name, field in g['elmdata'].items():
+                    for field_name, field in g["elmdata"].items():
                         self.elmdata.append(
-                            ElementData(np.squeeze(np.array(field)), field_name, mesh=self))
+                            ElementData(
+                                np.squeeze(np.array(field)), field_name, mesh=self
+                            )
+                        )
                 except KeyError:
                     pass
 
                 try:
-                    for field_name, field in g['nodedata'].items():
+                    for field_name, field in g["nodedata"].items():
                         self.nodedata.append(
-                            NodeData(np.squeeze(np.array(field)), field_name, mesh=self))
+                            NodeData(np.squeeze(np.array(field)), field_name, mesh=self)
+                        )
                 except KeyError:
                     pass
 
         return self
 
     def open_in_gmsh(self):
-        ''' Opens the mesh in gmsh '''
-        f, fn_tmp = tempfile.mkstemp(suffix='.msh')
+        """Opens the mesh in gmsh"""
+        f, fn_tmp = tempfile.mkstemp(suffix=".msh")
         os.close(f)
         open_in_gmsh(fn_tmp)
         os.remove(fn_tmp)
@@ -1303,7 +1300,7 @@ class Msh:
             return False
 
     def tetrahedra_quality(self):
-        """ calculates the quality measures of the tetrahedra
+        """calculates the quality measures of the tetrahedra
 
         Returns
         ----------
@@ -1318,13 +1315,16 @@ class Msh:
         M = self.nodes[self.elm[tetrahedra]]
         V = self.elements_volumes_and_areas()[tetrahedra]
         # Edges
-        E = np.array([
-            M[:, 0] - M[:, 1],
-            M[:, 0] - M[:, 2],
-            M[:, 0] - M[:, 3],
-            M[:, 1] - M[:, 2],
-            M[:, 1] - M[:, 3],
-            M[:, 2] - M[:, 3]])
+        E = np.array(
+            [
+                M[:, 0] - M[:, 1],
+                M[:, 0] - M[:, 2],
+                M[:, 0] - M[:, 3],
+                M[:, 1] - M[:, 2],
+                M[:, 1] - M[:, 3],
+                M[:, 2] - M[:, 3],
+            ]
+        )
         E = np.swapaxes(E, 0, 1)
         # Edge length
         S = np.linalg.norm(E, axis=2)
@@ -1336,58 +1336,64 @@ class Msh:
         delta = np.sqrt(s * (s - a) * (s - b) * (s - c))
         CR = delta / (6 * V)
         # Surface area of each face
-        SA = np.linalg.norm( [
-            np.cross(E[:, 0], E[:, 1]),
-            np.cross(E[:, 0], E[:, 2]),
-            np.cross(E[:, 1], E[:, 2]),
-            np.cross(E[:, 3], E[:, 4])], axis=2) * 0.5
+        SA = (
+            np.linalg.norm(
+                [
+                    np.cross(E[:, 0], E[:, 1]),
+                    np.cross(E[:, 0], E[:, 2]),
+                    np.cross(E[:, 1], E[:, 2]),
+                    np.cross(E[:, 3], E[:, 4]),
+                ],
+                axis=2,
+            )
+            * 0.5
+        )
         SA = np.swapaxes(SA, 0, 1)
         # Inscribed radius
         # https://en.wikipedia.org/wiki/Tetrahedron
         IR = 3 * V / np.sum(SA, axis=1)
         # intialize stuff
         radius_edge_ratio = ElementData(
-            np.nan*np.zeros(self.elm.nr),
-            'radius_edge_ratio'
+            np.nan * np.zeros(self.elm.nr), "radius_edge_ratio"
         )
         ir_cr_ratio = ElementData(
-            np.nan*np.zeros(self.elm.nr),
-            'inscribed_radius_circunscribed_radius_ratio'
+            np.nan * np.zeros(self.elm.nr),
+            "inscribed_radius_circunscribed_radius_ratio",
         )
-        radius_edge_ratio[tetrahedra] = CR/np.min(S, axis=1)
-        ir_cr_ratio[tetrahedra] = IR/CR
+        radius_edge_ratio[tetrahedra] = CR / np.min(S, axis=1)
+        ir_cr_ratio[tetrahedra] = IR / CR
         return radius_edge_ratio, ir_cr_ratio
 
     def triangle_angles(self):
-        ''' Calculates minimum angle of the mesh triangles
+        """Calculates minimum angle of the mesh triangles
 
         Returns
         --------
         min_triangle_angles: ElementData
             ElementData field with the angles for each triangle, in degrees
-        '''
+        """
         tr_indexes = self.elm.triangles
         node_tr = self.nodes[self.elm[tr_indexes, :3]]
         a = np.linalg.norm(node_tr[:, 1] - node_tr[:, 0], axis=1)
         b = np.linalg.norm(node_tr[:, 2] - node_tr[:, 0], axis=1)
         c = np.linalg.norm(node_tr[:, 2] - node_tr[:, 1], axis=1)
-        cos_angles = np.vstack([
-            (a**2 + b**2 - c**2) / (2*a*b),
-            (a**2 + c**2 - b**2) / (2*a*c),
-            (b**2 + c**2 - a**2) / (2*b*c),
-        ]).T
+        cos_angles = np.vstack(
+            [
+                (a**2 + b**2 - c**2) / (2 * a * b),
+                (a**2 + c**2 - b**2) / (2 * a * c),
+                (b**2 + c**2 - a**2) / (2 * b * c),
+            ]
+        ).T
         angles = np.rad2deg(np.arccos(cos_angles))
 
-        angle_field  = ElementData(
-            np.nan*np.zeros((self.elm.nr, 3)),
-            'min_triangle_angles'
+        angle_field = ElementData(
+            np.nan * np.zeros((self.elm.nr, 3)), "min_triangle_angles"
         )
         angle_field[tr_indexes] = angles
         return angle_field
 
-
     def triangle_normals(self, smooth=False):
-        """ Calculates the normals of triangles
+        """Calculates the normals of triangles
 
         Parameters
         ------------
@@ -1399,10 +1405,7 @@ class Msh:
             normals of triangles, zero at the tetrahedra
 
         """
-        normals = ElementData(
-            np.zeros((self.elm.nr, 3), dtype=float),
-            'normals'
-        )
+        normals = ElementData(np.zeros((self.elm.nr, 3), dtype=float), "normals")
         tr_indexes = self.elm.triangles
         node_tr = self.nodes[self.elm[tr_indexes, :3]]
         sideA = node_tr[:, 1] - node_tr[:, 0]
@@ -1422,58 +1425,58 @@ class Msh:
             n = np.mean(normals_nodes[tr], axis=1)
             normals[tr_indexes] = n / np.linalg.norm(n, axis=1)[:, None]
         else:
-            raise ValueError('smooth parameter must be >= 0')
+            raise ValueError("smooth parameter must be >= 0")
         return normals
 
     def nodes_volumes_or_areas(self):
-        ''' Return the volume (volume mesh) if area (surface mesh) of all nodes
+        """Return the volume (volume mesh) if area (surface mesh) of all nodes
         Only works for ordered values of mesh and node indices
 
         Returns
         -------------
         nd: NodeData
             NodeData structure with the volume or area of each node
-        '''
+        """
         nd = np.zeros(self.nodes.nr)
         if len(self.elm.tetrahedra) > 0:
-            name = 'volumes'
+            name = "volumes"
             volumes = self.elements_volumes_and_areas()[self.elm.tetrahedra]
             th_nodes = self.elm[self.elm.tetrahedra] - 1
             for i in range(4):
-                nd[:np.max(th_nodes[:, i]) + 1] += \
-                    np.bincount(th_nodes[:, i], volumes / 4.)
+                nd[: np.max(th_nodes[:, i]) + 1] += np.bincount(
+                    th_nodes[:, i], volumes / 4.0
+                )
 
         elif len(self.elm.triangles) > 0:
-            name = 'areas'
+            name = "areas"
             areas = self.elements_volumes_and_areas()[self.elm.triangles]
             tr_nodes = self.elm[self.elm.triangles] - 1
             for i in range(3):
-                nd[:np.max(tr_nodes[:, i]) + 1] += \
-                    np.bincount(tr_nodes[:, i], areas / 3.)
+                nd[: np.max(tr_nodes[:, i]) + 1] += np.bincount(
+                    tr_nodes[:, i], areas / 3.0
+                )
 
         return NodeData(nd, name)
 
     def nodes_areas(self):
-        ''' Areas for all nodes in a surface
+        """Areas for all nodes in a surface
 
         Returns
         ---------
         nd: NodeData
             NodeData structure with normals for each node
 
-        '''
+        """
         areas = self.elements_volumes_and_areas()[self.elm.triangles]
         triangle_nodes = self.elm[self.elm.triangles, :3] - 1
         nd = np.bincount(
-            triangle_nodes.reshape(-1),
-            np.repeat(areas/3., 3), self.nodes.nr
+            triangle_nodes.reshape(-1), np.repeat(areas / 3.0, 3), self.nodes.nr
         )
 
-        return NodeData(nd, 'areas')
-
+        return NodeData(nd, "areas")
 
     def nodes_normals(self, triangles=None, smooth=0):
-        ''' Normals for all nodes in a surface
+        """Normals for all nodes in a surface
 
         Parameters
         ------------
@@ -1488,7 +1491,7 @@ class Msh:
         nd: NodeData
             NodeData structure with normals for each surface node
 
-        '''
+        """
         if triangles is None:
             elements = self.elm.triangles - 1
         else:
@@ -1503,10 +1506,11 @@ class Msh:
         nd = np.zeros((self.nodes.nr, 3))
         for s in range(smooth + 1):
             for i in range(3):
-                nd[:, i] = \
-                    np.bincount(triangle_nodes.reshape(-1),
-                                np.repeat(normals[:, i], 3),
-                                self.nodes.nr)
+                nd[:, i] = np.bincount(
+                    triangle_nodes.reshape(-1),
+                    np.repeat(normals[:, i], 3),
+                    self.nodes.nr,
+                )
 
             normals = np.sum(nd[triangle_nodes], axis=1)
             normals /= np.linalg.norm(normals, axis=1)[:, None]
@@ -1514,10 +1518,10 @@ class Msh:
         nodes = np.unique(triangle_nodes)
         nd[nodes] = nd[nodes] / np.linalg.norm(nd[nodes], axis=1)[:, None]
 
-        return NodeData(nd, 'normals')
+        return NodeData(nd, "normals")
 
     def gaussian_curvature(self):
-        ''' Calculates the Gaussian curvature at each node
+        """Calculates the Gaussian curvature at each node
 
         Returns
         ---------
@@ -1528,7 +1532,7 @@ class Msh:
         Rereferece
         -------------
         https://computergraphics.stackexchange.com/a/1721
-        '''
+        """
         nodes_areas = self.nodes_areas()[:]
         triangles_angles = np.deg2rad(
             np.nan_to_num(self.triangle_angles()[self.elm.triangles])
@@ -1536,19 +1540,16 @@ class Msh:
         triangle_nodes = self.elm[self.elm.triangles] - 1
         triangle_nodes = triangle_nodes[:, :3]
         node_angles = np.bincount(
-            triangle_nodes.reshape(-1),
-            triangles_angles.reshape(-1), self.nodes.nr
+            triangle_nodes.reshape(-1), triangles_angles.reshape(-1), self.nodes.nr
         )
-        idx = nodes_areas==0
-        nodes_areas[idx] = .1
-        gaussian_curvature = (2*np.pi - node_angles)/nodes_areas
+        idx = nodes_areas == 0
+        nodes_areas[idx] = 0.1
+        gaussian_curvature = (2 * np.pi - node_angles) / nodes_areas
         gaussian_curvature[idx] = 0
-        return NodeData(gaussian_curvature, 'gaussian_curvature')
-
-
+        return NodeData(gaussian_curvature, "gaussian_curvature")
 
     def find_tetrahedron_with_points(self, points, compute_baricentric=True):
-        ''' Finds the tetrahedron that contains each of the described points using a
+        """Finds the tetrahedron that contains each of the described points using a
         stochastic walk algorithm
 
         Parameters
@@ -1572,7 +1573,7 @@ class Msh:
         Devillers, Olivier, Sylvain Pion, and Monique Teillaud. "Walking in a
         triangulation." International Journal of Foundations of Computer Science 13.02
         (2002): 181-199.
-        '''
+        """
         #
         th_indices = self.elm.tetrahedra
         th_nodes = self.nodes[self.elm[th_indices]]
@@ -1581,10 +1582,12 @@ class Msh:
         points_min = np.min(points, axis=0)
         th_max = np.max(th_nodes, axis=1)
         th_min = np.min(th_nodes, axis=1)
-        slack = (points_max - points_min) * .05
+        slack = (points_max - points_min) * 0.05
         th_in_box = np.where(
             np.all(
-                (th_min <= points_max + slack) * (th_max >= points_min - slack), axis=1))[0]
+                (th_min <= points_max + slack) * (th_max >= points_min - slack), axis=1
+            )
+        )[0]
         th_indices = th_indices[th_in_box]
         # if all the points are outside the bounding box
         if len(th_indices) == 0:
@@ -1608,28 +1611,32 @@ class Msh:
         th_faces = np.array(th_faces, dtype=int)
         adjacency_list = np.array(adjacency_list, dtype=int)
         th_with_points = cython_msh.find_tetrahedron_with_points(
-            pts, th_nodes, closest_th, th_faces, adjacency_list)
+            pts, th_nodes, closest_th, th_faces, adjacency_list
+        )
 
         # calculate baricentric coordinates
         inside = th_with_points != -1
         if compute_baricentric:
-            M = np.transpose(th_nodes[th_with_points[inside], :3, :3] -
-                             th_nodes[th_with_points[inside], 3, None, :], (0, 2, 1))
+            M = np.transpose(
+                th_nodes[th_with_points[inside], :3, :3]
+                - th_nodes[th_with_points[inside], 3, None, :],
+                (0, 2, 1),
+            )
             baricentric = np.zeros((len(points), 4), dtype=float)
             baricentric[inside, :3] = np.linalg.solve(
-                M, points[inside] - th_nodes[th_with_points[inside], 3, :])
+                M, points[inside] - th_nodes[th_with_points[inside], 3, :]
+            )
             baricentric[inside, 3] = 1 - np.sum(baricentric[inside], axis=1)
 
         # Return indices
-        th_with_points[inside] = \
-            th_indices[th_with_points[inside]]
+        th_with_points[inside] = th_indices[th_with_points[inside]]
 
         if compute_baricentric:
             return th_with_points, baricentric
         else:
             return th_with_points
 
-        '''
+        """
         th_with_points = -np.ones(points.shape[0], dtype=int)
         # We can now start the walking algorithm
         face_order = range(4)
@@ -1652,9 +1659,10 @@ class Msh:
                             end = False
                         break
             th_with_points[i] = th_indices[t] if t != -1 else t
-        '''
+        """
+
     def test_inside_volume(self, points):
-        ''' Tests if points are iside the volume using the Möller–Trumbore intersection
+        """Tests if points are iside the volume using the Möller–Trumbore intersection
         algorithm
 
         Notice: This algorithm is vulnerable to degenerate cases (example: when the ray
@@ -1669,7 +1677,7 @@ class Msh:
         inside: ndarray
             array of booleans
 
-        '''
+        """
         triangles = self.nodes[self.elm.get_outside_faces()]
         quantities = cython_msh.calc_quantities_for_test_point_in_triangle(triangles)
         points = np.array(points, dtype=float)
@@ -1684,11 +1692,10 @@ class Msh:
         for t, b in enumerate(th_baricenters):
             for i in range(4):
                 d = th_nodes[t, face_points[i]] - b
-                assert np.linalg.det(d) > 0, \
-                    'Found a face pointing the wrong way!'
+                assert np.linalg.det(d) > 0, "Found a face pointing the wrong way!"
 
     def fix_th_node_ordering(self):
-        ''' Fixes the node ordering of tetrahedra in-place '''
+        """Fixes the node ordering of tetrahedra in-place"""
         th = self.nodes[self.elm.node_number_list[self.elm.elm_type == 4, :]]
         M = th[:, 1:] - th[:, 0, None]
         switch = self.elm.elm_type == 4
@@ -1700,7 +1707,7 @@ class Msh:
         gc.collect()
 
     def fix_tr_node_ordering(self):
-        ''' Fixes the node ordering of the triangles in-place '''
+        """Fixes the node ordering of the triangles in-place"""
         corresponding = self.find_corresponding_tetrahedra()
         triangles = np.where(self.elm.elm_type == 2)[0]
 
@@ -1711,7 +1718,7 @@ class Msh:
         baricenters = self.elements_baricenters().value
         pos_bar = baricenters[corresponding - 1] - baricenters[triangles]
 
-        dotp = np.einsum('ij, ij -> i', normals, pos_bar)
+        dotp = np.einsum("ij, ij -> i", normals, pos_bar)
         switch = triangles[dotp > 0]
 
         tmp = np.copy(self.elm.node_number_list[switch, 1])
@@ -1720,41 +1727,38 @@ class Msh:
         del tmp
         gc.collect()
 
-
     def fix_surface_labels(self):
-        ''' Fixels labels of surfaces '''
+        """Fixels labels of surfaces"""
         change = (self.elm.elm_type == 2) * (self.elm.tag1 < 1000)
         self.elm.tag1[change] += 1000
         change = (self.elm.elm_type == 2) * (self.elm.tag2 < 1000)
         self.elm.tag2[change] += 1000
 
-
     def fix_surface_orientation(self):
-        ''' Ensure that the majority of triangle normals point outwards.
-            If this is not the case, the orientation of all triangles will
-            be inversed.
-        '''
+        """Ensure that the majority of triangle normals point outwards.
+        If this is not the case, the orientation of all triangles will
+        be inversed.
+        """
         idx_tr = self.elm.elm_type == 2
         normals = self.triangle_normals()[:]
         baricenters = self.elements_baricenters()[idx_tr]
         CoG = np.mean(baricenters, axis=0)
 
-        nr_inward = sum(np.einsum("ij,ij->i", normals, baricenters-CoG)<0)
+        nr_inward = sum(np.einsum("ij,ij->i", normals, baricenters - CoG) < 0)
 
-        if nr_inward/sum(idx_tr) > 0.5:
+        if nr_inward / sum(idx_tr) > 0.5:
             buffer = self.elm.node_number_list[idx_tr, 1].copy()
             self.elm.node_number_list[idx_tr, 1] = self.elm.node_number_list[idx_tr, 2]
             self.elm.node_number_list[idx_tr, 2] = buffer
 
-
     def compact_ordering(self, node_number):
-        ''' Changes the node and element ordering so that it goes from 1 to nr_nodes
+        """Changes the node and element ordering so that it goes from 1 to nr_nodes
 
         Parameters
         --------------
         node_number: N_nodes x 1 ndarray of inte
             Node numbering in the original mesh
-        '''
+        """
         rel = int(-9999) * np.ones((np.max(node_number) + 1), dtype=int)
         rel[node_number] = np.arange(1, self.nodes.nr + 1, dtype=int)
         self.elm.node_number_list = rel[self.elm.node_number_list]
@@ -1765,11 +1769,10 @@ class Msh:
         surf_tags = np.unique(self.elm.tag1[triangles])
         for s in surf_tags:
             if s < 1000:
-                self.elm.tag1[triangles *
-                              (self.elm.tag1 == s)] += 1000
+                self.elm.tag1[triangles * (self.elm.tag1 == s)] += 1000
 
     def find_corresponding_tetrahedra(self):
-        ''' Finds the tetrahedra corresponding to each triangle
+        """Finds the tetrahedra corresponding to each triangle
 
         Returns
         ---------
@@ -1777,10 +1780,11 @@ class Msh:
            List of the element indices of the tetrahedra corresponding to each triangle.
            Note: This is in mesh ordering (starts at 1), -1 if there's no corresponding
 
-        '''
+        """
         # Look into the cache
         node_nr_list_hash = hashlib.sha1(
-            np.hstack((self.elm.tag1[:, None], self.elm.node_number_list))).hexdigest()
+            np.hstack((self.elm.tag1[:, None], self.elm.node_number_list))
+        ).hexdigest()
         try:
             if self._correspondance_node_nr_list_hash == node_nr_list_hash:
                 return self._corresponding_tetrahedra
@@ -1803,12 +1807,14 @@ class Msh:
                 to_crop.append(t - 2000)
                 to_crop.append(t - 1600)
             # Select triangles and tetrahedra with tags
-            th_of_interest = np.where((self.elm.elm_type == 4) *
-                                      np.isin(self.elm.tag1, to_crop))[0]
+            th_of_interest = np.where(
+                (self.elm.elm_type == 4) * np.isin(self.elm.tag1, to_crop)
+            )[0]
             if len(th_of_interest) == 0:
                 continue
-            tr_of_interest = np.where((self.elm.elm_type == 2) *
-                                      (self.elm.tag1 == t))[0]
+            tr_of_interest = np.where((self.elm.elm_type == 2) * (self.elm.tag1 == t))[
+                0
+            ]
 
             th = self.elm.node_number_list[th_of_interest]
             faces = th[:, [[0, 2, 1], [0, 1, 3], [0, 3, 2], [1, 2, 3]]].reshape(-1, 3)
@@ -1826,34 +1832,37 @@ class Msh:
             index = faces_argsort[tr_search] // 4
 
             # Put the values in corresponding_th_indices
-            position = np.searchsorted(self.elm.triangles,
-                                       self.elm.elm_number[tr_of_interest[has_tetra]])
-            corresponding_th_indices[position] = \
-                self.elm.elm_number[th_of_interest[index]]
+            position = np.searchsorted(
+                self.elm.triangles, self.elm.elm_number[tr_of_interest[has_tetra]]
+            )
+            corresponding_th_indices[position] = self.elm.elm_number[
+                th_of_interest[index]
+            ]
 
-        if np.any(corresponding_th_indices==-1):
+        if np.any(corresponding_th_indices == -1):
             # add triangles at the outer boundary, irrespective of tag
             # get all tet faces, except those of "air" tetrahedra (i.e., tag1 = -1)
-            idx_th_all = np.where((self.elm.elm_type == 4)*(self.elm.tag1 != -1))[0]
+            idx_th_all = np.where((self.elm.elm_type == 4) * (self.elm.tag1 != -1))[0]
             th = self.elm.node_number_list[idx_th_all]
             faces = th[:, [[0, 2, 1], [0, 1, 3], [0, 3, 2], [1, 2, 3]]]
             faces = faces.reshape(-1, 3)
             faces_hash_array = _hash_rows(faces)
             # keep only tet faces that occur once (i.e. at the outer boundary)
-            [faces_hash_array, idx_fc, counts] = np.unique(faces_hash_array,
-                                                  return_index = True,
-                                                  return_counts = True)
+            [faces_hash_array, idx_fc, counts] = np.unique(
+                faces_hash_array, return_index=True, return_counts=True
+            )
             faces_hash_array = faces_hash_array[counts == 1]
             idx_fc = idx_fc[counts == 1]
 
-            tr_of_interest = self.elm.triangles[corresponding_th_indices==-1]-1
+            tr_of_interest = self.elm.triangles[corresponding_th_indices == -1] - 1
             tr = self.elm.node_number_list[tr_of_interest, :3]
             tr_hash_array = _hash_rows(tr)
-            _, idx_tr, idx_th = np.intersect1d(tr_hash_array, faces_hash_array,
-                                               return_indices = True)
+            _, idx_tr, idx_th = np.intersect1d(
+                tr_hash_array, faces_hash_array, return_indices=True
+            )
             # recover indices
             idx_tr = tr_of_interest[idx_tr]
-            idx_th = idx_th_all[ idx_fc[idx_th]//4 ] + 1
+            idx_th = idx_th_all[idx_fc[idx_th] // 4] + 1
             corresponding_th_indices[idx_tr] = idx_th
 
         self._correspondance_node_nr_list_hash = node_nr_list_hash
@@ -1861,9 +1870,10 @@ class Msh:
         gc.collect()
         return corresponding_th_indices
 
- 
-    def calc_matsimnibs(self, center, pos_ydir, distance, skin_surface=None, msh_surf=None):
-        """ Calculate the matsimnibs matrix for TMS simulations
+    def calc_matsimnibs(
+        self, center, pos_ydir, distance, skin_surface=None, msh_surf=None
+    ):
+        """Calculate the matsimnibs matrix for TMS simulations
 
         Parameters
         -----------
@@ -1898,14 +1908,16 @@ class Msh:
 
         # Y axis
         y = pos_ydir - center
-        if np.isclose(np.linalg.norm(y), 0.):
-            raise ValueError('The coil Y axis reference is too close to the coil center! ')
+        if np.isclose(np.linalg.norm(y), 0.0):
+            raise ValueError(
+                "The coil Y axis reference is too close to the coil center! "
+            )
         y /= np.linalg.norm(y)
 
         # Normal
         normal = msh_skin.nodes_normals().value[closest]
-        if np.isclose(np.abs(y.dot(normal)), 1.):
-            raise ValueError('The coil Y axis normal to the surface! ')
+        if np.isclose(np.abs(y.dot(normal)), 1.0):
+            raise ValueError("The coil Y axis normal to the surface! ")
         z = -normal
 
         # Orthogonalize y
@@ -1925,7 +1937,7 @@ class Msh:
         return matsimnibs
 
     def elm2node_matrix(self, elm_indices=None):
-        ''' Calculates a sparse matrix to tranform from ElementData to NodeData
+        """Calculates a sparse matrix to tranform from ElementData to NodeData
         Uses Superconvergent patch recovery for volumetric data. Will not work well for
         discontinuous fields (like E, if several tissues are used)
 
@@ -1948,7 +1960,7 @@ class Msh:
             estimates. Part 1: The recovery technique." International Journal for
             Numerical Methods in Engineering 33.7 (1992): 1331-1364.
 
-        '''
+        """
         if elm_indices is None:
             tr_indices = self.elm.triangles
             th_indices = self.elm.tetrahedra
@@ -1984,8 +1996,7 @@ class Msh:
             # Calculates the quantities needed for the superconvergent patch recovery
             baricenters = self.elements_baricenters()[th_indices]
             volumes = self.elements_volumes_and_areas()[th_indices]
-            baricenters = np.hstack(
-                [np.ones((baricenters.shape[0], 1)), baricenters])
+            baricenters = np.hstack([np.ones((baricenters.shape[0], 1)), baricenters])
 
             # NOTICE: Below, I will add everything in the outer nodes to the
             # first row. I will remove it afterwards
@@ -1994,9 +2005,10 @@ class Msh:
                 for j in range(i, 4):
                     A[:, i, j] = np.bincount(
                         masked_th_nodes.reshape(-1),
-                        np.repeat(baricenters[:, i], 4) *
-                        np.repeat(baricenters[:, j], 4),
-                        minlength=self.nodes.nr + 1)
+                        np.repeat(baricenters[:, i], 4)
+                        * np.repeat(baricenters[:, j], 4),
+                        minlength=self.nodes.nr + 1,
+                    )
 
             # This here only ensures we can invert
             outside = np.isclose(A[:, 0, 0], 0)
@@ -2012,19 +2024,22 @@ class Msh:
 
             Ainv = np.linalg.inv(A)
 
-            node_pos = np.hstack(
-                [np.ones((self.nodes.nr, 1)), self.nodes.node_coord])
+            node_pos = np.hstack([np.ones((self.nodes.nr, 1)), self.nodes.node_coord])
             # Added a dummy to the first position
             node_pos = np.vstack([np.ones((1, 4)), node_pos])
             for i in range(4):
                 M += scipy.sparse.csr_matrix(
-                    (np.einsum(
-                        'bi, bij, bj -> b',
-                        node_pos[masked_th_nodes[:, i]],
-                        Ainv[masked_th_nodes[:, i]],
-                        baricenters),
-                     (masked_th_nodes[:, i], th_indices - 1)),
-                    shape=M.shape)
+                    (
+                        np.einsum(
+                            "bi, bij, bj -> b",
+                            node_pos[masked_th_nodes[:, i]],
+                            Ainv[masked_th_nodes[:, i]],
+                            baricenters,
+                        ),
+                        (masked_th_nodes[:, i], th_indices - 1),
+                    ),
+                    shape=M.shape,
+                )
 
             # Assigns the average value to the points in the outside surface
             masked_th_nodes = np.copy(th_nodes)
@@ -2033,21 +2048,21 @@ class Msh:
 
             for i in range(4):
                 M += scipy.sparse.csr_matrix(
-                     (volumes, (masked_th_nodes[:, i], th_indices - 1)),
-                     shape=M.shape)
+                    (volumes, (masked_th_nodes[:, i], th_indices - 1)), shape=M.shape
+                )
 
             M = M[1:]
 
             node_vols = np.bincount(
-                th_nodes.reshape(-1),
-                np.repeat(volumes, 4),
-                minlength=self.nodes.nr+1)
+                th_nodes.reshape(-1), np.repeat(volumes, 4), minlength=self.nodes.nr + 1
+            )
 
             normalization = np.ones(self.nodes.nr)
             normalization[points_outside] = 1 / node_vols[points_outside]
 
             D = scipy.sparse.dia_matrix(
-                (normalization, 0), shape=(self.nodes.nr, self.nodes.nr))
+                (normalization, 0), shape=(self.nodes.nr, self.nodes.nr)
+            )
             M = D.dot(M)
 
         # Calculates the interpolation for nodes only in the surfaces
@@ -2065,21 +2080,23 @@ class Msh:
 
             for i in range(3):
                 M_tr += scipy.sparse.csr_matrix(
-                     (areas, (masked_tr_nodes[:, i], tr_indices - 1)),
-                     shape=M_tr.shape)
+                    (areas, (masked_tr_nodes[:, i], tr_indices - 1)), shape=M_tr.shape
+                )
 
             M_tr = M_tr[1:]
 
             node_areas = np.bincount(
                 tr_nodes[:, :3].reshape(-1),
                 np.repeat(areas, 3),
-                minlength=self.nodes.nr+1)
+                minlength=self.nodes.nr + 1,
+            )
 
             normalization = np.ones(self.nodes.nr)
             normalization[only_in_surf] = 1 / node_areas[only_in_surf]
 
             D = scipy.sparse.dia_matrix(
-                (normalization, 0), shape=(self.nodes.nr, self.nodes.nr))
+                (normalization, 0), shape=(self.nodes.nr, self.nodes.nr)
+            )
             M_tr = D.dot(M_tr)
             if len(th_indices) > 0:
                 M += M_tr
@@ -2089,7 +2106,7 @@ class Msh:
         return M
 
     def interp_matrix(self, pos, out_fill=np.nan, th_indices=None, element_wise=False):
-        ''' Calculates a matrix to perform interpolation
+        """Calculates a matrix to perform interpolation
         y = M.dot(x)
 
         Where x is node-wise data (if element_wise=False, default) or element-wise data
@@ -2115,12 +2132,15 @@ class Msh:
         M: scipy.sparse.csc
             Sparse matrix, interpolation represented by dot product
 
-        '''
+        """
         if len(self.elm.tetrahedra) == 0:
-            raise ValueError("Can only create interpolation matrices for tetrahedral meshes")
+            raise ValueError(
+                "Can only create interpolation matrices for tetrahedral meshes"
+            )
 
         th_with_points, bar = self.find_tetrahedron_with_points(
-            pos, compute_baricentric=True)
+            pos, compute_baricentric=True
+        )
         if th_indices is not None:
             th_with_points[~np.isin(th_with_points, th_indices)] = -1
         inside = th_with_points != -1
@@ -2147,7 +2167,7 @@ class Msh:
             idx = np.searchsorted(elm_in_volume, th)
 
             # get the 'node_number_list' of the tetrahedra with indices of 'idx'
-            th_nodes = msh_in_volume.elm[idx+1]
+            th_nodes = msh_in_volume.elm[idx + 1]
 
             M = scipy.sparse.csc_matrix((len(pos), msh_in_volume.nodes.nr))
 
@@ -2155,29 +2175,31 @@ class Msh:
         if np.any(inside):
             for i in range(4):
                 M += scipy.sparse.csc_matrix(
-                    (bar[inside, i],
-                    (pos_nr[inside], th_nodes[:, i] - 1)),
-                    shape=M.shape)
+                    (bar[inside, i], (pos_nr[inside], th_nodes[:, i] - 1)),
+                    shape=M.shape,
+                )
 
         # if any points are outside, fill in the unassigned values
         if np.any(~inside):
-
-            if out_fill != 'nearest':
+            if out_fill != "nearest":
                 v = out_fill * np.ones(np.sum(~inside))
                 M += scipy.sparse.csc_matrix(
-                    (v, (pos_nr[~inside], np.zeros(np.sum(~inside)))),
-                    shape=M.shape)
+                    (v, (pos_nr[~inside], np.zeros(np.sum(~inside)))), shape=M.shape
+                )
             else:
                 if th_indices is None:
                     _, nearest = self.nodes.find_closest_node(
-                        pos[~inside], return_index=True)
+                        pos[~inside], return_index=True
+                    )
                 else:
                     _, nearest = msh_in_volume.nodes.find_closest_node(
-                        pos[~inside], return_index=True)
+                        pos[~inside], return_index=True
+                    )
 
                 M += scipy.sparse.csc_matrix(
-                    (np.ones(np.sum(~inside)), (pos_nr[~inside], nearest-1)),
-                    shape=M.shape)
+                    (np.ones(np.sum(~inside)), (pos_nr[~inside], nearest - 1)),
+                    shape=M.shape,
+                )
 
         if element_wise:
             if th_indices is None:
@@ -2187,9 +2209,8 @@ class Msh:
 
         return M
 
-
     def intersect_segment(self, near, far):
-        ''' Finds the triangle (if any) that intersects a line segment
+        """Finds the triangle (if any) that intersects a line segment
 
         Parameters
         ------------
@@ -2204,29 +2225,25 @@ class Msh:
             Pairs of indices with the line segment index and the triangle index
         intercpt_pos (M, 3) array:
             Positions where the interceptions occur
-        '''
+        """
         # Using CGAL AABB https://doc.cgal.org/latest/AABB_tree/index.html
         if near.ndim == 1:
             near = near[None, :]
         if far.ndim == 1:
             far = far[None, :]
         if not (near.shape[1] == 3 and far.shape[1] == 3):
-            raise ValueError('near and far poins should be arrays of size (N, 3)')
+            raise ValueError("near and far poins should be arrays of size (N, 3)")
 
         indices, points = cgal.segment_triangle_intersection(
-            self.nodes[:],
-            self.elm[self.elm.elm_type == 2, :3] - 1,
-            near, far
+            self.nodes[:], self.elm[self.elm.elm_type == 2, :3] - 1, near, far
         )
         if len(indices) > 0:
             indices[:, 1] = self.elm.triangles[indices[:, 1]]
 
         return indices, points
 
-
-
     def intersect_ray(self, points, directions, AABBTree=None):
-        ''' Finds the triangle (if any) that intersects with the rays starting
+        """Finds the triangle (if any) that intersects with the rays starting
             at points and pointing into directions
 
         NOTE: triangle indices are not corresponding to msh indices!
@@ -2247,14 +2264,16 @@ class Msh:
             NOTE: points indices are 0-based, triangle indices are 1-based!
         intercpt_pos (M, 3) array:
             Positions where the interceptions occur
-        '''
+        """
         # Using CGAL AABB https://doc.cgal.org/latest/AABB_tree/index.html
         if points.ndim == 1:
             points = points[None, :]
         if directions.ndim == 1:
             directions = directions[None, :]
         if not (points.shape[1] == 3 and directions.shape[1] == 3):
-            raise ValueError('start points and directions should be arrays of size (N, 3)')
+            raise ValueError(
+                "start points and directions should be arrays of size (N, 3)"
+            )
 
         idx, far = self._intersect_segment_getfarpoint(points, directions)
 
@@ -2263,7 +2282,8 @@ class Msh:
                 indices, intercpt_pos = cgal.segment_triangle_intersection(
                     self.nodes[:],
                     self.elm[self.elm.elm_type == 2, :3] - 1,
-                    points[idx, :], far
+                    points[idx, :],
+                    far,
                 )
             else:
                 indices, intercpt_pos = AABBTree.intersection(points[idx, :], far)
@@ -2277,7 +2297,6 @@ class Msh:
             intercpt_pos = []
 
         return indices, intercpt_pos
-
 
     def _intersect_segment_getfarpoint(self, points, directions):
         """
@@ -2303,11 +2322,20 @@ class Msh:
 
         """
 
-        eps=0.01
+        eps = 0.01
         ROI = [
-            [np.min(self.nodes.node_coord[:,0])-eps, np.max(self.nodes.node_coord[:,0])+eps],
-            [np.min(self.nodes.node_coord[:,1])-eps, np.max(self.nodes.node_coord[:,1])+eps],
-            [np.min(self.nodes.node_coord[:,2])-eps, np.max(self.nodes.node_coord[:,2])+eps]
+            [
+                np.min(self.nodes.node_coord[:, 0]) - eps,
+                np.max(self.nodes.node_coord[:, 0]) + eps,
+            ],
+            [
+                np.min(self.nodes.node_coord[:, 1]) - eps,
+                np.max(self.nodes.node_coord[:, 1]) + eps,
+            ],
+            [
+                np.min(self.nodes.node_coord[:, 2]) - eps,
+                np.max(self.nodes.node_coord[:, 2]) + eps,
+            ],
         ]
 
         has_far = np.zeros(points.shape[0], dtype=bool)
@@ -2318,12 +2346,14 @@ class Msh:
             # lower bound
             idx = np.logical_and(directions[:, k] < 0, points[:, k] > ROI[k][0])
             s = (ROI[k][0] - points[idx, k]) / directions[idx, k]
-            p = points[idx, :]+s.reshape(-1, 1)*directions[idx, :]
+            p = points[idx, :] + s.reshape(-1, 1) * directions[idx, :]
 
-            inside_rect = (p[:, plane_idx[k][0]] >= ROI[plane_idx[k][0]][0]) * \
-                          (p[:, plane_idx[k][0]] <= ROI[plane_idx[k][0]][1]) * \
-                          (p[:, plane_idx[k][1]] >= ROI[plane_idx[k][1]][0]) * \
-                          (p[:, plane_idx[k][1]] <= ROI[plane_idx[k][1]][1])
+            inside_rect = (
+                (p[:, plane_idx[k][0]] >= ROI[plane_idx[k][0]][0])
+                * (p[:, plane_idx[k][0]] <= ROI[plane_idx[k][0]][1])
+                * (p[:, plane_idx[k][1]] >= ROI[plane_idx[k][1]][0])
+                * (p[:, plane_idx[k][1]] <= ROI[plane_idx[k][1]][1])
+            )
             idx[idx] = inside_rect
 
             has_far[idx] = True
@@ -2332,12 +2362,14 @@ class Msh:
             # upper bound
             idx = np.logical_and(directions[:, k] > 0, points[:, k] < ROI[k][1])
             s = (ROI[k][1] - points[idx, k]) / directions[idx, k]
-            p = points[idx, :]+s.reshape(-1, 1)*directions[idx, :]
+            p = points[idx, :] + s.reshape(-1, 1) * directions[idx, :]
 
-            inside_rect = (p[:, plane_idx[k][0]] >= ROI[plane_idx[k][0]][0]) * \
-                          (p[:, plane_idx[k][0]] <= ROI[plane_idx[k][0]][1]) * \
-                          (p[:, plane_idx[k][1]] >= ROI[plane_idx[k][1]][0]) * \
-                          (p[:, plane_idx[k][1]] <= ROI[plane_idx[k][1]][1])
+            inside_rect = (
+                (p[:, plane_idx[k][0]] >= ROI[plane_idx[k][0]][0])
+                * (p[:, plane_idx[k][0]] <= ROI[plane_idx[k][0]][1])
+                * (p[:, plane_idx[k][1]] >= ROI[plane_idx[k][1]][0])
+                * (p[:, plane_idx[k][1]] <= ROI[plane_idx[k][1]][1])
+            )
 
             idx[idx] = inside_rect
             has_far[idx] = True
@@ -2348,13 +2380,15 @@ class Msh:
 
         return np.where(has_far)[0], far
 
-    def get_min_distance_on_grid(self, distance_offset=0.0, resolution=1.0, order=3, AABBTree=None):
+    def get_min_distance_on_grid(
+        self, distance_offset=0.0, resolution=1.0, order=3, AABBTree=None
+    ):
         """Generates a distance to surface field on a grid
 
         Parameters
         ----------
         distance_offset : float, optional
-            A distance offset that is subtracted from the actuall distance, by default 0.0 
+            A distance offset that is subtracted from the actuall distance, by default 0.0
         resolution : float, optional
             The resolution of the grid, by default 1.0
         order : int
@@ -2407,12 +2441,12 @@ class Msh:
 
             # Filter coordinates that are outside the image boundaries
             outside_image_mask = ~(
-                    (x_coords >= 0)
-                    & (x_coords < width)
-                    & (y_coords >= 0)
-                    & (y_coords < height)
-                    & (z_coords >= 0)
-                    & (z_coords < depth)
+                (x_coords >= 0)
+                & (x_coords < width)
+                & (y_coords >= 0)
+                & (y_coords < height)
+                & (z_coords >= 0)
+                & (z_coords < depth)
             )
 
             mapped_values = scipy.ndimage.map_coordinates(
@@ -2422,20 +2456,24 @@ class Msh:
                     y_coords,
                     z_coords,
                 ),
-                order=order, mode='nearest', prefilter=False
+                order=order,
+                mode="nearest",
+                prefilter=False,
             )
 
             mapped_values[outside_image_mask] += np.sqrt(
-                np.maximum(x_coords[outside_image_mask] - width, 0)**2 +
-                np.maximum(y_coords[outside_image_mask] - height, 0)**2 +
-                np.maximum(z_coords[outside_image_mask] - depth, 0)**2
+                np.maximum(x_coords[outside_image_mask] - width, 0) ** 2
+                + np.maximum(y_coords[outside_image_mask] - height, 0) ** 2
+                + np.maximum(z_coords[outside_image_mask] - depth, 0) ** 2
             )
 
             return mapped_values
 
         return min_distance_on_grid, grid, M, AABBTree
 
-    def get_voxel_volume(self, resolution:float=1.0, dither_skip:int=0, AABBTree=None):
+    def get_voxel_volume(
+        self, resolution: float = 1.0, dither_skip: int = 0, AABBTree=None
+    ):
         """Generates a distance field on a grid to the mesh surface
 
         Parameters
@@ -2487,11 +2525,23 @@ class Msh:
             edge_indexes = np.argwhere(edges).astype(np.int32)
 
             dithered_grid = np.zeros_like(grid)
-            dithered_grid[dither_skip // 2::dither_skip, ::dither_skip, ::dither_skip] = True
-            dithered_grid[::dither_skip, dither_skip // 2::dither_skip, ::dither_skip] = True
-            dithered_grid[::dither_skip, ::dither_skip, dither_skip // 2::dither_skip] = True
-            dithered_grid[dither_skip // 2::dither_skip, dither_skip // 2::dither_skip, dither_skip // 2::dither_skip] = True
-            voxel_indexes = np.argwhere(scipy.ndimage.binary_erosion(grid) & dithered_grid).astype(np.int32)
+            dithered_grid[
+                dither_skip // 2 :: dither_skip, ::dither_skip, ::dither_skip
+            ] = True
+            dithered_grid[
+                ::dither_skip, dither_skip // 2 :: dither_skip, ::dither_skip
+            ] = True
+            dithered_grid[
+                ::dither_skip, ::dither_skip, dither_skip // 2 :: dither_skip
+            ] = True
+            dithered_grid[
+                dither_skip // 2 :: dither_skip,
+                dither_skip // 2 :: dither_skip,
+                dither_skip // 2 :: dither_skip,
+            ] = True
+            voxel_indexes = np.argwhere(
+                scipy.ndimage.binary_erosion(grid) & dithered_grid
+            ).astype(np.int32)
             voxel_length = len(voxel_indexes)
             voxel_indexes = np.append(voxel_indexes, edge_indexes, axis=0)
             voxel_dither_factors = np.ones(len(voxel_indexes))
@@ -2500,8 +2550,7 @@ class Msh:
             voxel_indexes = np.argwhere(grid).astype(np.int32)
             voxel_dither_factors = np.ones(len(voxel_indexes))
 
-
-        return grid, M, voxel_indexes, voxel_dither_factors,  AABBTree
+        return grid, M, voxel_indexes, voxel_dither_factors, AABBTree
 
     def pts_inside_surface(self, pts, AABBTree=None):
         """
@@ -2523,15 +2572,14 @@ class Msh:
         NOTE: This function works but would benefit from improvements!
         """
         directions = np.zeros_like(pts)
-        directions[:,2] = 1
+        directions[:, 2] = 1
         indices, _ = self.intersect_ray(pts, directions, AABBTree)
         if len(indices) == 0:
             return []
         else:
             # unequal number of intersections = inside
-            i,counts = np.unique(indices[:, 0], return_counts=True)
+            i, counts = np.unique(indices[:, 0], return_counts=True)
             return i[counts % 2 != 0]
-
 
     def any_pts_inside_surface(self, pts, AABBTree):
         """
@@ -2551,14 +2599,16 @@ class Msh:
 
         """
         directions = np.zeros_like(pts)
-        directions[:,2] = 1
+        directions[:, 2] = 1
 
         if pts.ndim == 1:
             pts = pts[None, :]
         if directions.ndim == 1:
             directions = directions[None, :]
         if not (pts.shape[1] == 3 and directions.shape[1] == 3):
-            raise ValueError('start points and directions should be arrays of size (N, 3)')
+            raise ValueError(
+                "start points and directions should be arrays of size (N, 3)"
+            )
 
         idx, far = self._intersect_segment_getfarpoint(pts, directions)
 
@@ -2569,8 +2619,8 @@ class Msh:
         return any_intersections
 
     def partition_skin_surface(
-            self, assume_single_outside_component = True, tol: float = 1e-3
-        ):
+        self, assume_single_outside_component=True, tol: float = 1e-3
+    ):
         """Return indices of vertices and faces estimated to be on the inner
         and outer skin surface (the inner part would be those inside nasal
         cavities, ear canals etc. whereas the outer skin surface would be the
@@ -2625,7 +2675,7 @@ class Msh:
         # direction
         idx = np.unique(m.intersect_ray(coords + tol * n, n)[0][:, 0])
 
-        v_in = verts[idx] if is_subset else idx # idx is zero-based!
+        v_in = verts[idx] if is_subset else idx  # idx is zero-based!
         v_out = np.setdiff1d(verts, v_in, assume_unique=True)
 
         # faces are deemed outside if two or all of its vertices are outside
@@ -2698,13 +2748,10 @@ class Msh:
         AABBTree.set_data(self.nodes[:], self.elm[self.elm.elm_type == 2, :3] - 1)
         return AABBTree
 
-
-    def view(self,
-             visible_tags=None,
-             visible_fields=[],
-             cond_list=None,
-             add_logo=False):
-        ''' Visualize mesh in Gmsh
+    def view(
+        self, visible_tags=None, visible_fields=[], cond_list=None, add_logo=False
+    ):
+        """Visualize mesh in Gmsh
 
         Parameters
         ------------
@@ -2725,20 +2772,22 @@ class Msh:
         >>> mesh = simnibs.msh.read_msh('ernie.msh')
         >>> vis = mesh.view()
         >>> vis.show()
-        '''
-        vis = gmsh_view.Visualization(self,cond_list,add_logo)
+        """
+        vis = gmsh_view.Visualization(self, cond_list, add_logo)
         if visible_tags is not None:
             vis.visibility = visible_tags
         vis.View = []
-        if visible_fields == 'all':
+        if visible_fields == "all":
             visible_fields = self.field.keys()
 
         for i, d in enumerate(self.nodedata + self.elmdata):
             vis.View.append(
                 d.view_options(
-                   visible=d.field_name in visible_fields,
-                   visible_tags=visible_tags,
-                   idx=i))
+                    visible=d.field_name in visible_fields,
+                    visible_tags=visible_tags,
+                    idx=i,
+                )
+            )
 
         if len(visible_fields) > 0:
             vis.Mesh.SurfaceEdges = 0
@@ -2749,7 +2798,7 @@ class Msh:
         return vis
 
     def add_node_field(self, field, field_name):
-        ''' Adds field defined in the nodes
+        """Adds field defined in the nodes
 
         Parameters
         ----------
@@ -2767,11 +2816,12 @@ class Msh:
         nd: simnibs.NodeData
             NodeData class with the input field
 
-        '''
+        """
         if isinstance(field, NodeData):
             if field.nr != self.nodes.nr:
-                raise ValueError('Number of data points in the field '
-                                 'and of mesh nodes do not match')
+                raise ValueError(
+                    "Number of data points in the field and of mesh nodes do not match"
+                )
             field.field_name = field_name
             field.mesh = self
             self.nodedata.append(field)
@@ -2780,15 +2830,16 @@ class Msh:
 
         else:
             if self.nodes.nr != field.shape[0]:
-                raise ValueError('Number of data points in the field '
-                                 'and of mesh nodes do not match')
+                raise ValueError(
+                    "Number of data points in the field and of mesh nodes do not match"
+                )
 
             nd = NodeData(field, field_name, self)
             self.nodedata.append(nd)
             return nd
 
     def add_element_field(self, field, field_name):
-        ''' Adds field defined in the elements
+        """Adds field defined in the elements
 
         Parameters
         ----------
@@ -2806,11 +2857,13 @@ class Msh:
         ed: simnibs.ElementData
             ElementData class with the input field
 
-        '''
+        """
         if isinstance(field, ElementData):
             if field.nr != self.elm.nr:
-                raise ValueError('Number of data points in the field '
-                                 'and number of mesh elements do not match')
+                raise ValueError(
+                    "Number of data points in the field "
+                    "and number of mesh elements do not match"
+                )
             field.field_name = field_name
             field.mesh = self
             self.elmdata.append(field)
@@ -2819,16 +2872,22 @@ class Msh:
 
         else:
             if self.elm.nr != field.shape[0]:
-                raise ValueError('Number of data points in the field '
-                                 'and number of mesh elements do not match')
+                raise ValueError(
+                    "Number of data points in the field "
+                    "and number of mesh elements do not match"
+                )
             ed = ElementData(field, field_name, self)
             self.elmdata.append(ed)
             return ed
 
-    def fields_summary(self, roi=None, fields=None,
-                       percentiles=(99.9, 99, 95),
-                       focality_cutoffs=(75, 50)):
-        ''' Creates a text summary of the field
+    def fields_summary(
+        self,
+        roi=None,
+        fields=None,
+        percentiles=(99.9, 99, 95),
+        focality_cutoffs=(75, 50),
+    ):
+        """Creates a text summary of the field
 
         Parameters
         ------------
@@ -2840,7 +2899,7 @@ class Msh:
             Field percentiles to be printed. Default: (99.9, 99, 95)
         focality_cutoffs: ndarray (optional)
             Cuttofs for focality calculations. Default: (75, 50)
-        '''
+        """
         if roi is None:
             mesh = self
         else:
@@ -2855,41 +2914,45 @@ class Msh:
 
         units = []
         for f in fields:
-            if f in ['E', 'magnE', 'D', 'g']:
-                units.append(' V/m')
-            elif f in ['J', 'magnJ']:
-                units.append(' A/m²')
-            elif f == 'v':
-                units.append(' V')
+            if f in ["E", "magnE", "D", "g"]:
+                units.append(" V/m")
+            elif f in ["J", "magnJ"]:
+                units.append(" A/m²")
+            elif f == "v":
+                units.append(" V")
             else:
-                units.append('')
+                units.append("")
 
         if 2 in mesh.elm.elm_type:
-            units_mesh = ' mm²'
+            units_mesh = " mm²"
         elif 4 in mesh.elm.elm_type:
-            units_mesh = ' mm³'
+            units_mesh = " mm³"
         if np.all(np.isin([2, 4], mesh.elm.elm_type)):
-            warnings.warn("Can't report Field summary in meshes with volumes and surfaces")
-            return ''
+            warnings.warn(
+                "Can't report Field summary in meshes with volumes and surfaces"
+            )
+            return ""
 
-        percentiles_table = [['Field'] + [f'{p:.1f}%' for p in percentiles]]
-        focality_table = [['Field'] + [f'{f:.1f}%' for f in focality_cutoffs]]
+        percentiles_table = [["Field"] + [f"{p:.1f}%" for p in percentiles]]
+        focality_table = [["Field"] + [f"{f:.1f}%" for f in focality_cutoffs]]
         for fn, u in zip(fields, units):
             f = mesh.field[fn]
             prc = f.get_percentiles(percentiles)
-            percentiles_table.append([fn] + [f'{p:.2e}{u}' for p in prc])
+            percentiles_table.append([fn] + [f"{p:.2e}{u}" for p in prc])
             focality = f.get_focality(focality_cutoffs, 99.9)
-            focality_table.append([fn] + [f'{fv:.2e}{units_mesh}' for fv in focality])
+            focality_table.append([fn] + [f"{fv:.2e}{units_mesh}" for fv in focality])
 
-        string = ''
-        string += 'Field Percentiles\n'
-        string += '-----------------\n'
-        string += 'Top percentiles of the field (or field magnitude for vector fields)\n'
+        string = ""
+        string += "Field Percentiles\n"
+        string += "-----------------\n"
+        string += (
+            "Top percentiles of the field (or field magnitude for vector fields)\n"
+        )
         string += _format_table(percentiles_table)
-        string += '\n'
-        string += 'Field Focality\n'
-        string += '---------------\n'
-        string += 'Mesh volume or area with a field >= X% of the 99.9th percentile\n'
+        string += "\n"
+        string += "Field Focality\n"
+        string += "---------------\n"
+        string += "Mesh volume or area with a field >= X% of the 99.9th percentile\n"
         string += _format_table(focality_table)
 
         return string
@@ -2924,10 +2987,12 @@ class Msh:
             raise ValueError("Please provide affine for sizing field.")
 
         # create a NodeData field containiong the sizing field with ":metric" tag for mmg
-        sizing_field_node_data = NodeData.from_data_grid(mesh=self,
-                                                         data_grid=sizing_field,
-                                                         affine=affine,
-                                                         field_name='sizing_field:metric')
+        sizing_field_node_data = NodeData.from_data_grid(
+            mesh=self,
+            data_grid=sizing_field,
+            affine=affine,
+            field_name="sizing_field:metric",
+        )
 
         # ensure positive element sizes
         sizing_field_node_data.value = np.abs(sizing_field_node_data.value)
@@ -2936,7 +3001,7 @@ class Msh:
         self.nodedata.append(sizing_field_node_data)
 
     def reconstruct_surfaces(self, tags=None):
-        ''' Reconstruct the mesh surfaces for each label/connected component individually
+        """Reconstruct the mesh surfaces for each label/connected component individually
         This function acts in-place, and will keep any surfaces already present in the
         mesh
 
@@ -2950,14 +3015,14 @@ class Msh:
         ------
         Two surfaces will be present, one at each side of the model
         Will not fix any element_data that might be associated with this mesh
-        '''
+        """
         unique_tags = np.unique(self.elm.tag1[self.elm.elm_type == 4])
         if len(unique_tags) == 0:
-            raise InvalidMeshError('Could not find any tetraheda in mesh')
+            raise InvalidMeshError("Could not find any tetraheda in mesh")
         if tags is not None:
             unique_tags = unique_tags[np.isin(unique_tags, tags)]
         if len(unique_tags) == 0:
-            raise ValueError('Could not find given tags in mesh')
+            raise ValueError("Could not find given tags in mesh")
 
         tr_to_add = []
         for t in unique_tags:
@@ -2965,10 +3030,9 @@ class Msh:
             tr_to_add.append(self.elm.get_outside_faces(elm_in_tag))
 
         for tr, tag in zip(tr_to_add, unique_tags):
-            self.elm.add_triangles(tr, 1000+tag)
+            self.elm.add_triangles(tr, 1000 + tag)
 
         self.fix_tr_node_ordering()
-
 
     # def remove_triangle_twins(self, hierarchy=None):
     #     """
@@ -3029,10 +3093,15 @@ class Msh:
     #     idx_keep = np.setdiff1d(self.elm.elm_number, idx_tr[np.logical_not(idx_keep)]+1) # 1-based indexing of elm_number
     #     return self.crop_mesh(elements=idx_keep)
 
-
-    def reconstruct_unique_surface(self, hierarchy = None, add_outer_as = None,
-                                   faces = None, idx_tet_faces = None, adj_tets = None):
-        ''' Reconstructs the mesh surfaces from the tetrahedra.
+    def reconstruct_unique_surface(
+        self,
+        hierarchy=None,
+        add_outer_as=None,
+        faces=None,
+        idx_tet_faces=None,
+        adj_tets=None,
+    ):
+        """Reconstructs the mesh surfaces from the tetrahedra.
 
             Triangles will be added between tetrahedra of different labels,
             or at tetrahedra faces towards "air", whereby the triangle label is
@@ -3058,16 +3127,18 @@ class Msh:
         * This function acts in-place
         * Will not fix any element_data that might be associated with this mesh
         * will not add triangles to "air" tetrahedra (having label -1)
-        '''
+        """
 
+        assert np.all(self.elm.elm_type == 4)
 
-        assert np.all(self.elm.elm_type==4)
-
-        if hierarchy is None: hierarchy = (1, 2, 9, 3, 4, 8, 7, 6, 10, 5)
+        if hierarchy is None:
+            hierarchy = (1, 2, 9, 3, 4, 8, 7, 6, 10, 5)
         hierarchy = np.asarray(hierarchy)
-        if np.any(hierarchy>1000): hierarchy -= 1000
+        if np.any(hierarchy > 1000):
+            hierarchy -= 1000
 
-        if (add_outer_as is not None) and (add_outer_as > 1000): add_outer_as -= 1000
+        if (add_outer_as is not None) and (add_outer_as > 1000):
+            add_outer_as -= 1000
 
         if (faces is None) or (idx_tet_faces is None) or (adj_tets is None):
             faces, idx_tet_faces, adj_tets = self.elm._get_tet_faces_and_adjacent_tets()
@@ -3076,48 +3147,48 @@ class Msh:
 
         # get matrix (n_tet x 4) that indicates neighbors with different labels
         adj_labels = tag[adj_tets]
-        adj_labels[adj_tets == -1] = -1 # -1 indicates "air"
-        adj_diff = adj_labels - tag.reshape((len(tag),1)) != 0
-        adj_diff[tag == -1] = False # do not add triangles for "air" tetrahedra
+        adj_labels[adj_tets == -1] = -1  # -1 indicates "air"
+        adj_diff = adj_labels - tag.reshape((len(tag), 1)) != 0
+        adj_diff[tag == -1] = False  # do not add triangles for "air" tetrahedra
 
         # temporarily renumber tags according to hierarchy
         hierarchy = np.asarray(hierarchy)
         if add_outer_as is not None:
             hierarchy = np.append(-1, hierarchy)
-        hierarchy = np.append(hierarchy, np.setdiff1d(np.unique(tag),hierarchy) )
+        hierarchy = np.append(hierarchy, np.setdiff1d(np.unique(tag), hierarchy))
 
-        map_old_new = np.zeros(np.max(hierarchy)+2, dtype = int)
-        map_old_new[hierarchy] = np.arange(len(hierarchy))+1
+        map_old_new = np.zeros(np.max(hierarchy) + 2, dtype=int)
+        map_old_new[hierarchy] = np.arange(len(hierarchy)) + 1
         tag = map_old_new[tag]
 
         # get index and tag of surface faces (small tag wins)
         idx_tri = idx_tet_faces[adj_diff]
-        tag_tri = np.tile(tag, (4,1)).T
+        tag_tri = np.tile(tag, (4, 1)).T
         if add_outer_as is not None:
-            tag_tri[adj_labels == -1] = 1 # because map_old_new[-1] == 1
+            tag_tri[adj_labels == -1] = 1  # because map_old_new[-1] == 1
         tag_tri = tag_tri[adj_diff]
 
         idx_tri = np.vstack((idx_tri, tag_tri))
-        idx_tri = recfunctions.unstructured_to_structured(idx_tri.T,
-                                    dtype=np.dtype([('a', int), ('b', int)]))
-        idx_tri = np.sort(idx_tri, order=('a', 'b'))
+        idx_tri = recfunctions.unstructured_to_structured(
+            idx_tri.T, dtype=np.dtype([("a", int), ("b", int)])
+        )
+        idx_tri = np.sort(idx_tri, order=("a", "b"))
         idx_tri = recfunctions.structured_to_unstructured(idx_tri)
-        idx = np.hstack((True, np.diff(idx_tri[:,0]) != 0))
-        idx_tri = idx_tri[idx,:]
+        idx = np.hstack((True, np.diff(idx_tri[:, 0]) != 0))
+        idx_tri = idx_tri[idx, :]
 
         # undo renumbering
-        tag_tri = idx_tri[:,1]
-        tag_tri = hierarchy[tag_tri-1]
+        tag_tri = idx_tri[:, 1]
+        tag_tri = hierarchy[tag_tri - 1]
         if add_outer_as is not None:
             tag_tri[tag_tri == -1] = add_outer_as
-        idx_tri = idx_tri[:,0]
+        idx_tri = idx_tri[:, 0]
 
-        self.elm.add_triangles(faces[idx_tri,:]+1, 1000+tag_tri)
+        self.elm.add_triangles(faces[idx_tri, :] + 1, 1000 + tag_tri)
         self.fix_tr_node_ordering()
 
-
-    def smooth_surfaces(self, n_steps, step_size=.3, tags=None, max_gamma=5):
-        ''' In-place smoothing of the mesh surfaces using Taubin smoothing,
+    def smooth_surfaces(self, n_steps, step_size=0.3, tags=None, max_gamma=5):
+        """In-place smoothing of the mesh surfaces using Taubin smoothing,
             ensures that the tetrahedra quality does not fall below
             a minimal level. Can still decrease overall tetrahedra quality, though.
 
@@ -3137,13 +3208,13 @@ class Msh:
             would exceed max_gamma otherwise. Default: 5
             (for gamma metric see Parthasarathy et al., Finite Elements in
              Analysis and Design, 1994)
-        '''
+        """
         assert step_size > 0 and step_size < 1
         # Surface nodes and surface node mask
         idx = self.elm.elm_type == 2
         if tags is not None:
             idx *= np.isin(self.elm.tag1, tags)
-        surf_nodes = np.unique(self.elm.node_number_list[idx,:3]) - 1
+        surf_nodes = np.unique(self.elm.node_number_list[idx, :3]) - 1
         nodes_mask = np.zeros(self.nodes.nr, dtype=bool)
         nodes_mask[surf_nodes] = True
 
@@ -3154,10 +3225,11 @@ class Msh:
         for i in range(3):
             for j in range(3):
                 adj_tr += scipy.sparse.csr_matrix(
-                    (ones, (tr[:, i], tr[:, j])),
-                    shape=adj_tr.shape
+                    (ones, (tr[:, i], tr[:, j])), shape=adj_tr.shape
                 )
-        adj_tr -= scipy.sparse.dia_matrix((np.ones(adj_tr.shape[0]), 0), shape=adj_tr.shape)
+        adj_tr -= scipy.sparse.dia_matrix(
+            (np.ones(adj_tr.shape[0]), 0), shape=adj_tr.shape
+        )
 
         # Tetrahedron neighbourhood information
         th = self.elm[self.elm.tetrahedra] - 1
@@ -3166,39 +3238,37 @@ class Msh:
         ones = np.ones(len(th), dtype=bool)
         for i in range(4):
             adj_th += scipy.sparse.csr_matrix(
-                (ones, (th[:, i], th_indices)),
-                shape=adj_th.shape
+                (ones, (th[:, i], th_indices)), shape=adj_th.shape
             )
         # keep only tets connected to surface nodes
         idx = np.sum(adj_th[nodes_mask], axis=0) > 0
         idx = np.asarray(idx).reshape(-1)
-        th = th[idx,:]
-        adj_th = adj_th[:,idx]
+        th = th[idx, :]
+        adj_th = adj_th[:, idx]
         adj_th = adj_th.tocsc()
 
-        def calc_gamma(nodes_coords,th):
-            ''' gamma of tetrahedra '''
+        def calc_gamma(nodes_coords, th):
+            """gamma of tetrahedra"""
             node_th = nodes_coords[th]
             # tet volumes
             M = node_th[:, 1:] - node_th[:, 0, None]
-            vol = np.linalg.det(M) / 6.
+            vol = np.linalg.det(M) / 6.0
             # edge lengths
             edge_rms = np.zeros(len(th))
             for i in range(4):
-                for j in range(i+1, 4):
+                for j in range(i + 1, 4):
                     edge_rms += np.sum(
-                        (node_th[:,i,:] - node_th[:,j,:])**2,
-                        axis=1
+                        (node_th[:, i, :] - node_th[:, j, :]) ** 2, axis=1
                     )
-            edge_rms = edge_rms/6.
+            edge_rms = edge_rms / 6.0
             # gamma
-            gamma = edge_rms**1.5/vol
+            gamma = edge_rms**1.5 / vol
             gamma /= 8.479670
-            gamma[vol<0] = -1
+            gamma[vol < 0] = -1
             return gamma
 
         nodes_coords = np.ascontiguousarray(self.nodes.node_coord, float)
-        gamma = calc_gamma(nodes_coords,th)
+        gamma = calc_gamma(nodes_coords, th)
         n_badgamma = np.sum((gamma < 0) + (gamma > max_gamma))
         for i in range(n_steps):
             nc_before = nodes_coords.copy()
@@ -3207,7 +3277,7 @@ class Msh:
                 nodes_coords,
                 np.ascontiguousarray(adj_tr.indices, np.uint),
                 np.ascontiguousarray(adj_tr.indptr, np.uint),
-                float(step_size)
+                float(step_size),
             )
             # Taubin step
             cython_msh.gauss_smooth_simple(
@@ -3215,28 +3285,32 @@ class Msh:
                 nodes_coords,
                 np.ascontiguousarray(adj_tr.indices, np.uint),
                 np.ascontiguousarray(adj_tr.indptr, np.uint),
-                -1.05 * float(step_size)
+                -1.05 * float(step_size),
             )
             # revert where gamma exceeded max_gamma
-            gamma = calc_gamma(nodes_coords,th)
+            gamma = calc_gamma(nodes_coords, th)
             idx_badtet = (gamma < 0) + (gamma > max_gamma)
-            for k in range(4): # mostly < 4 iterations required, limit to ensure stability
-                if np.sum(idx_badtet) <= n_badgamma: break
+            for k in range(
+                4
+            ):  # mostly < 4 iterations required, limit to ensure stability
+                if np.sum(idx_badtet) <= n_badgamma:
+                    break
 
-                idx_badnodes = np.sum(adj_th[:,idx_badtet], axis=1) > 0
+                idx_badnodes = np.sum(adj_th[:, idx_badtet], axis=1) > 0
                 idx_badnodes = np.asarray(idx_badnodes).reshape(-1)
                 nodes_coords[idx_badnodes] = nc_before[idx_badnodes]
 
-                gamma = calc_gamma(nodes_coords,th)
+                gamma = calc_gamma(nodes_coords, th)
                 idx_badtet = (gamma < 0) + (gamma > max_gamma)
 
             n_badgamma = np.sum(idx_badtet)
 
         self.nodes.node_coord = nodes_coords
 
-
-    def smooth_surfaces_simple(self, n_steps, step_size=.3, tags=None, nodes_mask=None):
-        ''' In-place smoothing of the mesh surfaces using Taubin smoothing,
+    def smooth_surfaces_simple(
+        self, n_steps, step_size=0.3, tags=None, nodes_mask=None
+    ):
+        """In-place smoothing of the mesh surfaces using Taubin smoothing,
             no control of tetrahedral quality
 
         Parameters
@@ -3251,13 +3325,13 @@ class Msh:
             list of tags to be smoothed. Default: all
         nodes_mask: (optional) bool
             mask of nodes to be smoothed. Default: all
-        '''
+        """
         assert step_size > 0 and step_size < 1
         # Surface nodes and surface node mask
         idx = self.elm.elm_type == 2
         if tags is not None:
             idx *= np.isin(self.elm.tag1, tags)
-        surf_nodes = np.unique(self.elm.node_number_list[idx,:3]) - 1
+        surf_nodes = np.unique(self.elm.node_number_list[idx, :3]) - 1
 
         if nodes_mask is not None:
             assert len(nodes_mask) == self.nodes.nr
@@ -3273,10 +3347,11 @@ class Msh:
         for i in range(3):
             for j in range(3):
                 adj_tr += scipy.sparse.csr_matrix(
-                    (ones, (tr[:, i], tr[:, j])),
-                    shape=adj_tr.shape
+                    (ones, (tr[:, i], tr[:, j])), shape=adj_tr.shape
                 )
-        adj_tr -= scipy.sparse.dia_matrix((np.ones(adj_tr.shape[0]), 0), shape=adj_tr.shape)
+        adj_tr -= scipy.sparse.dia_matrix(
+            (np.ones(adj_tr.shape[0]), 0), shape=adj_tr.shape
+        )
 
         nodes_coords = np.ascontiguousarray(self.nodes.node_coord, float)
         for i in range(n_steps):
@@ -3285,7 +3360,7 @@ class Msh:
                 nodes_coords,
                 np.ascontiguousarray(adj_tr.indices, np.uint),
                 np.ascontiguousarray(adj_tr.indptr, np.uint),
-                float(step_size)
+                float(step_size),
             )
             # Taubin step
             cython_msh.gauss_smooth_simple(
@@ -3293,14 +3368,13 @@ class Msh:
                 nodes_coords,
                 np.ascontiguousarray(adj_tr.indices, np.uint),
                 np.ascontiguousarray(adj_tr.indptr, np.uint),
-                -1.05 * float(step_size)
+                -1.05 * float(step_size),
             )
 
         self.nodes.node_coord = nodes_coords
 
-
     def gamma_metric(self):
-        """ calculates the (normalized) Gamma quality metric for tetrahedra
+        """calculates the (normalized) Gamma quality metric for tetrahedra
 
         Returns
         ----------
@@ -3311,34 +3385,37 @@ class Msh:
         th = self.elm.elm_type == 4
         edge_rms = np.zeros(self.elm.nr)
         for i in range(4):
-            for j in range(i+1, 4):
+            for j in range(i + 1, 4):
                 edge_rms[th] += np.sum(
-                    (self.nodes[self.elm[th, i]] - self.nodes[self.elm[th, j]])**2,
-                    axis=1
+                    (self.nodes[self.elm[th, i]] - self.nodes[self.elm[th, j]]) ** 2,
+                    axis=1,
                 )
-        edge_rms = np.sqrt(edge_rms/6.)
+        edge_rms = np.sqrt(edge_rms / 6.0)
         gamma = np.zeros(self.elm.nr)
-        gamma[th] = edge_rms[th]**3/vol[th]
-        gamma /= 8.479670 # dividing by value for equilateral tetrahedra -> normalized value as metric
-        return ElementData(gamma, 'gamma', self)
-
+        gamma[th] = edge_rms[th] ** 3 / vol[th]
+        gamma /= 8.479670  # dividing by value for equilateral tetrahedra -> normalized value as metric
+        return ElementData(gamma, "gamma", self)
 
     def surface_EC(self):
-        """ return euler characteristic of surfaces """
+        """return euler characteristic of surfaces"""
         idx_tr = self.elm.elm_type == 2
 
         nr_tr = np.sum(idx_tr)
-        nr_node_tr = np.unique(self.elm.node_number_list[idx_tr,0:3].flatten()).shape[0]
+        nr_node_tr = np.unique(self.elm.node_number_list[idx_tr, 0:3].flatten()).shape[
+            0
+        ]
 
-        M = np.sort(self.elm.node_number_list[idx_tr,0:3], axis=1)
-        nr_edges = np.unique(np.vstack( (M[:,[0,1]], M[:,[1,2]], M[:,[0,2]]) ), axis=0).shape[0]
+        M = np.sort(self.elm.node_number_list[idx_tr, 0:3], axis=1)
+        nr_edges = np.unique(
+            np.vstack((M[:, [0, 1]], M[:, [1, 2]], M[:, [0, 2]])), axis=0
+        ).shape[0]
 
         EC = nr_node_tr + nr_tr - nr_edges
         return EC
 
-
-    def split_tets_along_line(self, idx_n1, idx_n2, do_checks = True,
-                              return_tetindices = False):
+    def split_tets_along_line(
+        self, idx_n1, idx_n2, do_checks=True, return_tetindices=False
+    ):
         """
         Adds a new node in the middle between the two given nodes
         and splits all tetrahedra connected to the line between the
@@ -3371,35 +3448,40 @@ class Msh:
                 raise TypeError("The mesh must not contain data")
 
         # get tets connected to the two nodes
-        idx_orgtets = np.where( np.any(self.elm.node_number_list == idx_n1,axis=1) *
-                                np.any(self.elm.node_number_list == idx_n2,axis=1) )[0]
+        idx_orgtets = np.where(
+            np.any(self.elm.node_number_list == idx_n1, axis=1)
+            * np.any(self.elm.node_number_list == idx_n2, axis=1)
+        )[0]
         if len(idx_orgtets) == 0:
             raise ValueError("The two nodes are not connected!")
 
         # add new node
-        pos_newnode = np.mean( self.nodes.node_coord[[idx_n1-1,idx_n2-1],:],
-                               axis=0 )
+        pos_newnode = np.mean(
+            self.nodes.node_coord[[idx_n1 - 1, idx_n2 - 1], :], axis=0
+        )
         self.nodes.node_coord = np.vstack((self.nodes.node_coord, pos_newnode))
         idx_newnode = self.nodes.nr
 
         # add new tets - connect them to the new node and node n2
-        idx_newtets = np.arange(self.elm.nr, self.elm.nr+len(idx_orgtets))
-        self.elm.node_number_list = np.vstack((self.elm.node_number_list,
-                                               self.elm.node_number_list[idx_orgtets]))
+        idx_newtets = np.arange(self.elm.nr, self.elm.nr + len(idx_orgtets))
+        self.elm.node_number_list = np.vstack(
+            (self.elm.node_number_list, self.elm.node_number_list[idx_orgtets])
+        )
         self.elm.tag1 = np.hstack((self.elm.tag1, self.elm.tag1[idx_orgtets]))
         self.elm.tag2 = np.hstack((self.elm.tag2, self.elm.tag2[idx_orgtets]))
-        self.elm.elm_type = np.hstack((self.elm.elm_type,
-                                       4*np.ones((len(idx_orgtets)), np.int32)))
+        self.elm.elm_type = np.hstack(
+            (self.elm.elm_type, 4 * np.ones((len(idx_orgtets)), np.int32))
+        )
 
         idx = np.where(self.elm.node_number_list[idx_newtets] == idx_n1)[1]
-        self.elm.node_number_list[idx_newtets,idx] = idx_newnode
+        self.elm.node_number_list[idx_newtets, idx] = idx_newnode
 
         # connect old tets to to the new node and node n1
         idx = np.where(self.elm.node_number_list[idx_orgtets] == idx_n2)[1]
-        self.elm.node_number_list[idx_orgtets,idx] = idx_newnode
+        self.elm.node_number_list[idx_orgtets, idx] = idx_newnode
 
         if return_tetindices:
-            return idx_orgtets+1, idx_newtets+1
+            return idx_orgtets + 1, idx_newtets + 1
 
 
 class Data(object):
@@ -3429,39 +3511,42 @@ class Data(object):
 
     """
 
-    def __init__(self, value, name='', mesh=None):
+    def __init__(self, value, name="", mesh=None):
         self.field_name = name
         self.value = value
         self.mesh = mesh
 
         if value.ndim > 2:
-            raise ValueError('Can only handle 1 and 2 dimensional fields '
-                             'Tensors should be given as a Nx9 array')
+            raise ValueError(
+                "Can only handle 1 and 2 dimensional fields "
+                "Tensors should be given as a Nx9 array"
+            )
 
         if self.nr_comp > self.nr:
-            warnings.warn('Second axis larger than the first '
-                          'Field is probably transposed')
+            warnings.warn(
+                "Second axis larger than the first Field is probably transposed"
+            )
 
     @property
     def type(self):
-        '''NodeData of ElementData'''
+        """NodeData of ElementData"""
         return self.__class__.__name__
 
     @property
     def nr(self):
-        '''Number of data entries'''
+        """Number of data entries"""
         return self.value.shape[0]
 
     @property
     def nr_comp(self):
-        '''Number of field components'''
+        """Number of field components"""
         try:
             return self.value.shape[1]
         except IndexError:
             return 1
 
-    def interpolate_to_surface(self, surface, out_fill='nearest', th_indices=None):
-        ''' Interpolates the field in the nodes of a given surface
+    def interpolate_to_surface(self, surface, out_fill="nearest", th_indices=None):
+        """Interpolates the field in the nodes of a given surface
         The interpolation occurs in the tetrahedra!
 
         Parameters
@@ -3475,13 +3560,23 @@ class Data(object):
         ---------
         node_data: NodeData
             Node data structure with the interpolated field
-        '''
-        interp = self.interpolate_scattered(surface.nodes.node_coord, out_fill=out_fill, th_indices=th_indices)
+        """
+        interp = self.interpolate_scattered(
+            surface.nodes.node_coord, out_fill=out_fill, th_indices=th_indices
+        )
         return NodeData(interp, name=self.field_name, mesh=surface)
 
-    def to_nifti(self, n_voxels, affine, fn=None, units='mm', qform=None,
-                 method='linear', continuous=False):
-        ''' Transforms the data in a nifti file
+    def to_nifti(
+        self,
+        n_voxels,
+        affine,
+        fn=None,
+        units="mm",
+        qform=None,
+        method="linear",
+        continuous=False,
+    ):
+        """Transforms the data in a nifti file
 
         Parameters
         -----------
@@ -3507,9 +3602,10 @@ class Data(object):
         ---------
         img: nibabel.Nifti1Pair
             Image object with the field interpolated in the voxels
-        '''
-        data = self.interpolate_to_grid(n_voxels, affine, method=method,
-                                        continuous=continuous)
+        """
+        data = self.interpolate_to_grid(
+            n_voxels, affine, method=method, continuous=continuous
+        )
         if data.dtype == np.bool_ or data.dtype == bool:
             data = data.astype(np.uint8)
         if data.dtype == np.float64:
@@ -3527,12 +3623,22 @@ class Data(object):
         else:
             return img
 
-    def to_deformed_grid(self, warp, reference, out=None,
-                         out_original=None, tags=None, order=1,
-                         method='linear', continuous=False,
-                         inverse_warp=None, reference_original=None,
-                         binary=False, fix_boundary_zeros=True):
-        ''' Interpolates field to a grid and apply non-linear interpolation
+    def to_deformed_grid(
+        self,
+        warp,
+        reference,
+        out=None,
+        out_original=None,
+        tags=None,
+        order=1,
+        method="linear",
+        continuous=False,
+        inverse_warp=None,
+        reference_original=None,
+        binary=False,
+        fix_boundary_zeros=True,
+    ):
+        """Interpolates field to a grid and apply non-linear interpolation
 
         We first interpolate to a grid and then apply the transformation in order to
         avoid problems from deformed triangles
@@ -3577,12 +3683,12 @@ class Data(object):
             Whether to replace zeros at boundaries of deformation field by values
             of clostest non-zero voxel; relevant only for non-linear transforms
             (Default: True)
-        
+
         Returns
         --------
         img: nibabel.Nifti1Pair
             Nibabel image object with tranformed field
-        '''
+        """
         self._test_msh()
         # Figure out a good space where to grid the data
         if tags is not None:
@@ -3606,14 +3712,15 @@ class Data(object):
             reference_nifti = nibabel.load(reference_original)
         affine = reference_nifti.affine
         dimensions = reference_nifti.shape[:3]
-        image = data.interpolate_to_grid(dimensions, affine, method=method,
-                                         continuous=continuous)
+        image = data.interpolate_to_grid(
+            dimensions, affine, method=method, continuous=continuous
+        )
         if len(image.shape) == 3:
             image = image[..., None]
 
         if out_original is not None:
             img = nibabel.Nifti1Pair(image, affine)
-            img.header.set_xyzt_units('mm')
+            img.header.set_xyzt_units("mm")
             img.set_qform(affine)
             if image.dtype == np.float64:
                 img.set_data_dtype(np.float32)
@@ -3621,23 +3728,28 @@ class Data(object):
 
         img = nifti_transform(
             (image, affine),
-            warp, reference, out=out, order=order,
-            inverse_warp=inverse_warp, binary=binary,
-            fix_boundary_zeros=fix_boundary_zeros)
+            warp,
+            reference,
+            out=out,
+            order=order,
+            inverse_warp=inverse_warp,
+            binary=binary,
+            fix_boundary_zeros=fix_boundary_zeros,
+        )
 
         del image
         gc.collect()
         return img
 
     def _norm(self):
-        ''' simple norm of the field '''
+        """simple norm of the field"""
         if self.nr_comp == 1:
             return np.abs(self.value).reshape(-1)
         else:
             return np.linalg.norm(self.value, axis=1)
 
     def _weights(self, roi=slice(None)):
-        ''' Area / volume of each nodes or element '''
+        """Area / volume of each nodes or element"""
         if isinstance(self, NodeData):
             return self.mesh.nodes_volumes_or_areas()[roi]
 
@@ -3647,9 +3759,8 @@ class Data(object):
         else:
             raise NotImplementedError
 
-
     def mean_field_norm(self):
-        ''' Calculates V*w/sum(w)
+        """Calculates V*w/sum(w)
         Where V is the magnitude of the field, and w is the volume or area of the mesh where
         the field is defined. This can be used as a focality metric. It should give out
         small values when the field is focal.
@@ -3658,11 +3769,13 @@ class Data(object):
         ----------
         eff_area: float
             Area or volume of mesh, weighted by the field
-        '''
+        """
         self._test_msh()
         if np.all(np.isin([2, 4], self.mesh.elm.elm_type)):
-            warnings.warn('Calculating effective volume/area of fields in meshes with'
-                          ' triangles and tetrahedra can give misleading results')
+            warnings.warn(
+                "Calculating effective volume/area of fields in meshes with"
+                " triangles and tetrahedra can give misleading results"
+            )
 
         norm = self._norm()
         weights = self._weights()
@@ -3670,7 +3783,7 @@ class Data(object):
         return np.sum(norm * weights) / np.sum(weights)
 
     def get_percentiles(self, percentile=[99.9], roi=None):
-        ''' Get percentiles of field (or field magnitude, if a vector field)
+        """Get percentiles of field (or field magnitude, if a vector field)
 
         Parameters
         ------------
@@ -3684,7 +3797,7 @@ class Data(object):
         ----------
         f_p: ndarray
             Field at the given percentiles
-        '''
+        """
         self._test_msh()
         if roi is None:
             roi = slice(None)
@@ -3707,7 +3820,7 @@ class Data(object):
         return v[closest]
 
     def get_focality(self, cuttofs=[50, 70], peak_percentile=99.9):
-        ''' Caluclates field focality as the area/volume of the mesh experiencing a field
+        """Caluclates field focality as the area/volume of the mesh experiencing a field
         magnitude of above (cut_off% of the field peak). peak_percentile gives what is the
         field peak
 
@@ -3723,11 +3836,13 @@ class Data(object):
         ---------
         focality: ndarray
             Area/volume exceeding the cuttof of the peak value
-        '''
+        """
         self._test_msh()
         if np.all(np.isin([2, 4], self.mesh.elm.elm_type)):
-            warnings.warn('Calculating focality of fields in meshes with'
-                          ' triangles and tetrahedra can give misleading results')
+            warnings.warn(
+                "Calculating focality of fields in meshes with"
+                " triangles and tetrahedra can give misleading results"
+            )
 
         norm = self._norm()
         s = np.argsort(norm)
@@ -3744,8 +3859,10 @@ class Data(object):
 
         return focality
 
-    def summary(self, percentiles=(99.9, 99, 95), focality_cutoffs=(75, 50), units=None):
-        ''' Creates a text summary of the field
+    def summary(
+        self, percentiles=(99.9, 99, 95), focality_cutoffs=(75, 50), units=None
+    ):
+        """Creates a text summary of the field
 
         Parameters
         ------------
@@ -3755,51 +3872,58 @@ class Data(object):
             Cuttofs for focality calculations. Default: (75, 50)
         units: str or None
             Name of field units or automatically determine from name
-        '''
+        """
         if units is None:
-            if self.field_name in ['E', 'magnE', 'D', 'g']:
-                units = 'V/m'
-            elif self.field_name in ['J', 'magnJ']:
-                units = 'A/m²'
-            elif self.field_name == 'v':
-                units = 'V'
+            if self.field_name in ["E", "magnE", "D", "g"]:
+                units = "V/m"
+            elif self.field_name in ["J", "magnJ"]:
+                units = "A/m²"
+            elif self.field_name == "v":
+                units = "V"
             else:
-                units = ''
+                units = ""
         if units:
-            units = ' ' + units
+            units = " " + units
 
         if 2 in self.mesh.elm.elm_type:
-            units_mesh = ' mm²'
+            units_mesh = " mm²"
         elif 4 in self.mesh.elm.elm_type:
-            units_mesh = ' mm³'
+            units_mesh = " mm³"
         if np.all(np.isin([2, 4], self.mesh.elm.elm_type)):
-            warnings.warn('Field summary in meshes with'
-                          ' triangles and tetrahedra can give misleading results')
+            warnings.warn(
+                "Field summary in meshes with"
+                " triangles and tetrahedra can give misleading results"
+            )
         norm = self._norm()
         weights = self._weights()
-        mean_norm = np.sum(norm * weights)/np.sum(weights)
+        mean_norm = np.sum(norm * weights) / np.sum(weights)
         prc = self.get_percentiles(percentiles)
         focality = self.get_focality(focality_cutoffs, percentiles[-1])
-        string = f'Field: {self.field_name}\n'
-        string += 'Peak Values:\n'
-        n_spaces = len(f'{percentiles[0]:.2e}{units} ') - 5
-        string += (n_spaces*' ' + '|').join(f'{p:.1f}%' for p in percentiles) + '\n'
-        string += ' |'.join(f'{p:.2e}{units}' for p in prc) + '\n'
-        string += 'Focality:\n'
-        n_spaces = len(f'{focality[0]:.2e}{units_mesh} ') - 5
-        string += (n_spaces*' ' + '|').join(f'{fc:.1f}%' for fc in focality_cutoffs) + '\n'
-        string += ' |'.join(f'{fv:.2e}{units_mesh}' for fv in focality) + '\n'
+        string = f"Field: {self.field_name}\n"
+        string += "Peak Values:\n"
+        n_spaces = len(f"{percentiles[0]:.2e}{units} ") - 5
+        string += (n_spaces * " " + "|").join(f"{p:.1f}%" for p in percentiles) + "\n"
+        string += " |".join(f"{p:.2e}{units}" for p in prc) + "\n"
+        string += "Focality:\n"
+        n_spaces = len(f"{focality[0]:.2e}{units_mesh} ") - 5
+        string += (n_spaces * " " + "|").join(
+            f"{fc:.1f}%" for fc in focality_cutoffs
+        ) + "\n"
+        string += " |".join(f"{fv:.2e}{units_mesh}" for fv in focality) + "\n"
 
-        string += f'Mean Field:\n{mean_norm:.2f}{units}'
+        string += f"Mean Field:\n{mean_norm:.2f}{units}"
         return string
 
-    def view_options(self, v_range='auto',
-                     percentile=False,
-                     visible=True,
-                     visible_tags=None,
-                     saturate=True,
-                     idx=None):
-        ''' Generates a View object with visualization opions
+    def view_options(
+        self,
+        v_range="auto",
+        percentile=False,
+        visible=True,
+        visible_tags=None,
+        saturate=True,
+        idx=None,
+    ):
+        """Generates a View object with visualization opions
 
         Parameters
         -----------
@@ -3823,7 +3947,7 @@ class Data(object):
         ----------
         view: gmsh_visualization.View
             view object
-        '''
+        """
         self._test_msh()
         view = gmsh_view.View(indx=idx)
         if isinstance(self, NodeData):
@@ -3845,12 +3969,12 @@ class Data(object):
             two_sided = True
         else:
             two_sided = False
-        if v_range == 'auto':
+        if v_range == "auto":
             if two_sided:
                 prc = self.get_percentiles([0.1, 99.9], roi)
                 max_ = np.max(np.abs(prc))
                 # for sparse fields
-                if np.isclose(max_, 0.):
+                if np.isclose(max_, 0.0):
                     prc = self.get_percentiles([0, 100], roi)
                     max_ = np.max(np.abs(prc))
                 min_ = -max_
@@ -3862,16 +3986,15 @@ class Data(object):
                     min_ = 0
                     max_ = self.get_percentiles(99.9, roi)[0]
                     # for sparse fields
-                    if np.isclose(max_, 0.):
+                    if np.isclose(max_, 0.0):
                         max_ = self.get_percentiles(100, roi)[0]
 
                 # All negative
                 else:
                     max_ = 0
                     min_ = self.get_percentiles(0.1, roi)[0]
-                    if np.isclose(min_, 0.):
+                    if np.isclose(min_, 0.0):
                         min_ = self.get_percentiles(0, roi)[0]
-
 
             # if the min and the max are close together (eg. masks)
             if np.isclose(min_, max_, atol=1e-12):
@@ -3894,8 +4017,8 @@ class Data(object):
 
     @property
     def indexing_nr(self):
-        ''' Nodes or element numbers '''
-        raise Exception('indexing_nr is not defined')
+        """Nodes or element numbers"""
+        raise Exception("indexing_nr is not defined")
 
     def __eq__(self, other):
         try:
@@ -3931,7 +4054,7 @@ class Data(object):
         return cp
 
     def __str__(self):
-        return self.field_name + '\n' + self.value.__str__()
+        return self.field_name + "\n" + self.value.__str__()
 
     def __truediv__(self, other):
         cp = copy.copy(self)
@@ -3950,11 +4073,12 @@ class Data(object):
 
     def _test_msh(self):
         if self.mesh is None:
-            raise ValueError('Cannot evaluate function if .mesh property is not '
-                             'assigned')
+            raise ValueError(
+                "Cannot evaluate function if .mesh property is not assigned"
+            )
 
-    def write_hdf5(self, hdf5_fn, path='./'):
-        ''' Writes the field to an hdf5 file
+    def write_hdf5(self, hdf5_fn, path="./"):
+        """Writes the field to an hdf5 file
 
         Parameters
         -----------
@@ -3963,8 +4087,8 @@ class Data(object):
         path: str
             path in the hdf5 file where the field should be saved
 
-        '''
-        with h5py.File(hdf5_fn, 'a') as f:
+        """
+        with h5py.File(hdf5_fn, "a") as f:
             try:
                 g = f.create_group(path)
             except ValueError:
@@ -3978,7 +4102,7 @@ class Data(object):
 
     @classmethod
     def read_hdf5_data_matrix_row(cls, leadfield_fn, field_name, row):
-        """ Reads a row of an hdf5 data matrix and store it as Data
+        """Reads a row of an hdf5 data matrix and store it as Data
 
         Parameters
         -----------
@@ -3995,9 +4119,11 @@ class Data(object):
             instance with the fields
         """
         import h5py
-        with h5py.File(leadfield_fn, 'r') as f:
+
+        with h5py.File(leadfield_fn, "r") as f:
             value = f[field_name][row]
         return cls(value, field_name)
+
 
 class ElementData(Data):
     """
@@ -4032,17 +4158,17 @@ class ElementData(Data):
         number of dimensions per data point (1 for scalars, 3 for vectors)
     """
 
-    def __init__(self, value, name='', mesh=None):
+    def __init__(self, value, name="", mesh=None):
         Data.__init__(self, value=value, name=name, mesh=mesh)
 
     @property
     def elm_number(self):
-        '''Element numbers (1, ..., nr)'''
-        return np.arange(1, self.nr + 1, dtype='int32')
+        """Element numbers (1, ..., nr)"""
+        return np.arange(1, self.nr + 1, dtype="int32")
 
     @property
     def indexing_nr(self):
-        '''Same as elm_number'''
+        """Same as elm_number"""
         return self.elm_number
 
     def elm_data2node_data(self):
@@ -4067,8 +4193,10 @@ class ElementData(Data):
         self._test_msh()
         msh = self.mesh
         if self.nr != msh.elm.nr:
-            raise ValueError("The number of data points in the data "
-                             "structure should be equal to the number of elements in the mesh")
+            raise ValueError(
+                "The number of data points in the data "
+                "structure should be equal to the number of elements in the mesh"
+            )
         nd = np.zeros((msh.nodes.nr, self.nr_comp))
 
         if len(msh.elm.tetrahedra) == 0:
@@ -4084,8 +4212,9 @@ class ElementData(Data):
 
         # Get the point in the outside surface
         points_outside = np.unique(msh.elm.get_outside_faces())
-        outside_points_mask = np.isin(msh.elm[msh.elm.tetrahedra],
-                                      points_outside).reshape(-1, 4)
+        outside_points_mask = np.isin(
+            msh.elm[msh.elm.tetrahedra], points_outside
+        ).reshape(-1, 4)
         masked_th_nodes = np.copy(msh.elm[msh.elm.tetrahedra])
         masked_th_nodes[outside_points_mask] = -1
 
@@ -4099,9 +4228,10 @@ class ElementData(Data):
         b = np.empty((len(uq_in), 4, self.nr_comp), self.value.dtype)
         for i in range(4):
             for j in range(i, 4):
-                A[:, i, j] = np.bincount(th_nodes.reshape(-1),
-                                         np.repeat(baricenters[:, i], 4) *
-                                         np.repeat(baricenters[:, j], 4))
+                A[:, i, j] = np.bincount(
+                    th_nodes.reshape(-1),
+                    np.repeat(baricenters[:, i], 4) * np.repeat(baricenters[:, j], 4),
+                )
         A[:, 1, 0] = A[:, 0, 1]
         A[:, 2, 0] = A[:, 0, 2]
         A[:, 3, 0] = A[:, 0, 3]
@@ -4111,16 +4241,17 @@ class ElementData(Data):
 
         for j in range(self.nr_comp):
             for i in range(4):
-                b[:, i, j] = np.bincount(th_nodes.reshape(-1),
-                                         np.repeat(baricenters[:, i], 4) *
-                                         np.repeat(value[:, j], 4))
+                b[:, i, j] = np.bincount(
+                    th_nodes.reshape(-1),
+                    np.repeat(baricenters[:, i], 4) * np.repeat(value[:, j], 4),
+                )
 
         try:
             a = np.linalg.solve(A[uq_in != -1], b[uq_in != -1])
         except np.linalg.LinAlgError:
             # The mesh probably contains "duplicate" nodes
             # TODO fix the mesh instead - then this shouldn't be necessary
-            used_nodes = uq_in[uq_in != -1]-1
+            used_nodes = uq_in[uq_in != -1] - 1
             the_nodes = msh.nodes.node_coord[used_nodes]
 
             S = np.linalg.svd(A[uq_in != -1], compute_uv=False)
@@ -4130,49 +4261,61 @@ class ElementData(Data):
             di, ix = tree.query(the_nodes[to_interp])
 
             warnings.warn(
-                ("NumPy raised a `LinAlgError` interpolating to certain nodes "
-                 f"(mean coordinate {the_nodes[to_interp].mean(0)}, "
-                 f"standard deviation {the_nodes[to_interp].std(0)}). "
-                 f"Using nearest neighbor interpolation at {to_interp.sum()} "
-                 f"nodes (maximum distance is {di.max():.5f})."
+                (
+                    "NumPy raised a `LinAlgError` interpolating to certain nodes "
+                    f"(mean coordinate {the_nodes[to_interp].mean(0)}, "
+                    f"standard deviation {the_nodes[to_interp].std(0)}). "
+                    f"Using nearest neighbor interpolation at {to_interp.sum()} "
+                    f"nodes (maximum distance is {di.max():.5f})."
                 )
             )
 
             a = np.zeros(b[uq_in != -1].shape)
-            a[to_compute] = np.linalg.solve(A[uq_in != -1][to_compute], b[uq_in != -1][to_compute])
+            a[to_compute] = np.linalg.solve(
+                A[uq_in != -1][to_compute], b[uq_in != -1][to_compute]
+            )
             a[to_interp] = a[to_compute][ix]
 
-        p = np.hstack([np.ones((np.sum(uq_in != -1), 1)), msh.nodes[uq_in[uq_in != -1]]])
-        f = np.einsum('ij, ijk -> ik', p, a)
+        p = np.hstack(
+            [np.ones((np.sum(uq_in != -1), 1)), msh.nodes[uq_in[uq_in != -1]]]
+        )
+        f = np.einsum("ij, ijk -> ik", p, a)
         nd[uq_in[uq_in != -1]] = f
 
         # Assigns the average value to the points in the outside surface
         masked_th_nodes = np.copy(msh.elm[msh.elm.tetrahedra])
         masked_th_nodes[~outside_points_mask] = -1
-        uq_out, th_nodes_out = np.unique(masked_th_nodes,
-                                         return_inverse=True)
+        uq_out, th_nodes_out = np.unique(masked_th_nodes, return_inverse=True)
         sum_vals = np.empty((len(uq_out), self.nr_comp), self.value.dtype)
         for j in range(self.nr_comp):
-            sum_vals[:, j] = np.bincount(th_nodes_out.reshape(-1),
-                                         np.repeat(value[:, j], 4) *
-                                         np.repeat(volumes, 4))
+            sum_vals[:, j] = np.bincount(
+                th_nodes_out.reshape(-1),
+                np.repeat(value[:, j], 4) * np.repeat(volumes, 4),
+            )
 
         sum_vols = np.bincount(th_nodes_out.reshape(-1), np.repeat(volumes, 4))
 
-        nd[uq_out[uq_out != -1]] = (sum_vals/sum_vols[:, None])[uq_out != -1]
+        nd[uq_out[uq_out != -1]] = (sum_vals / sum_vols[:, None])[uq_out != -1]
 
         nd.value = np.squeeze(nd.value)
         return nd
 
     def as_nodedata(self):
-        ''' Converts the current ElementData instance to NodaData
+        """Converts the current ElementData instance to NodaData
         For more information see the elm_data2node_data method
-        '''
+        """
         return self.elm_data2node_data()
 
-    def interpolate_scattered(self, points, out_fill=np.nan, method='linear',
-                              continuous=False, squeeze=True, th_indices=None):
-        ''' Interpolates the ElementData into the points by finding the element
+    def interpolate_scattered(
+        self,
+        points,
+        out_fill=np.nan,
+        method="linear",
+        continuous=False,
+        squeeze=True,
+        th_indices=None,
+    ):
+        """Interpolates the ElementData into the points by finding the element
         containing the point and assigning the value in it
 
         Parameters
@@ -4199,23 +4342,23 @@ class ElementData(Data):
         -------
         f: np.ndarray
             Value of function in the points
-        '''
+        """
 
         self._test_msh()
 
         msh = copy.deepcopy(self.mesh)
 
         if len(msh.elm.tetrahedra) == 0:
-            raise InvalidMeshError('Mesh has no volume elements')
+            raise InvalidMeshError("Mesh has no volume elements")
         if len(self.value.shape) > 1:
             f = np.zeros((points.shape[0], self.nr_comp), self.value.dtype)
         else:
-            f = np.zeros((points.shape[0], ), self.value.dtype)
+            f = np.zeros((points.shape[0],), self.value.dtype)
 
-        if method == 'assign':
-
-            th_with_points = \
-                msh.find_tetrahedron_with_points(points, compute_baricentric=False)
+        if method == "assign":
+            th_with_points = msh.find_tetrahedron_with_points(
+                points, compute_baricentric=False
+            )
 
             if th_indices is not None:
                 th_with_points[~np.isin(th_with_points, th_indices)] = -1
@@ -4224,18 +4367,20 @@ class ElementData(Data):
 
             f[inside] = self[th_with_points[inside]]
 
-        elif method == 'linear':
-
+        elif method == "linear":
             if continuous:
                 nd = self.elm_data2node_data()
-                f = nd.interpolate_scattered(points, out_fill=out_fill, squeeze=False, th_indices=th_indices)
+                f = nd.interpolate_scattered(
+                    points, out_fill=out_fill, squeeze=False, th_indices=th_indices
+                )
 
                 # nd.interpolate_scattered has taken care of the points outside, so set all elements in 'inside' to be True
-                inside = np.ones((points.shape[0],), dtype='bool')
+                inside = np.ones((points.shape[0],), dtype="bool")
 
             else:
-
-                th_with_points, bar = msh.find_tetrahedron_with_points(points, compute_baricentric=True)
+                th_with_points, bar = msh.find_tetrahedron_with_points(
+                    points, compute_baricentric=True
+                )
 
                 if th_indices is not None:
                     th_with_points[~np.isin(th_with_points, th_indices)] = -1
@@ -4244,7 +4389,6 @@ class ElementData(Data):
 
                 # if any points are inside
                 if np.any(inside):
-
                     # get the indices of True elements in 'inside'
                     where_inside = np.where(inside)[0]
 
@@ -4253,7 +4397,9 @@ class ElementData(Data):
                     th = th_with_points[where_inside]
 
                     # get sorted unique elements of `th`
-                    sorted_th, arg_th, arg_inv = np.unique(th, return_index=True, return_inverse=True)
+                    sorted_th, arg_th, arg_inv = np.unique(
+                        th, return_index=True, return_inverse=True
+                    )
 
                     # get the 'tag1' from 'msh' for every element in 'th' in 'points' order
                     sorted_tag = msh.elm.tag1[sorted_th - 1]
@@ -4284,35 +4430,40 @@ class ElementData(Data):
                         idx = np.searchsorted(msh_with_t, th_with_t)
 
                         if where_inside_with_t.size and len(nd.value.shape) == 1:
-                            f[where_inside_with_t] = np.einsum('ik, ik -> i',
-                                                               nd[msh_tag.elm[idx+1]],
-                                                               bar[where_inside_with_t])
+                            f[where_inside_with_t] = np.einsum(
+                                "ik, ik -> i",
+                                nd[msh_tag.elm[idx + 1]],
+                                bar[where_inside_with_t],
+                            )
                         elif where_inside_with_t.size:
-                            f[where_inside_with_t] = np.einsum('ikj, ik -> ij',
-                                                               nd[msh_tag.elm[idx+1]],
-                                                               bar[where_inside_with_t])
+                            f[where_inside_with_t] = np.einsum(
+                                "ikj, ik -> ij",
+                                nd[msh_tag.elm[idx + 1]],
+                                bar[where_inside_with_t],
+                            )
 
         else:
-            raise ValueError('Invalid interpolation method!')
+            raise ValueError("Invalid interpolation method!")
 
         # Finally, fill in the unassigned values
         if np.any(~inside):
-
-            if out_fill == 'nearest':
+            if out_fill == "nearest":
                 if th_indices is not None:
-
                     msh.add_element_field(self.value, self.field_name)
 
                     is_in = np.isin(msh.elm.elm_number, th_indices)
                     elm_in_volume = msh.elm.elm_number[is_in]
                     msh_in_volume = msh.crop_mesh(elements=elm_in_volume)
 
-                    _, nearest = msh_in_volume.find_closest_element(points[~inside], return_index=True)
+                    _, nearest = msh_in_volume.find_closest_element(
+                        points[~inside], return_index=True
+                    )
 
                     f[~inside] = msh_in_volume.elmdata[-1][nearest]
                 else:
-
-                    _, nearest = msh.find_closest_element(points[~inside], return_index=True)
+                    _, nearest = msh.find_closest_element(
+                        points[~inside], return_index=True
+                    )
 
                     f[~inside] = self[nearest]
 
@@ -4323,8 +4474,8 @@ class ElementData(Data):
             f = np.squeeze(f)
         return f
 
-    def interpolate_to_grid(self, n_voxels, affine, method='linear', continuous=False):
-        ''' Interpolates the ElementData into a grid.
+    def interpolate_to_grid(self, n_voxels, affine, method="linear", continuous=False):
+        """Interpolates the ElementData into a grid.
             finds which tetrahedra contais the given voxel and
             assign the value of the tetrahedra to the voxel.
 
@@ -4347,19 +4498,21 @@ class ElementData(Data):
         image: ndarray
             An (n_voxels[0], n_voxels[1], n_voxels[2], nr_comp) matrix with
             interpolated values. If nr_comp == 1, the last dimension is squeezed out
-        '''
+        """
 
         msh = self.mesh
         self._test_msh()
         if self.nr != msh.elm.nr:
-            raise ValueError('Invalid Mesh! Mesh should have the same number of elements'
-                             'as the number of data points')
+            raise ValueError(
+                "Invalid Mesh! Mesh should have the same number of elements"
+                "as the number of data points"
+            )
         if len(n_voxels) != 3:
-            raise ValueError('n_voxels should have length = 3')
+            raise ValueError("n_voxels should have length = 3")
         if affine.shape != (4, 4):
-            raise ValueError('Affine should be a 4x4 matrix')
+            raise ValueError("Affine should be a 4x4 matrix")
         if len(msh.elm.tetrahedra) == 0:
-            raise InvalidMeshError('Mesh has no volume elements')
+            raise InvalidMeshError("Mesh has no volume elements")
 
         msh_th = msh.crop_mesh(elm_type=4)
         msh_th.elmdata = []
@@ -4369,22 +4522,27 @@ class ElementData(Data):
             v = v.T
         v = v[msh.elm.elm_type == 4]
 
-        if method == 'assign':
+        if method == "assign":
             nd = np.hstack([msh_th.nodes.node_coord, np.ones((msh_th.nodes.nr, 1))])
             inv_affine = np.linalg.inv(affine)
             nd = inv_affine.dot(nd.T).T[:, :3]
 
             # initialize image
-            image = np.zeros([n_voxels[0], n_voxels[1], n_voxels[2], self.nr_comp], dtype=float)
+            image = np.zeros(
+                [n_voxels[0], n_voxels[1], n_voxels[2], self.nr_comp], dtype=float
+            )
             field = v.astype(float)
             image = cython_msh.interp_grid(
-                np.array(n_voxels, dtype=int), field, nd.astype(float),
-                (msh_th.elm.node_number_list - 1).astype(int))
+                np.array(n_voxels, dtype=int),
+                field,
+                nd.astype(float),
+                (msh_th.elm.node_number_list - 1).astype(int),
+            )
             image = image.astype(self.value.dtype)
             if self.nr_comp == 1:
                 image = np.squeeze(image, axis=3)
 
-        elif method == 'linear':
+        elif method == "linear":
             if continuous:
                 nd = self.elm_data2node_data()
                 image = nd.interpolate_to_grid(n_voxels, affine)
@@ -4405,7 +4563,7 @@ class ElementData(Data):
                     del nd
                     gc.collect()
         else:
-            raise ValueError('Invalid interpolation method!')
+            raise ValueError("Invalid interpolation method!")
 
         del msh_th
         del v
@@ -4414,18 +4572,19 @@ class ElementData(Data):
         return image
 
     def assign_triangle_values(self):
-        ''' In-place Assigns field value at triangle as the same as the one of the tetrahedra with
+        """In-place Assigns field value at triangle as the same as the one of the tetrahedra with
         a similar tag to it.
 
-        '''
+        """
         self._test_msh()
         msh = self.mesh
         corrensponding = msh.find_corresponding_tetrahedra()
-        self[msh.elm.triangles[corrensponding >= 0]] =\
-                self[corrensponding[corrensponding >= 0]]
+        self[msh.elm.triangles[corrensponding >= 0]] = self[
+            corrensponding[corrensponding >= 0]
+        ]
 
     def calc_flux(self, triangles=None):
-        ''' Calculates the flux of a vectorial field
+        """Calculates the flux of a vectorial field
 
         Parameters
         -----------
@@ -4437,19 +4596,20 @@ class ElementData(Data):
         flux: float
             total field crossing the surface
 
-        '''
+        """
         self._test_msh()
         msh = self.mesh
         if triangles is None:
             triangles = msh.elm.triangles
         normals = msh.triangle_normals()
         areas = msh.elements_volumes_and_areas()
-        flux = np.sum(areas[triangles] *
-                      np.sum(normals[triangles] * self[triangles], axis=1))
+        flux = np.sum(
+            areas[triangles] * np.sum(normals[triangles] * self[triangles], axis=1)
+        )
         return flux
 
     def norm(self, ord=2):
-        ''' Calculate the norm (magnitude) of the field
+        """Calculate the norm (magnitude) of the field
 
         Parameters
         ------------
@@ -4460,20 +4620,22 @@ class ElementData(Data):
         -----------
         norm: NodeData
             NodeData field with the norm the field
-        '''
+        """
         if len(self.value.shape) == 1:
-            ed = ElementData(np.abs(self.value),
-                             name='magn' + self.field_name,
-                             mesh=self.mesh)
+            ed = ElementData(
+                np.abs(self.value), name="magn" + self.field_name, mesh=self.mesh
+            )
         else:
-            ed = ElementData(np.linalg.norm(self.value, axis=1, ord=ord),
-                             name='magn' + self.field_name,
-                             mesh=self.mesh)
+            ed = ElementData(
+                np.linalg.norm(self.value, axis=1, ord=ord),
+                name="magn" + self.field_name,
+                mesh=self.mesh,
+            )
         return ed
 
     @classmethod
-    def from_data_grid(cls, mesh, data_grid, affine, field_name='', **kwargs):
-        ''' Defines an ElementData field from a mesh and gridded data
+    def from_data_grid(cls, mesh, data_grid, affine, field_name="", **kwargs):
+        """Defines an ElementData field from a mesh and gridded data
 
         Parameters
         ---------
@@ -4485,32 +4647,35 @@ class ElementData(Data):
             Array describing the affine transformation from the data grid to the mesh
             space
         kwargs: see the scipy.ndimage.map_coordinates documentation
-        '''
-        assert len(data_grid.shape) in [3, 4], \
-                'The data grid must have 3 or 4 dimensions'
+        """
+        assert len(data_grid.shape) in [3, 4], (
+            "The data grid must have 3 or 4 dimensions"
+        )
         bar = mesh.elements_baricenters().value.T
         iM = np.linalg.inv(affine)
         coords = iM[:3, :3].dot(bar) + iM[:3, 3, None]
         # Deal with edges
         for i in range(3):
             s = data_grid.shape[i]
-            coords[i, (coords[i, :] > -0.5) * (coords[i, :] < 0)] = 0.
-            coords[i, (coords[i, :] > s-1) * (coords[i, :] < s-0.5)] = s-1
+            coords[i, (coords[i, :] > -0.5) * (coords[i, :] < 0)] = 0.0
+            coords[i, (coords[i, :] > s - 1) * (coords[i, :] < s - 0.5)] = s - 1
 
         f = partial(
-            scipy.ndimage.map_coordinates, coordinates=coords,
-            output=data_grid.dtype, **kwargs)
+            scipy.ndimage.map_coordinates,
+            coordinates=coords,
+            output=data_grid.dtype,
+            **kwargs,
+        )
         if len(data_grid.shape) == 4:
             indim = data_grid.shape[3]
-            outdata = np.array(
-                [f(data_grid[..., i]) for i in range(indim)]).T
+            outdata = np.array([f(data_grid[..., i]) for i in range(indim)]).T
         elif len(data_grid.shape) == 3:
             outdata = f(data_grid)
 
         ed = cls(outdata, name=field_name, mesh=mesh)
         return ed
 
-    def append_to_mesh(self, fn, mode='binary'):
+    def append_to_mesh(self, fn, mode="binary"):
         """Appends this ElementData fields to a file
 
         Parameters
@@ -4520,46 +4685,51 @@ class ElementData(Data):
             mode: binary or ascii
                 mode in which to write
         """
-        with open(fn, 'ab') as f:
-            f.write(b'$ElementData\n')
+        with open(fn, "ab") as f:
+            f.write(b"$ElementData\n")
             # string tags
-            f.write((str(1) + '\n').encode('ascii'))
-            f.write(('"' + self.field_name + '"\n').encode('ascii'))
+            f.write((str(1) + "\n").encode("ascii"))
+            f.write(('"' + self.field_name + '"\n').encode("ascii"))
 
-            f.write((str(1) + '\n').encode('ascii'))
-            f.write((str(0) + '\n').encode('ascii'))
+            f.write((str(1) + "\n").encode("ascii"))
+            f.write((str(0) + "\n").encode("ascii"))
 
-            f.write((str(4) + '\n').encode('ascii'))
-            f.write((str(0) + '\n').encode('ascii'))
-            f.write((str(self.nr_comp) + '\n').encode('ascii'))
-            f.write((str(self.nr) + '\n').encode('ascii'))
-            f.write((str(0) + '\n').encode('ascii'))
+            f.write((str(4) + "\n").encode("ascii"))
+            f.write((str(0) + "\n").encode("ascii"))
+            f.write((str(self.nr_comp) + "\n").encode("ascii"))
+            f.write((str(self.nr) + "\n").encode("ascii"))
+            f.write((str(0) + "\n").encode("ascii"))
 
-            if mode == 'ascii':
+            if mode == "ascii":
                 for ii in range(self.nr):
-                    f.write((str(self.elm_number[ii]) + ' ' +
-                             str(self.value[ii]).translate(None, '[](),') +
-                             '\n').encode('ascii'))
+                    f.write(
+                        (
+                            str(self.elm_number[ii])
+                            + " "
+                            + str(self.value[ii]).translate(None, "[](),")
+                            + "\n"
+                        ).encode("ascii")
+                    )
 
-            elif mode == 'binary':
-
-                elm_number = self.elm_number.astype('int32')
-                value = self.value.astype('float64')
+            elif mode == "binary":
+                elm_number = self.elm_number.astype("int32")
+                value = self.value.astype("float64")
                 try:
                     value.shape[1]
                 except IndexError:
                     value = value[:, np.newaxis]
                 m = elm_number[:, np.newaxis]
                 for i in range(self.nr_comp):
-                    m = np.concatenate((m,
-                                        value[:, i].astype('float64').view('int32').reshape(-1, 2)),
-                                       axis=1)
+                    m = np.concatenate(
+                        (m, value[:, i].astype("float64").view("int32").reshape(-1, 2)),
+                        axis=1,
+                    )
                 f.write(m.tobytes())
 
             else:
                 raise IOError("invalid mode:", mode)
 
-            f.write(b'$EndElementData\n')
+            f.write(b"$EndElementData\n")
 
     def write(self, fn):
         """Writes this ElementData fields to a file with field information only
@@ -4572,38 +4742,39 @@ class ElementData(Data):
             mode: binary or ascii
                 mode in which to write
         """
-        with open(fn, 'wb') as f:
-            f.write(b'$MeshFormat\n2.2 1 8\n')
-            f.write(struct.pack('i', 1))
-            f.write(b'\n$EndMeshFormat\n')
-            f.write(b'$ElementData\n')
+        with open(fn, "wb") as f:
+            f.write(b"$MeshFormat\n2.2 1 8\n")
+            f.write(struct.pack("i", 1))
+            f.write(b"\n$EndMeshFormat\n")
+            f.write(b"$ElementData\n")
             # string tags
-            f.write((str(1) + '\n').encode('ascii'))
-            f.write(('"' + self.field_name + '"\n').encode('ascii'))
+            f.write((str(1) + "\n").encode("ascii"))
+            f.write(('"' + self.field_name + '"\n').encode("ascii"))
 
-            f.write((str(1) + '\n').encode('ascii'))
-            f.write((str(0) + '\n').encode('ascii'))
+            f.write((str(1) + "\n").encode("ascii"))
+            f.write((str(0) + "\n").encode("ascii"))
 
-            f.write((str(4) + '\n').encode('ascii'))
-            f.write((str(0) + '\n').encode('ascii'))
-            f.write((str(self.nr_comp) + '\n').encode('ascii'))
-            f.write((str(self.nr) + '\n').encode('ascii'))
-            f.write((str(0) + '\n').encode('ascii'))
+            f.write((str(4) + "\n").encode("ascii"))
+            f.write((str(0) + "\n").encode("ascii"))
+            f.write((str(self.nr_comp) + "\n").encode("ascii"))
+            f.write((str(self.nr) + "\n").encode("ascii"))
+            f.write((str(0) + "\n").encode("ascii"))
 
-            elm_number = self.elm_number.astype('int32')
-            value = self.value.astype('float64')
+            elm_number = self.elm_number.astype("int32")
+            value = self.value.astype("float64")
             try:
                 value.shape[1]
             except IndexError:
                 value = value[:, np.newaxis]
             m = elm_number[:, np.newaxis]
             for i in range(self.nr_comp):
-                m = np.concatenate((m,
-                                    value[:, i].astype('float64').view('int32').reshape(-1, 2)),
-                                   axis=1)
+                m = np.concatenate(
+                    (m, value[:, i].astype("float64").view("int32").reshape(-1, 2)),
+                    axis=1,
+                )
             f.write(m.tobytes())
 
-            f.write(b'$EndElementData\n')
+            f.write(b"$EndElementData\n")
 
 
 class NodeData(Data):
@@ -4638,17 +4809,17 @@ class NodeData(Data):
         number of dimensions per data point (1 for scalars, 3 for vectors)
     """
 
-    def __init__(self, value, name='', mesh=None):
+    def __init__(self, value, name="", mesh=None):
         Data.__init__(self, value=value, name=name, mesh=mesh)
 
     @property
     def node_number(self):
-        ''' Node numbers (1, ..., nr)'''
-        return np.arange(1, self.nr + 1, dtype='int32')
+        """Node numbers (1, ..., nr)"""
+        return np.arange(1, self.nr + 1, dtype="int32")
 
     @property
     def indexing_nr(self):
-        ''' Same as node_numbers'''
+        """Same as node_numbers"""
         return self.node_number
 
     def as_nodedata(self):
@@ -4666,10 +4837,11 @@ class NodeData(Data):
         """
         self._test_msh()
         msh = self.mesh
-        if (self.nr != msh.nodes.nr):
+        if self.nr != msh.nodes.nr:
             raise ValueError(
                 "The number of data points in the data structure should be"
-                "equal to the number of elements in the mesh")
+                "equal to the number of elements in the mesh"
+            )
 
         triangles = np.where(msh.elm.elm_type == 2)[0]
         tetrahedra = np.where(msh.elm.elm_type == 4)[0]
@@ -4680,18 +4852,18 @@ class NodeData(Data):
             elm_data = np.zeros((msh.elm.nr, self.nr_comp), dtype=float)
 
         if len(triangles) > 0:
-            elm_data[triangles] = \
-                np.average(self.value[msh.elm.node_number_list[
-                           triangles, :3] - 1], axis=1)
+            elm_data[triangles] = np.average(
+                self.value[msh.elm.node_number_list[triangles, :3] - 1], axis=1
+            )
         if len(tetrahedra) > 0:
-            elm_data[tetrahedra] = \
-                np.average(self.value[msh.elm.node_number_list[
-                           tetrahedra, :4] - 1], axis=1)
+            elm_data[tetrahedra] = np.average(
+                self.value[msh.elm.node_number_list[tetrahedra, :4] - 1], axis=1
+            )
 
         return ElementData(elm_data, self.field_name, mesh=msh)
 
     def gradient(self):
-        ''' Calculates the gradient of a field in the middle of the tetrahedra
+        """Calculates the gradient of a field in the middle of the tetrahedra
 
         Parameters
         ------
@@ -4702,33 +4874,34 @@ class NodeData(Data):
         -----
         grad: simnibs.ElementData
             An ElementData field with gradient in the middle of each tetrahedra
-        '''
+        """
         self._test_msh()
         mesh = self.mesh
         if self.nr_comp != 1:
-            raise ValueError('can only take gradient of scalar fields')
+            raise ValueError("can only take gradient of scalar fields")
         if mesh.nodes.nr != self.nr:
-            raise ValueError('mesh must have the same number of nodes as the NodeData')
+            raise ValueError("mesh must have the same number of nodes as the NodeData")
 
         # Tetrahedra gradients
         elm_node_coords = mesh.nodes[mesh.elm[mesh.elm.tetrahedra]]
 
-        tetra_matrices = elm_node_coords[:, 1:4, :] - \
-            elm_node_coords[:, 0, :][:, None]
+        tetra_matrices = elm_node_coords[:, 1:4, :] - elm_node_coords[:, 0, :][:, None]
 
-        dif_between_tetra_nodes = self[mesh.elm[mesh.elm.tetrahedra][:, 1:4]] - \
-            self[mesh.elm[mesh.elm.tetrahedra][:, 0]][:, None]
+        dif_between_tetra_nodes = (
+            self[mesh.elm[mesh.elm.tetrahedra][:, 1:4]]
+            - self[mesh.elm[mesh.elm.tetrahedra][:, 0]][:, None]
+        )
 
         th_grad = np.linalg.solve(tetra_matrices, dif_between_tetra_nodes)
 
         gradient = np.zeros((mesh.elm.nr, 3), dtype=float)
         gradient[mesh.elm.elm_type == 4] = th_grad
-        gradient[mesh.elm.elm_type == 2] = 0.
+        gradient[mesh.elm.elm_type == 2] = 0.0
 
-        return ElementData(gradient, 'grad_' + self.field_name, mesh)
+        return ElementData(gradient, "grad_" + self.field_name, mesh)
 
     def calc_flux(self, nodes=None):
-        ''' Calculates the flux of a vector field though the given nodes
+        """Calculates the flux of a vector field though the given nodes
 
         Parameters
         -----------
@@ -4740,22 +4913,23 @@ class NodeData(Data):
         --------
         flux: float
             Total fux through all surfcaces
-        '''
+        """
         self._test_msh()
         msh = self.mesh
         if msh.nodes.nr != self.nr:
-            raise ValueError('Mesh should have {0} nodes'.format(self.nr))
+            raise ValueError("Mesh should have {0} nodes".format(self.nr))
         if nodes is None:
             nodes = np.unique(msh.elm[msh.elm.triangles][:, :3])
-        assert self.nr_comp == 3, 'Can only calculate flux of vectors'
+        assert self.nr_comp == 3, "Can only calculate flux of vectors"
         normals = msh.nodes_normals()
         areas = msh.nodes_areas()
-        flux = np.sum(
-            np.sum(normals[nodes] * self[nodes], axis=1) * areas[nodes])
+        flux = np.sum(np.sum(normals[nodes] * self[nodes], axis=1) * areas[nodes])
         return flux
 
-    def interpolate_scattered(self, points, out_fill=np.nan, squeeze=True, th_indices=None):
-        ''' Interpolates the NodeaData into the points by finding the element
+    def interpolate_scattered(
+        self, points, out_fill=np.nan, squeeze=True, th_indices=None
+    ):
+        """Interpolates the NodeaData into the points by finding the element
         containing the point and performing linear interpolation inside the element
 
         Parameters
@@ -4775,20 +4949,21 @@ class NodeData(Data):
         -------
         f: np.ndarray
             Value of function in the points
-        '''
+        """
         self._test_msh()
 
         msh = copy.deepcopy(self.mesh)
 
         if len(msh.elm.tetrahedra) == 0:
-            raise InvalidMeshError('Mesh has no volume elements')
+            raise InvalidMeshError("Mesh has no volume elements")
         if len(self.value.shape) > 1:
             f = np.zeros((points.shape[0], self.nr_comp), self.value.dtype)
         else:
-            f = np.zeros((points.shape[0], ), self.value.dtype)
+            f = np.zeros((points.shape[0],), self.value.dtype)
 
-        th_with_points, bar = \
-            msh.find_tetrahedron_with_points(points, compute_baricentric=True)
+        th_with_points, bar = msh.find_tetrahedron_with_points(
+            points, compute_baricentric=True
+        )
 
         if th_indices is not None:
             th_with_points[~np.isin(th_with_points, th_indices)] = -1
@@ -4797,34 +4972,34 @@ class NodeData(Data):
 
         # if any points are inside
         if np.any(inside) and len(self.value.shape) == 1:
-            f[inside] = np.einsum('ik, ik -> i',
-                                  self[msh.elm[th_with_points[inside]]],
-                                  bar[inside])
+            f[inside] = np.einsum(
+                "ik, ik -> i", self[msh.elm[th_with_points[inside]]], bar[inside]
+            )
         elif np.any(inside):
-            f[inside] = np.einsum('ikj, ik -> ij',
-                                  self[msh.elm[th_with_points[inside]]],
-                                  bar[inside])
+            f[inside] = np.einsum(
+                "ikj, ik -> ij", self[msh.elm[th_with_points[inside]]], bar[inside]
+            )
 
         # if any points are outside, fill in the unassigned values
         if np.any(~inside):
-
-            if out_fill == 'nearest':
+            if out_fill == "nearest":
                 if th_indices is not None:
-
                     msh.add_node_field(self.value, self.field_name)
 
                     is_in = np.isin(msh.elm.elm_number, th_indices)
                     elm_in_volume = msh.elm.elm_number[is_in]
                     msh_in_volume = msh.crop_mesh(elements=elm_in_volume)
 
-                    _, nearest = msh_in_volume.nodes.find_closest_node(points[~inside],
-                                                                       return_index=True)
+                    _, nearest = msh_in_volume.nodes.find_closest_node(
+                        points[~inside], return_index=True
+                    )
 
                     f[~inside] = msh_in_volume.nodedata[-1][nearest]
 
                 else:
-                    _, nearest = msh.nodes.find_closest_node(points[~inside],
-                                                             return_index=True)
+                    _, nearest = msh.nodes.find_closest_node(
+                        points[~inside], return_index=True
+                    )
                     f[~inside] = self[nearest]
 
             else:
@@ -4836,7 +5011,7 @@ class NodeData(Data):
         return f
 
     def interpolate_to_grid(self, n_voxels, affine, **kwargs):
-        ''' Interpolates the NodeData into a grid.
+        """Interpolates the NodeData into a grid.
             finds which tetrahedra contais the given voxel and
             performs linear interpolation inside the voxel
 
@@ -4853,16 +5028,16 @@ class NodeData(Data):
             image: ndarray
                 An (n_voxels[0], n_voxels[1], n_voxels[2], nr_comp) matrix with
                 interpolated values. If nr_comp == 1, the last dimension is squeezed out
-        '''
+        """
 
         msh = self.mesh
         self._test_msh()
         if len(n_voxels) != 3:
-            raise ValueError('n_voxels should have length = 3')
+            raise ValueError("n_voxels should have length = 3")
         if affine.shape != (4, 4):
-            raise ValueError('Affine should be a 4x4 matrix')
+            raise ValueError("Affine should be a 4x4 matrix")
         if len(msh.elm.tetrahedra) == 0:
-            raise InvalidMeshError('Mesh has no volume elements')
+            raise InvalidMeshError("Mesh has no volume elements")
 
         v = np.atleast_2d(self.value)
         if v.shape[0] < v.shape[1]:
@@ -4873,14 +5048,18 @@ class NodeData(Data):
         nd = inv_affine.dot(nd.T).T[:, :3]
 
         # initialize image
-        image = np.zeros([n_voxels[0], n_voxels[1], n_voxels[2], self.nr_comp], dtype=float)
+        image = np.zeros(
+            [n_voxels[0], n_voxels[1], n_voxels[2], self.nr_comp], dtype=float
+        )
         field = v.astype(float)
         if v.shape[0] != msh_th.nodes.nr:
-            raise ValueError('Number of data points in the structure does not match '
-                             'the number of nodes present in the volume-only mesh')
+            raise ValueError(
+                "Number of data points in the structure does not match "
+                "the number of nodes present in the volume-only mesh"
+            )
         image = cython_msh.interp_grid(
-            np.array(n_voxels, dtype=int), field, nd,
-            msh_th.elm.node_number_list - 1)
+            np.array(n_voxels, dtype=int), field, nd, msh_th.elm.node_number_list - 1
+        )
         image = image.astype(self.value.dtype)
         if self.nr_comp == 1:
             image = np.squeeze(image, axis=3)
@@ -4890,8 +5069,10 @@ class NodeData(Data):
         gc.collect()
         return image
 
-    def interpolate_to_grid_max(self, n_voxels, affine, compartments=None, parallel=True):
-        ''' Interpolates the NodeData into a grid.
+    def interpolate_to_grid_max(
+        self, n_voxels, affine, compartments=None, parallel=True
+    ):
+        """Interpolates the NodeData into a grid.
             finds which tetrahedra contais the given voxel and
             performs linear interpolation inside the voxel
 
@@ -4908,16 +5089,16 @@ class NodeData(Data):
             image: ndarray
                 An (n_voxels[0], n_voxels[1], n_voxels[2], nr_comp) matrix with
                 interpolated values. If nr_comp == 1, the last dimension is squeezed out
-        '''
+        """
 
         msh = self.mesh
         self._test_msh()
         if len(n_voxels) != 3:
-            raise ValueError('n_voxels should have length = 3')
+            raise ValueError("n_voxels should have length = 3")
         if affine.shape != (4, 4):
-            raise ValueError('Affine should be a 4x4 matrix')
+            raise ValueError("Affine should be a 4x4 matrix")
         if len(msh.elm.tetrahedra) == 0:
-            raise InvalidMeshError('Mesh has no volume elements')
+            raise InvalidMeshError("Mesh has no volume elements")
 
         v = np.atleast_2d(self.value)
         if v.shape[0] < v.shape[1]:
@@ -4927,9 +5108,14 @@ class NodeData(Data):
         nd = np.hstack([msh_th.nodes.node_coord, np.ones((msh_th.nodes.nr, 1))])
         nd = inv_affine.dot(nd.T).T[:, :3]
 
-        #handle compartments
+        # handle compartments
         if compartments is None:
-            compartments = [[i,] for i in range(v.shape[1])]
+            compartments = [
+                [
+                    i,
+                ]
+                for i in range(v.shape[1])
+            ]
 
         # initialize image
         labelimage = np.zeros([n_voxels[0], n_voxels[1], n_voxels[2]], dtype=np.uint16)
@@ -4937,38 +5123,53 @@ class NodeData(Data):
 
         field = v.astype(np.float32)
         if v.shape[0] != msh_th.nodes.nr:
-            raise ValueError('Number of data points in the structure does not match '
-                             'the number of nodes present in the volume-only mesh')
+            raise ValueError(
+                "Number of data points in the structure does not match "
+                "the number of nodes present in the volume-only mesh"
+            )
         if parallel:
             import multiprocessing
             from multiprocessing.pool import ThreadPool
+
             n = msh_th.elm.node_number_list.shape[0]
             n_elm = int(np.ceil(n / multiprocessing.cpu_count()))
             pool = ThreadPool()
             i = 0
             while i < n:
-                pool.apply_async(cython_msh.interp_grid_nodedata_max,args=(
-                   np.array(n_voxels, dtype=int), field, nd,
-                   msh_th.elm.node_number_list[i:i+n_elm] - 1,
-                   compartments,labelimage,maximage))
+                pool.apply_async(
+                    cython_msh.interp_grid_nodedata_max,
+                    args=(
+                        np.array(n_voxels, dtype=int),
+                        field,
+                        nd,
+                        msh_th.elm.node_number_list[i : i + n_elm] - 1,
+                        compartments,
+                        labelimage,
+                        maximage,
+                    ),
+                )
                 i += n_elm
             pool.close()
             pool.join()
         else:
             cython_msh.interp_grid_nodedata_max(
-               np.array(n_voxels, dtype=int), field, nd,
-               msh_th.elm.node_number_list - 1,
-               compartments,labelimage,maximage)
+                np.array(n_voxels, dtype=int),
+                field,
+                nd,
+                msh_th.elm.node_number_list - 1,
+                compartments,
+                labelimage,
+                maximage,
+            )
         del nd
         del msh_th
         del field
         gc.collect()
         return labelimage, maximage
 
-
     @classmethod
-    def from_data_grid(cls, mesh, data_grid, affine, field_name='', **kwargs):
-        ''' Defines an NodeData field from a mesh and gridded data
+    def from_data_grid(cls, mesh, data_grid, affine, field_name="", **kwargs):
+        """Defines an NodeData field from a mesh and gridded data
 
         Parameters
         ---------
@@ -4980,26 +5181,29 @@ class NodeData(Data):
             Array describing the affine transformation from the data grid to the mesh
             space
         kwargs: see the scipy.ndimage.map_coordinates documentation
-        '''
-        assert len(data_grid.shape) in [3, 4], \
-                'The data grid must have 3 or 4 dimensions'
+        """
+        assert len(data_grid.shape) in [3, 4], (
+            "The data grid must have 3 or 4 dimensions"
+        )
 
-        pos=mesh.nodes.node_coord.T
+        pos = mesh.nodes.node_coord.T
         iM = np.linalg.inv(affine)
         coords = iM[:3, :3].dot(pos) + iM[:3, 3, None]
         # Deal with edges
         for i in range(3):
             s = data_grid.shape[i]
-            coords[i, (coords[i, :] > -0.5) * (coords[i, :] < 0)] = 0.
-            coords[i, (coords[i, :] > s-1) * (coords[i, :] < s-0.5)] = s-1
+            coords[i, (coords[i, :] > -0.5) * (coords[i, :] < 0)] = 0.0
+            coords[i, (coords[i, :] > s - 1) * (coords[i, :] < s - 0.5)] = s - 1
 
         f = partial(
-            scipy.ndimage.map_coordinates, coordinates=coords,
-            output=data_grid.dtype, **kwargs)
+            scipy.ndimage.map_coordinates,
+            coordinates=coords,
+            output=data_grid.dtype,
+            **kwargs,
+        )
         if len(data_grid.shape) == 4:
             indim = data_grid.shape[3]
-            outdata = np.array(
-                [f(data_grid[..., i]) for i in range(indim)]).T
+            outdata = np.array([f(data_grid[..., i]) for i in range(indim)]).T
         elif len(data_grid.shape) == 3:
             outdata = f(data_grid)
 
@@ -5007,7 +5211,7 @@ class NodeData(Data):
         return nd
 
     def norm(self, ord=2):
-        ''' Calculate the norm (magnitude) of the field
+        """Calculate the norm (magnitude) of the field
 
         Parameters
         ------------
@@ -5018,19 +5222,21 @@ class NodeData(Data):
         ---------
         norm: NodeData
             NodeData field with the norm the field
-        '''
+        """
         if len(self.value.shape) == 1:
-            nd = NodeData(np.abs(self.value),
-                          name='magn' + self.field_name,
-                          mesh=self.mesh)
+            nd = NodeData(
+                np.abs(self.value), name="magn" + self.field_name, mesh=self.mesh
+            )
         else:
-            nd = NodeData(np.linalg.norm(self.value, axis=1, ord=ord),
-                          name='magn' + self.field_name,
-                          mesh=self.mesh)
+            nd = NodeData(
+                np.linalg.norm(self.value, axis=1, ord=ord),
+                name="magn" + self.field_name,
+                mesh=self.mesh,
+            )
         return nd
 
     def normal(self, fill=np.nan):
-        ''' Calculate the normal component of the field in the mesh surfaces
+        """Calculate the normal component of the field in the mesh surfaces
 
         Parameters
         -----------
@@ -5042,20 +5248,24 @@ class NodeData(Data):
         normal: NodeData
             NodeData field with the normal the field where a surface is defined and the
             fill value where it's not
-        '''
+        """
         self._test_msh()
-        assert self.nr_comp == 3, 'Normals are only defined for vector fields'
-        normal = NodeData(fill * np.ones(self.nr, dtype=self.value.dtype),
-                          name='normal' + self.field_name,
-                          mesh=self.mesh)
+        assert self.nr_comp == 3, "Normals are only defined for vector fields"
+        normal = NodeData(
+            fill * np.ones(self.nr, dtype=self.value.dtype),
+            name="normal" + self.field_name,
+            mesh=self.mesh,
+        )
         nodes_in_surface = self.mesh.elm[self.mesh.elm.triangles, :3]
         nodes_in_surface = np.unique(nodes_in_surface)
         nodes_normals = self.mesh.nodes_normals()
-        normal[nodes_in_surface] = np.sum(self[nodes_in_surface] * nodes_normals[nodes_in_surface], axis=1)
+        normal[nodes_in_surface] = np.sum(
+            self[nodes_in_surface] * nodes_normals[nodes_in_surface], axis=1
+        )
         return normal
 
     def angle(self, fill=np.nan):
-        ''' Calculate the angle between the field and the surface normal
+        """Calculate the angle between the field and the surface normal
 
         Parameters
         -------------
@@ -5067,26 +5277,29 @@ class NodeData(Data):
         angle: NodeData
             NodeData field with the angles the field where a surface is defined and the
             fill value where it's not
-        '''
+        """
         self._test_msh()
-        assert self.nr_comp == 3, 'angles are only defined for vector fields'
-        angle = NodeData(fill * np.ones(self.nr, dtype=self.value.dtype),
-                          name='angle' + self.field_name,
-                          mesh=self.mesh)
+        assert self.nr_comp == 3, "angles are only defined for vector fields"
+        angle = NodeData(
+            fill * np.ones(self.nr, dtype=self.value.dtype),
+            name="angle" + self.field_name,
+            mesh=self.mesh,
+        )
 
         nodes_in_surface = self.mesh.elm[self.mesh.elm.triangles, :3]
         nodes_in_surface = np.unique(nodes_in_surface)
         nodes_normals = self.mesh.nodes_normals()
-        normal = np.sum(self[nodes_in_surface] * nodes_normals[nodes_in_surface], axis=1)
+        normal = np.sum(
+            self[nodes_in_surface] * nodes_normals[nodes_in_surface], axis=1
+        )
         norm = np.linalg.norm(self[nodes_in_surface], axis=1)
-        tan = np.sqrt(norm ** 2 - normal ** 2)
-        #angle[nodes_in_surface] = np.arccos(normal/norm)
+        tan = np.sqrt(norm**2 - normal**2)
+        # angle[nodes_in_surface] = np.arccos(normal/norm)
         angle[nodes_in_surface] = np.arctan2(tan, normal)
         return angle
 
-
     def tangent(self, fill=np.nan):
-        ''' Calculate the tangent component of the field in the surfaces
+        """Calculate the tangent component of the field in the surfaces
 
         Parameters
         -----------
@@ -5098,23 +5311,25 @@ class NodeData(Data):
         tangent: NodeData
             NodeData field with the tangent component of the field where a surface is defined and the
             fill value where it's not
-        '''
+        """
         self._test_msh()
-        assert self.nr_comp == 3, 'angles are only defined for vector fields'
-        tangent = NodeData(fill * np.ones(self.nr, dtype=self.value.dtype),
-                          name='tangent' + self.field_name,
-                          mesh=self.mesh)
+        assert self.nr_comp == 3, "angles are only defined for vector fields"
+        tangent = NodeData(
+            fill * np.ones(self.nr, dtype=self.value.dtype),
+            name="tangent" + self.field_name,
+            mesh=self.mesh,
+        )
         nodes_in_surface = self.mesh.elm[self.mesh.elm.triangles, :3]
         nodes_in_surface = np.unique(nodes_in_surface)
         nodes_normals = self.mesh.nodes_normals()
-        normal = np.sum(self[nodes_in_surface] * nodes_normals[nodes_in_surface], axis=1)
+        normal = np.sum(
+            self[nodes_in_surface] * nodes_normals[nodes_in_surface], axis=1
+        )
         norm = np.linalg.norm(self[nodes_in_surface], axis=1)
-        tangent[nodes_in_surface] = np.sqrt(norm ** 2 - normal ** 2)
+        tangent[nodes_in_surface] = np.sqrt(norm**2 - normal**2)
         return tangent
 
-
-
-    def append_to_mesh(self, fn, mode='binary', mmg_fix=False):
+    def append_to_mesh(self, fn, mode="binary", mmg_fix=False):
         """Appends this NodeData fields to a file
 
         Parameters
@@ -5124,53 +5339,57 @@ class NodeData(Data):
             mode: binary or ascii
                 mode in which to write
         """
-        with open(fn, 'ab') as f:
-            f.write(b'$NodeData\n')
+        with open(fn, "ab") as f:
+            f.write(b"$NodeData\n")
             # string tags
-            f.write((str(1) + '\n').encode('ascii'))
-            f.write(('"' + self.field_name + '"\n').encode('ascii'))
+            f.write((str(1) + "\n").encode("ascii"))
+            f.write(('"' + self.field_name + '"\n').encode("ascii"))
 
-            f.write((str(1) + '\n').encode('ascii'))
-            f.write((str(0) + '\n').encode('ascii'))
+            f.write((str(1) + "\n").encode("ascii"))
+            f.write((str(0) + "\n").encode("ascii"))
 
             if mmg_fix:
-                f.write((str(3) + '\n').encode('ascii'))
-                f.write((str(0) + '\n').encode('ascii'))
-                f.write((str(self.nr_comp) + '\n').encode('ascii'))
-                f.write((str(self.nr) + '\n').encode('ascii'))
+                f.write((str(3) + "\n").encode("ascii"))
+                f.write((str(0) + "\n").encode("ascii"))
+                f.write((str(self.nr_comp) + "\n").encode("ascii"))
+                f.write((str(self.nr) + "\n").encode("ascii"))
             else:
-                f.write((str(4) + '\n').encode('ascii'))
-                f.write((str(0) + '\n').encode('ascii'))
-                f.write((str(self.nr_comp) + '\n').encode('ascii'))
-                f.write((str(self.nr) + '\n').encode('ascii'))
-                f.write((str(0) + '\n').encode('ascii'))
+                f.write((str(4) + "\n").encode("ascii"))
+                f.write((str(0) + "\n").encode("ascii"))
+                f.write((str(self.nr_comp) + "\n").encode("ascii"))
+                f.write((str(self.nr) + "\n").encode("ascii"))
+                f.write((str(0) + "\n").encode("ascii"))
 
-            if mode == 'ascii':
+            if mode == "ascii":
                 for ii in range(self.nr):
-                    f.write((
-                        str(self.node_number[ii]) + ' ' +
-                        str(self.value[ii]).translate(None, '[](),') +
-                        '\n').encode('ascii'))
+                    f.write(
+                        (
+                            str(self.node_number[ii])
+                            + " "
+                            + str(self.value[ii]).translate(None, "[](),")
+                            + "\n"
+                        ).encode("ascii")
+                    )
 
-            elif mode == 'binary':
-                value = self.value.astype('float64')
+            elif mode == "binary":
+                value = self.value.astype("float64")
                 try:
                     value.shape[1]
                 except IndexError:
                     value = value[:, np.newaxis]
 
-                m = self.node_number[:, np.newaxis].astype('int32')
+                m = self.node_number[:, np.newaxis].astype("int32")
                 for i in range(self.nr_comp):
-                    m = np.concatenate((m,
-                                        value[:, i].astype('float64').view('int32').reshape(-1, 2)),
-                                       axis=1)
+                    m = np.concatenate(
+                        (m, value[:, i].astype("float64").view("int32").reshape(-1, 2)),
+                        axis=1,
+                    )
 
                 f.write(m.tobytes())
             else:
                 raise IOError("invalid mode:", mode)
 
-            f.write(b'$EndNodeData\n')
-
+            f.write(b"$EndNodeData\n")
 
     def write(self, fn):
         """Writes this NodeData field to a file with field information only
@@ -5181,42 +5400,43 @@ class NodeData(Data):
             fn: str
                 file name
         """
-        with open(fn, 'wb') as f:
-            f.write(b'$MeshFormat\n2.2 1 8\n')
-            f.write(struct.pack('i', 1))
-            f.write(b'\n$EndMeshFormat\n')
-            f.write(b'$NodeData\n')
-            f.write((str(1) + '\n').encode('ascii'))
-            f.write(('"' + self.field_name + '"\n').encode('ascii'))
+        with open(fn, "wb") as f:
+            f.write(b"$MeshFormat\n2.2 1 8\n")
+            f.write(struct.pack("i", 1))
+            f.write(b"\n$EndMeshFormat\n")
+            f.write(b"$NodeData\n")
+            f.write((str(1) + "\n").encode("ascii"))
+            f.write(('"' + self.field_name + '"\n').encode("ascii"))
 
-            f.write((str(1) + '\n').encode('ascii'))
-            f.write((str(0) + '\n').encode('ascii'))
+            f.write((str(1) + "\n").encode("ascii"))
+            f.write((str(0) + "\n").encode("ascii"))
 
-            f.write((str(4) + '\n').encode('ascii'))
-            f.write((str(0) + '\n').encode('ascii'))
-            f.write((str(self.nr_comp) + '\n').encode('ascii'))
-            f.write((str(self.nr) + '\n').encode('ascii'))
-            f.write((str(0) + '\n').encode('ascii'))
+            f.write((str(4) + "\n").encode("ascii"))
+            f.write((str(0) + "\n").encode("ascii"))
+            f.write((str(self.nr_comp) + "\n").encode("ascii"))
+            f.write((str(self.nr) + "\n").encode("ascii"))
+            f.write((str(0) + "\n").encode("ascii"))
 
-            value = self.value.astype('float64')
+            value = self.value.astype("float64")
             try:
                 value.shape[1]
             except IndexError:
                 value = value[:, np.newaxis]
 
-            m = self.node_number[:, np.newaxis].astype('int32')
+            m = self.node_number[:, np.newaxis].astype("int32")
             for i in range(self.nr_comp):
-                m = np.concatenate((m,
-                                    value[:, i].astype('float64').view('int32').reshape(-1, 2)),
-                                   axis=1)
+                m = np.concatenate(
+                    (m, value[:, i].astype("float64").view("int32").reshape(-1, 2)),
+                    axis=1,
+                )
 
             f.write(m.tobytes())
 
-            f.write(b'$EndNodeData\n')
+            f.write(b"$EndNodeData\n")
 
 
 def read_msh(fn, m=None, skip_data=False):
-    ''' Reads a gmsh '.msh' file
+    """Reads a gmsh '.msh' file
 
     Parameters
     ------------
@@ -5231,14 +5451,14 @@ def read_msh(fn, m=None, skip_data=False):
     --------
     msh: simnibs.msh.Msh
         Mesh structure
-    '''
+    """
     if m is None:
         m = Msh()
 
     fn = os.path.expanduser(fn)
 
     if not os.path.isfile(fn):
-        raise IOError(fn + ' not found')
+        raise IOError(fn + " not found")
 
     version_number = _find_mesh_version(fn)
     if version_number == 2:
@@ -5248,20 +5468,20 @@ def read_msh(fn, m=None, skip_data=False):
         m = _read_msh_4(fn, m, skip_data)
 
     else:
-        raise IOError('Unrecgnized Mesh file version : {}'.format(version_number))
+        raise IOError("Unrecgnized Mesh file version : {}".format(version_number))
 
     return m
 
 
 def _find_mesh_version(fn):
     if not os.path.isfile(fn):
-        raise IOError(fn + ' not found')
+        raise IOError(fn + " not found")
 
     # file open
-    with open(fn, 'rb') as f:
+    with open(fn, "rb") as f:
         # check 1st line
         first_line = f.readline().decode()
-        if not first_line.startswith('$MeshFormat'):
+        if not first_line.startswith("$MeshFormat"):
             raise IOError(fn, "must start with $MeshFormat")
 
         # parse 2nd line
@@ -5276,10 +5496,10 @@ def _read_msh_2(fn, m, skip_data=False):
     m.fn = fn
 
     # file open
-    with open(fn, 'rb') as f:
+    with open(fn, "rb") as f:
         # check 1st line
         first_line = f.readline()
-        if not first_line.startswith(b'$MeshFormat'):
+        if not first_line.startswith(b"$MeshFormat"):
             raise IOError(fn, "must start with $MeshFormat")
 
         # parse 2nd line
@@ -5300,11 +5520,12 @@ def _read_msh_2(fn, m, skip_data=False):
 
         if data_size != 8:
             raise IOError(
-                "data_size should be double (8), i'm reading: {0}".format(data_size))
+                "data_size should be double (8), i'm reading: {0}".format(data_size)
+            )
 
         # read next byte, if binary, to check for endianness
         if binary:
-            endianness = struct.unpack('i', f.readline()[:4])[0]
+            endianness = struct.unpack("i", f.readline()[:4])[0]
         else:
             endianness = 1
 
@@ -5312,11 +5533,11 @@ def _read_msh_2(fn, m, skip_data=False):
             raise IOError("endianness is not 1, is the endian order wrong?")
 
         # read 3rd line
-        if not f.readline().startswith(b'$EndMeshFormat'):
+        if not f.readline().startswith(b"$EndMeshFormat"):
             raise IOError(fn + " expected $EndMeshFormat")
-        
+
         # Skip  everyting until nodes
-        while not f.readline().startswith(b'$Nodes'):
+        while not f.readline().startswith(b"$Nodes"):
             continue
 
         # read 5th line with number of nodes
@@ -5328,13 +5549,11 @@ def _read_msh_2(fn, m, skip_data=False):
         # read all nodes
         if binary:
             # 0.02s to read binary.msh
-            dt = np.dtype([
-                ('id', np.int32),
-                ('coord', np.float64, 3)])
+            dt = np.dtype([("id", np.int32), ("coord", np.float64, 3)])
 
             temp = np.fromfile(f, dtype=dt, count=node_nr)
-            node_number = np.copy(temp['id'])
-            node_coord = np.copy(temp['coord'])
+            node_number = np.copy(temp["id"])
+            node_coord = np.copy(temp["coord"])
 
             # sometimes there's a line feed here, sometimes there is not...
             LF_byte = f.read(1)  # read \n
@@ -5345,9 +5564,9 @@ def _read_msh_2(fn, m, skip_data=False):
 
         else:
             # nodes has 4 entries: [node_ID x y z]
-            node_number = np.empty(node_nr, dtype='int32')
+            node_number = np.empty(node_nr, dtype="int32")
             # array Nx3 for (x,y,z) coordinates of the nodes
-            node_coord = np.empty(3 * node_nr, dtype='float64')
+            node_coord = np.empty(3 * node_nr, dtype="float64")
             for ii in range(node_nr):
                 line = f.readline().decode().strip().split()
                 node_number[ii] = line[0]
@@ -5358,87 +5577,126 @@ def _read_msh_2(fn, m, skip_data=False):
             node_coord = node_coord.reshape((node_nr, 3))
 
         if not np.all(node_number == np.arange(1, node_nr + 1)):
-            warnings.warn("Mesh file with discontinuos nodes, things can fail"
-                          " unexpectedly")
+            warnings.warn(
+                "Mesh file with discontinuos nodes, things can fail unexpectedly"
+            )
         m.nodes.node_coord = node_coord
 
-        if not f.readline().startswith(b'$EndNodes'):
-            raise IOError(fn + " expected $EndNodes after reading " +
-                          str(node_nr) + " nodes")
+        if not f.readline().startswith(b"$EndNodes"):
+            raise IOError(
+                fn + " expected $EndNodes after reading " + str(node_nr) + " nodes"
+            )
 
         # read all elements
-        if not f.readline().startswith(b'$Elements'):
+        if not f.readline().startswith(b"$Elements"):
             raise IOError(fn, "expected line with $Elements")
 
         try:
             elm_nr = int(f.readline().decode().strip())
         except:
             raise IOError(
-                fn + " something wrong when reading number of elements (line after $Elements)"
-                "- should be a number")
+                fn
+                + " something wrong when reading number of elements (line after $Elements)"
+                "- should be a number"
+            )
 
         if binary:
             current_element = 0
 
-            elm_number = np.empty(elm_nr, dtype='int32')
-            m.elm.elm_type = np.empty(elm_nr, dtype='int32')
-            m.elm.tag1 = np.empty(elm_nr, dtype='int32')
-            m.elm.tag2 = np.empty(elm_nr, dtype='int32')
-            m.elm.node_number_list = -np.ones((elm_nr, 4), dtype='int32')
+            elm_number = np.empty(elm_nr, dtype="int32")
+            m.elm.elm_type = np.empty(elm_nr, dtype="int32")
+            m.elm.tag1 = np.empty(elm_nr, dtype="int32")
+            m.elm.tag2 = np.empty(elm_nr, dtype="int32")
+            m.elm.node_number_list = -np.ones((elm_nr, 4), dtype="int32")
             read = np.ones(elm_nr, dtype=bool)
 
-            nr_nodes_elm = [None, 2, 3, 4, 4, 8, 6, 5, 3, 6, 9,
-                            10, 27, 18, 14, 1, 8, 20, 15, 13]
+            nr_nodes_elm = [
+                None,
+                2,
+                3,
+                4,
+                4,
+                8,
+                6,
+                5,
+                3,
+                6,
+                9,
+                10,
+                27,
+                18,
+                14,
+                1,
+                8,
+                20,
+                15,
+                13,
+            ]
             while current_element < elm_nr:
-                elm_type, nr, _ = np.fromfile(f, 'int32', 3)
+                elm_type, nr, _ = np.fromfile(f, "int32", 3)
                 if elm_type == 1:
-                    tmp = np.fromfile(f, 'int32', nr * 5).reshape(-1, 5)
+                    tmp = np.fromfile(f, "int32", nr * 5).reshape(-1, 5)
 
-                    m.elm.elm_type[current_element:current_element+nr] = \
-                        1 * np.ones(nr, 'int32')
-                    elm_number[current_element:current_element+nr] = tmp[:, 0]
-                    m.elm.tag1[current_element:current_element+nr] = tmp[:, 1]
-                    m.elm.tag2[current_element:current_element+nr] = tmp[:, 2]
-                    m.elm.node_number_list[current_element:current_element+nr, :2] = tmp[:, 3:]
-                    read[current_element:current_element+nr] = 1
+                    m.elm.elm_type[current_element : current_element + nr] = (
+                        1 * np.ones(nr, "int32")
+                    )
+                    elm_number[current_element : current_element + nr] = tmp[:, 0]
+                    m.elm.tag1[current_element : current_element + nr] = tmp[:, 1]
+                    m.elm.tag2[current_element : current_element + nr] = tmp[:, 2]
+                    m.elm.node_number_list[
+                        current_element : current_element + nr, :2
+                    ] = tmp[:, 3:]
+                    read[current_element : current_element + nr] = 1
 
                 elif elm_type == 2:
-                    tmp = np.fromfile(f, 'int32', nr * 6).reshape(-1, 6)
+                    tmp = np.fromfile(f, "int32", nr * 6).reshape(-1, 6)
 
-                    m.elm.elm_type[current_element:current_element+nr] = \
-                        2 * np.ones(nr, 'int32')
-                    elm_number[current_element:current_element+nr] = tmp[:, 0]
-                    m.elm.tag1[current_element:current_element+nr] = tmp[:, 1]
-                    m.elm.tag2[current_element:current_element+nr] = tmp[:, 2]
-                    m.elm.node_number_list[current_element:current_element+nr, :3] = tmp[:, 3:]
-                    read[current_element:current_element+nr] = 1
+                    m.elm.elm_type[current_element : current_element + nr] = (
+                        2 * np.ones(nr, "int32")
+                    )
+                    elm_number[current_element : current_element + nr] = tmp[:, 0]
+                    m.elm.tag1[current_element : current_element + nr] = tmp[:, 1]
+                    m.elm.tag2[current_element : current_element + nr] = tmp[:, 2]
+                    m.elm.node_number_list[
+                        current_element : current_element + nr, :3
+                    ] = tmp[:, 3:]
+                    read[current_element : current_element + nr] = 1
 
                 elif elm_type == 4:
-                    tmp = np.fromfile(f, 'int32', nr * 7).reshape(-1, 7)
+                    tmp = np.fromfile(f, "int32", nr * 7).reshape(-1, 7)
 
-                    m.elm.elm_type[current_element:current_element+nr] = \
-                        4 * np.ones(nr, 'int32')
-                    elm_number[current_element:current_element+nr] = tmp[:, 0]
-                    m.elm.tag1[current_element:current_element+nr] = tmp[:, 1]
-                    m.elm.tag2[current_element:current_element+nr] = tmp[:, 2]
-                    m.elm.node_number_list[current_element:current_element+nr] = tmp[:, 3:]
-                    read[current_element:current_element+nr] = 1
+                    m.elm.elm_type[current_element : current_element + nr] = (
+                        4 * np.ones(nr, "int32")
+                    )
+                    elm_number[current_element : current_element + nr] = tmp[:, 0]
+                    m.elm.tag1[current_element : current_element + nr] = tmp[:, 1]
+                    m.elm.tag2[current_element : current_element + nr] = tmp[:, 2]
+                    m.elm.node_number_list[current_element : current_element + nr] = (
+                        tmp[:, 3:]
+                    )
+                    read[current_element : current_element + nr] = 1
 
                 elif elm_type == 15:
-                    tmp = np.fromfile(f, 'int32', nr * 4).reshape(-1, 4)
+                    tmp = np.fromfile(f, "int32", nr * 4).reshape(-1, 4)
 
-                    m.elm.elm_type[current_element:current_element+nr] = \
-                        15 * np.ones(nr, 'int32')
-                    elm_number[current_element:current_element+nr] = tmp[:, 0]
-                    m.elm.tag1[current_element:current_element+nr] = tmp[:, 1]
-                    m.elm.tag2[current_element:current_element+nr] = tmp[:, 2]
-                    m.elm.node_number_list[current_element:current_element+nr, :1] = tmp[:, 3:]
-                    read[current_element:current_element+nr] = 1
+                    m.elm.elm_type[current_element : current_element + nr] = (
+                        15 * np.ones(nr, "int32")
+                    )
+                    elm_number[current_element : current_element + nr] = tmp[:, 0]
+                    m.elm.tag1[current_element : current_element + nr] = tmp[:, 1]
+                    m.elm.tag2[current_element : current_element + nr] = tmp[:, 2]
+                    m.elm.node_number_list[
+                        current_element : current_element + nr, :1
+                    ] = tmp[:, 3:]
+                    read[current_element : current_element + nr] = 1
                 else:
-                    warnings.warn('element of type {0} '
-                                  'cannot be read, ignoring it'.format(elm_type))
-                    np.fromfile(f, 'int32', nr * (3 + nr_nodes_elm[elm_type]))
-                    read[current_element:current_element+nr] = 0
+                    warnings.warn(
+                        "element of type {0} cannot be read, ignoring it".format(
+                            elm_type
+                        )
+                    )
+                    np.fromfile(f, "int32", nr * (3 + nr_nodes_elm[elm_type]))
+                    read[current_element : current_element + nr] = 0
                 current_element += nr
 
             elm_number = elm_number[read]
@@ -5448,35 +5706,34 @@ def _read_msh_2(fn, m, skip_data=False):
             m.elm.node_number_list = m.elm.node_number_list[read]
 
         else:
-
-            elm_number = np.empty(elm_nr, dtype='int32')
-            m.elm.elm_type = np.empty(elm_nr, dtype='int32')
-            m.elm.tag1 = np.empty(elm_nr, dtype='int32')
-            m.elm.tag2 = np.empty(elm_nr, dtype='int32')
-            m.elm.node_number_list = -np.ones((elm_nr, 4), dtype='int32')
+            elm_number = np.empty(elm_nr, dtype="int32")
+            m.elm.elm_type = np.empty(elm_nr, dtype="int32")
+            m.elm.tag1 = np.empty(elm_nr, dtype="int32")
+            m.elm.tag2 = np.empty(elm_nr, dtype="int32")
+            m.elm.node_number_list = -np.ones((elm_nr, 4), dtype="int32")
             read = np.ones(elm_nr, dtype=bool)
 
             for ii in range(elm_nr):
                 line = f.readline().decode().strip().split()
-                if line[1] == '1':
+                if line[1] == "1":
                     elm_number[ii] = line[0]
                     m.elm.elm_type[ii] = line[1]
                     m.elm.tag1[ii] = line[3]
                     m.elm.tag2[ii] = line[4]
                     m.elm.node_number_list[ii, :2] = [int(i) for i in line[5:]]
-                elif line[1] == '2':
+                elif line[1] == "2":
                     elm_number[ii] = line[0]
                     m.elm.elm_type[ii] = line[1]
                     m.elm.tag1[ii] = line[3]
                     m.elm.tag2[ii] = line[4]
                     m.elm.node_number_list[ii, :3] = [int(i) for i in line[5:]]
-                elif line[1] == '4':
+                elif line[1] == "4":
                     elm_number[ii] = line[0]
                     m.elm.elm_type[ii] = line[1]
                     m.elm.tag1[ii] = line[3]
                     m.elm.tag2[ii] = line[4]
                     m.elm.node_number_list[ii] = [int(i) for i in line[5:]]
-                elif line[1] == '15':
+                elif line[1] == "15":
                     elm_number[ii] = line[0]
                     m.elm.elm_type[ii] = line[1]
                     m.elm.tag1[ii] = line[3]
@@ -5484,8 +5741,11 @@ def _read_msh_2(fn, m, skip_data=False):
                     m.elm.node_number_list[ii, :1] = [int(i) for i in line[5:]]
                 else:
                     read[ii] = 0
-                    warnings.warn('element of type {0} '
-                                  'cannot be read, ignoring it'.format(line[1]))
+                    warnings.warn(
+                        "element of type {0} cannot be read, ignoring it".format(
+                            line[1]
+                        )
+                    )
 
             elm_number = elm_number[read]
             m.elm.elm_type = m.elm.elm_type[read]
@@ -5495,34 +5755,47 @@ def _read_msh_2(fn, m, skip_data=False):
 
         elm_nr_changed = False
         if not np.all(elm_number == np.arange(1, m.elm.nr + 1)):
-            warnings.warn('Changing element numbering')
+            warnings.warn("Changing element numbering")
             elm_nr_changed = True
             elm_number = np.arange(1, m.elm.nr + 1)
 
         line = f.readline()
-        if b'$EndElements' not in line:
+        if b"$EndElements" not in line:
             line = f.readline()
-            if b'$EndElements' not in line:
-                raise IOError(fn + " expected $EndElements after reading " +
-                              str(m.elm.nr) + " elements. Read " + line)
+            if b"$EndElements" not in line:
+                raise IOError(
+                    fn
+                    + " expected $EndElements after reading "
+                    + str(m.elm.nr)
+                    + " elements. Read "
+                    + line
+                )
 
         # read the header in the beginning of a data section
         def parse_Data():
             section = f.readline()
-            if section == b'':
-                return 'EOF', '', 0, 0
+            if section == b"":
+                return "EOF", "", 0, 0
             # string tags
-            number_of_string_tags = int(f.readline().decode('ascii'))
-            assert number_of_string_tags == 1, "Invalid Mesh File: invalid number of string tags"
-            name = f.readline().decode('ascii').strip().strip('"')
+            number_of_string_tags = int(f.readline().decode("ascii"))
+            assert number_of_string_tags == 1, (
+                "Invalid Mesh File: invalid number of string tags"
+            )
+            name = f.readline().decode("ascii").strip().strip('"')
             # real tags
-            number_of_real_tags = int(f.readline().decode('ascii'))
-            assert number_of_real_tags == 1, "Invalid Mesh File: invalid number of real tags"
+            number_of_real_tags = int(f.readline().decode("ascii"))
+            assert number_of_real_tags == 1, (
+                "Invalid Mesh File: invalid number of real tags"
+            )
             f.readline()
             # integer tags
-            number_of_integer_tags = int(f.readline().decode().strip())  # usually 3 or 4
-            integer_tags = [int(f.readline().decode().strip())
-                            for i in range(number_of_integer_tags)]
+            number_of_integer_tags = int(
+                f.readline().decode().strip()
+            )  # usually 3 or 4
+            integer_tags = [
+                int(f.readline().decode().strip())
+                for i in range(number_of_integer_tags)
+            ]
             nr = integer_tags[2]
             nr_comp = integer_tags[1]
             return section.strip(), name, nr, nr_comp
@@ -5531,73 +5804,87 @@ def _read_msh_2(fn, m, skip_data=False):
             data = NodeData(np.empty((nr, nr_comp)), name=name, mesh=m)
             if binary:
                 if nr_comp == 1:
-                    value_dt = ('values', np.float64)
+                    value_dt = ("values", np.float64)
                 else:
-                    value_dt = ('values', np.float64, nr_comp)
-                dt = np.dtype([('id', np.int32), value_dt])
+                    value_dt = ("values", np.float64, nr_comp)
+                dt = np.dtype([("id", np.int32), value_dt])
                 temp = np.fromfile(f, dtype=dt, count=nr)
-                node_number = np.copy(temp['id'])
-                data.value = np.copy(temp['values'])
+                node_number = np.copy(temp["id"])
+                data.value = np.copy(temp["values"])
             else:
-                node_number = np.empty(nr, dtype='int32')
-                data.value = np.empty((nr, nr_comp), dtype='float64')
+                node_number = np.empty(nr, dtype="int32")
+                data.value = np.empty((nr, nr_comp), dtype="float64")
                 for ii in range(nr):
                     line = f.readline().decode().strip().split()
                     node_number[ii] = int(line[0])
                     data.value[ii, :] = [float(v) for v in line[1:]]
 
-            if not f.readline().startswith(b'$EndNodeData'):
-                raise IOError(fn + " expected $EndNodeData after reading " +
-                              str(nr) + " lines in $NodeData")
+            if not f.readline().startswith(b"$EndNodeData"):
+                raise IOError(
+                    fn
+                    + " expected $EndNodeData after reading "
+                    + str(nr)
+                    + " lines in $NodeData"
+                )
 
             if np.any(node_number != m.nodes.node_number):
-                raise IOError("Can't read NodeData field: "
-                              "it does not have one data point per node")
+                raise IOError(
+                    "Can't read NodeData field: "
+                    "it does not have one data point per node"
+                )
 
             return data
 
         def read_ElementData(t, name, nr, nr_comp, m):
             if elm_nr_changed or not np.all(read):
-                raise IOError('Could not read ElementData: '
-                              'Element ordering not compact or invalid element type')
+                raise IOError(
+                    "Could not read ElementData: "
+                    "Element ordering not compact or invalid element type"
+                )
             data = ElementData(np.empty((nr, nr_comp)), name=name, mesh=m)
             if binary:
                 if nr_comp == 1:
-                    value_dt = ('values', np.float64)
+                    value_dt = ("values", np.float64)
                 else:
-                    value_dt = ('values', np.float64, nr_comp)
-                dt = np.dtype([('id', np.int32), value_dt])
+                    value_dt = ("values", np.float64, nr_comp)
+                dt = np.dtype([("id", np.int32), value_dt])
                 temp = np.fromfile(f, dtype=dt, count=nr)
-                elm_number = np.copy(temp['id'])
-                data.value = np.copy(temp['values'])
+                elm_number = np.copy(temp["id"])
+                data.value = np.copy(temp["values"])
 
             else:
-                elm_number = np.empty(nr, dtype='int32')
-                data.value = np.empty([nr, nr_comp], dtype='float64')
+                elm_number = np.empty(nr, dtype="int32")
+                data.value = np.empty([nr, nr_comp], dtype="float64")
 
                 for ii in range(nr):
                     line = f.readline().decode().strip().split()
                     elm_number[ii] = int(line[0])
                     data.value[ii, :] = [float(jj) for jj in line[1:]]
 
-            if not f.readline().startswith(b'$EndElementData'):
-                raise IOError(fn + " expected $EndElementData after reading " +
-                              str(nr) + " lines in $ElementData")
+            if not f.readline().startswith(b"$EndElementData"):
+                raise IOError(
+                    fn
+                    + " expected $EndElementData after reading "
+                    + str(nr)
+                    + " lines in $ElementData"
+                )
 
             if np.any(elm_number != m.elm.elm_number):
-                raise IOError("Can't read ElementData field: "
-                              "it does not have one data point per element")
+                raise IOError(
+                    "Can't read ElementData field: "
+                    "it does not have one data point per element"
+                )
 
             return data
 
         # read sections recursively
         def read_next_section():
             t, name, nr, nr_comp = parse_Data()
-            if t == 'EOF':
+            if t == "EOF":
                 return
-            elif t == b'$NodeData':
+            elif t == b"$NodeData":
                 m.nodedata.append(read_NodeData(t, name, nr, nr_comp, m))
-            elif t == b'$ElementData':
+            elif t == b"$ElementData":
                 m.elmdata.append(read_ElementData(t, name, nr, nr_comp, m))
             else:
                 raise IOError("Can't recognize section name:" + t)
@@ -5614,10 +5901,10 @@ def _read_msh_2(fn, m, skip_data=False):
 def _read_msh_4(fn, m, skip_data=False):
     m.fn = fn
     # file open
-    with open(fn, 'rb') as f:
+    with open(fn, "rb") as f:
         # check 1st line
         first_line = f.readline()
-        if not first_line.startswith(b'$MeshFormat'):
+        if not first_line.startswith(b"$MeshFormat"):
             raise IOError(fn, "must start with $MeshFormat")
 
         # parse 2nd line
@@ -5638,11 +5925,12 @@ def _read_msh_4(fn, m, skip_data=False):
 
         if data_size != 8:
             raise IOError(
-                "data_size should be double (8), i'm reading: {0}".format(data_size))
+                "data_size should be double (8), i'm reading: {0}".format(data_size)
+            )
 
         # read next byte, if binary, to check for endianness
         if binary:
-            endianness = struct.unpack('i', f.readline()[:4])[0]
+            endianness = struct.unpack("i", f.readline()[:4])[0]
         else:
             endianness = 1
 
@@ -5650,16 +5938,16 @@ def _read_msh_4(fn, m, skip_data=False):
             raise IOError("endianness is not 1, is the endian order wrong?")
 
         # read 3rd line
-        if not f.readline().startswith(b'$EndMeshFormat'):
+        if not f.readline().startswith(b"$EndMeshFormat"):
             raise IOError(fn + " expected $EndMeshFormat")
 
         # Skip  everyting untill nodes
-        while not f.readline().startswith(b'$Nodes'):
+        while not f.readline().startswith(b"$Nodes"):
             continue
 
         # Number of nodes and number of blocks
         if binary:
-            entity_blocks, node_nr = struct.unpack('LL', f.read(struct.calcsize('LL')))
+            entity_blocks, node_nr = struct.unpack("LL", f.read(struct.calcsize("LL")))
         else:
             line = f.readline().strip()
             entity_blocks, node_nr = line.decode().split()
@@ -5671,7 +5959,8 @@ def _read_msh_4(fn, m, skip_data=False):
         for block in range(entity_blocks):
             if binary:
                 _, _, parametric, n_in_block = struct.unpack(
-                    'iiii', f.read(struct.calcsize('iiii')))
+                    "iiii", f.read(struct.calcsize("iiii"))
+                )
                 # We need to read 4 extra bytes here
                 f.read(4)
             else:
@@ -5681,41 +5970,44 @@ def _read_msh_4(fn, m, skip_data=False):
             if parametric:
                 raise IOError("Can't read parametric entity!")
             if binary:
-                dt = np.dtype([
-                    ('id', np.int32, 1),
-                    ('coord', np.float64, 3)])
+                dt = np.dtype([("id", np.int32, 1), ("coord", np.float64, 3)])
                 temp = np.fromfile(f, dtype=dt, count=n_in_block)
-                node_nbr_block = temp['id']
-                node_coord_block = temp['coord']
+                node_nbr_block = temp["id"]
+                node_coord_block = temp["coord"]
             else:
                 node_nbr_block = np.zeros(n_in_block, dtype=int)
                 node_coord_block = np.zeros(3 * n_in_block, dtype=float)
                 for i in range(n_in_block):
                     line = f.readline().decode().strip().split()
                     node_nbr_block[i] = line[0]
-                    node_coord_block[3*i] = line[1]
-                    node_coord_block[3*i + 1] = line[2]
-                    node_coord_block[3*i + 2] = line[3]
+                    node_coord_block[3 * i] = line[1]
+                    node_coord_block[3 * i + 1] = line[2]
+                    node_coord_block[3 * i + 2] = line[3]
                 node_coord_block = node_coord_block.reshape(-1, 3)
 
-            node_number[n_read:n_read+n_in_block] = node_nbr_block
-            node_coord[n_read:n_read+n_in_block, :] = node_coord_block
+            node_number[n_read : n_read + n_in_block] = node_nbr_block
+            node_coord[n_read : n_read + n_in_block, :] = node_coord_block
             n_read += n_in_block
 
         m.nodes.node_coord = node_coord
 
         line = f.readline()
-        if b'$EndNodes' not in line:
+        if b"$EndNodes" not in line:
             line = f.readline()
-            if b'$EndNodes' not in line:
-                raise IOError(fn + " expected $EndNodes after reading " +
-                              str(m.noedes.nr) + " nodes. Read " + line)
+            if b"$EndNodes" not in line:
+                raise IOError(
+                    fn
+                    + " expected $EndNodes after reading "
+                    + str(m.noedes.nr)
+                    + " nodes. Read "
+                    + line
+                )
 
         # Read Elements
-        if not f.readline().startswith(b'$Elements'):
+        if not f.readline().startswith(b"$Elements"):
             raise IOError(fn, "expected line with $Elements")
         if binary:
-            entity_blocks, elm_nr = struct.unpack('LL', f.read(struct.calcsize('LL')))
+            entity_blocks, elm_nr = struct.unpack("LL", f.read(struct.calcsize("LL")))
         else:
             line = f.readline().strip()
             entity_blocks, elm_nr = line.decode().split()
@@ -5730,7 +6022,8 @@ def _read_msh_4(fn, m, skip_data=False):
         for block in range(entity_blocks):
             if binary:
                 tag, _, elm_type, n_in_block = struct.unpack(
-                    'iiii', f.read(struct.calcsize('iiii')))
+                    "iiii", f.read(struct.calcsize("iiii"))
+                )
                 f.read(4)
             else:
                 tag, _, elm_type, n_in_block = f.readline().decode().strip().split()
@@ -5744,16 +6037,15 @@ def _read_msh_4(fn, m, skip_data=False):
                 nr_nodes_elm = 4
             else:
                 warnings.warn(
-                    "Can't read element type: {}. Ignoring it".format(elm_type))
+                    "Can't read element type: {}. Ignoring it".format(elm_type)
+                )
                 continue
 
             if binary:
-                dt = np.dtype([
-                    ('id', np.int32, 1),
-                    ('nodes', np.int32, nr_nodes_elm)])
+                dt = np.dtype([("id", np.int32, 1), ("nodes", np.int32, nr_nodes_elm)])
                 temp = np.fromfile(f, dtype=dt, count=n_in_block)
-                elm_nbr_block = temp['id']
-                elm_node_block = temp['nodes']
+                elm_nbr_block = temp["id"]
+                elm_node_block = temp["nodes"]
 
             else:
                 elm_nbr_block = np.zeros(n_in_block, dtype=np.int32)
@@ -5761,14 +6053,18 @@ def _read_msh_4(fn, m, skip_data=False):
                 for i in range(n_in_block):
                     line = f.readline().decode().strip().split()
                     elm_nbr_block[i] = int(line[0])
-                    elm_node_block[nr_nodes_elm*i:nr_nodes_elm*(i+1)] = [int(l) for l in line[1:]]
+                    elm_node_block[nr_nodes_elm * i : nr_nodes_elm * (i + 1)] = [
+                        int(l) for l in line[1:]
+                    ]
                 elm_node_block = elm_node_block.reshape(-1, nr_nodes_elm)
 
-            elm_number[n_read:n_read+n_in_block] = elm_nbr_block
-            m.elm.node_number_list[n_read:n_read+n_in_block, :nr_nodes_elm] = elm_node_block
-            m.elm.tag1[n_read:n_read+n_in_block] = tag
-            m.elm.elm_type[n_read:n_read+n_in_block] = elm_type
-            read[n_read:n_read+n_in_block] = True
+            elm_number[n_read : n_read + n_in_block] = elm_nbr_block
+            m.elm.node_number_list[n_read : n_read + n_in_block, :nr_nodes_elm] = (
+                elm_node_block
+            )
+            m.elm.tag1[n_read : n_read + n_in_block] = tag
+            m.elm.elm_type[n_read : n_read + n_in_block] = elm_type
+            read[n_read : n_read + n_in_block] = True
             n_read += n_in_block
 
         elm_number = elm_number[read]
@@ -5784,29 +6080,39 @@ def _read_msh_4(fn, m, skip_data=False):
         m.elm.tag2 = m.elm.tag1
 
         line = f.readline()
-        if b'$EndElements' not in line:
+        if b"$EndElements" not in line:
             line = f.readline()
-            if b'$EndElements' not in line:
-                raise IOError(fn + " expected $EndElements after reading " +
-                              str(m.elm.nr) + " elements. Read " + line)
+            if b"$EndElements" not in line:
+                raise IOError(
+                    fn
+                    + " expected $EndElements after reading "
+                    + str(m.elm.nr)
+                    + " elements. Read "
+                    + line
+                )
 
         # read the header in the beginning of a data section
         def parse_Data():
             section = f.readline()
-            if section == b'':
-                return 'EOF', '', 0, 0
+            if section == b"":
+                return "EOF", "", 0, 0
             # string tags
-            number_of_string_tags = int(f.readline().decode('ascii'))
-            assert number_of_string_tags == 1, "Invalid Mesh File: invalid number of string tags"
-            name = f.readline().decode('ascii').strip().strip('"')
+            number_of_string_tags = int(f.readline().decode("ascii"))
+            assert number_of_string_tags == 1, (
+                "Invalid Mesh File: invalid number of string tags"
+            )
+            name = f.readline().decode("ascii").strip().strip('"')
             # real tags
-            number_of_real_tags = int(f.readline().decode('ascii'))
-            assert number_of_real_tags == 1, "Invalid Mesh File: invalid number of real tags"
+            number_of_real_tags = int(f.readline().decode("ascii"))
+            assert number_of_real_tags == 1, (
+                "Invalid Mesh File: invalid number of real tags"
+            )
             f.readline()
             # integer tags
-            number_of_integer_tags = int(f.readline().decode('ascii'))  # usually 3 or 4
-            integer_tags = [int(f.readline().decode('ascii'))
-                            for i in range(number_of_integer_tags)]
+            number_of_integer_tags = int(f.readline().decode("ascii"))  # usually 3 or 4
+            integer_tags = [
+                int(f.readline().decode("ascii")) for i in range(number_of_integer_tags)
+            ]
             nr = integer_tags[2]
             nr_comp = integer_tags[1]
             return section.strip(), name, nr, nr_comp
@@ -5814,72 +6120,82 @@ def _read_msh_4(fn, m, skip_data=False):
         def read_NodeData(t, name, nr, nr_comp, m):
             data = NodeData(np.empty((nr, nr_comp)), name=name, mesh=m)
             if binary:
-                dt = np.dtype([
-                    ('id', np.int32, 1),
-                    ('values', np.float64, nr_comp)])
+                dt = np.dtype([("id", np.int32, 1), ("values", np.float64, nr_comp)])
 
                 temp = np.fromfile(f, dtype=dt, count=nr)
-                node_number = np.copy(temp['id'])
-                data.value = np.copy(temp['values'])
+                node_number = np.copy(temp["id"])
+                data.value = np.copy(temp["values"])
             else:
-                node_number = np.empty(nr, dtype='int32')
-                data.value = np.empty((nr, nr_comp), dtype='float64')
+                node_number = np.empty(nr, dtype="int32")
+                data.value = np.empty((nr, nr_comp), dtype="float64")
                 for ii in range(nr):
-                    line = f.readline().decode('ascii').split()
+                    line = f.readline().decode("ascii").split()
                     node_number[ii] = int(line[0])
                     data.value[ii, :] = [float(v) for v in line[1:]]
 
-            if not f.readline().startswith(b'$EndNodeData'):
-                raise IOError(fn + " expected $EndNodeData after reading " +
-                              str(nr) + " lines in $NodeData")
+            if not f.readline().startswith(b"$EndNodeData"):
+                raise IOError(
+                    fn
+                    + " expected $EndNodeData after reading "
+                    + str(nr)
+                    + " lines in $NodeData"
+                )
 
             if np.any(node_number != m.nodes.elm_number):
-                raise IOError("Can't read NodeData field: "
-                              "it does not have one data point per node")
+                raise IOError(
+                    "Can't read NodeData field: "
+                    "it does not have one data point per node"
+                )
 
             return data
 
         def read_ElementData(t, name, nr, nr_comp, m):
             if not np.all(read):
-                raise IOError('Could not read ElementData: '
-                              'Element ordering not compact or invalid element type')
+                raise IOError(
+                    "Could not read ElementData: "
+                    "Element ordering not compact or invalid element type"
+                )
             data = ElementData(np.empty((nr, nr_comp)), name=name, mesh=m)
             if binary:
-                dt = np.dtype([
-                    ('id', np.int32, 1),
-                    ('values', np.float64, nr_comp)])
+                dt = np.dtype([("id", np.int32, 1), ("values", np.float64, nr_comp)])
 
                 temp = np.fromfile(f, dtype=dt, count=nr)
-                elm_number = np.copy(temp['id'])
-                data.value = np.copy(temp['values'])
+                elm_number = np.copy(temp["id"])
+                data.value = np.copy(temp["values"])
 
             else:
-                elm_number = np.empty(nr, dtype='int32')
-                data.value = np.empty([nr, nr_comp], dtype='float64')
+                elm_number = np.empty(nr, dtype="int32")
+                data.value = np.empty([nr, nr_comp], dtype="float64")
 
                 for ii in range(nr):
-                    line = f.readline().decode('ascii').split()
+                    line = f.readline().decode("ascii").split()
                     elm_number[ii] = int(line[0])
                     data.value[ii, :] = [float(jj) for jj in line[1:]]
 
-            if not f.readline().startswith(b'$EndElementData'):
-                raise IOError(fn + " expected $EndElementData after reading " +
-                              str(nr) + " lines in $ElementData")
+            if not f.readline().startswith(b"$EndElementData"):
+                raise IOError(
+                    fn
+                    + " expected $EndElementData after reading "
+                    + str(nr)
+                    + " lines in $ElementData"
+                )
 
             if np.any(elm_number != m.elm.elm_number):
-                raise IOError("Can't read ElementData field: "
-                              "it does not have one data point per element")
+                raise IOError(
+                    "Can't read ElementData field: "
+                    "it does not have one data point per element"
+                )
 
             return data
 
         # read sections recursively
         def read_next_section():
             t, name, nr, nr_comp = parse_Data()
-            if t == 'EOF':
+            if t == "EOF":
                 return
-            elif t == b'$NodeData':
+            elif t == b"$NodeData":
                 m.nodedata.append(read_NodeData(t, name, nr, nr_comp, m))
-            elif t == b'$ElementData':
+            elif t == b"$ElementData":
                 m.elmdata.append(read_ElementData(t, name, nr, nr_comp, m))
             else:
                 raise IOError("Can't recognize section name:" + t)
@@ -5894,8 +6210,8 @@ def _read_msh_4(fn, m, skip_data=False):
 
 
 # write msh to mesh file
-def write_msh(msh, file_name=None, mode='binary', mmg_fix=False):
-    """ Writes a gmsh 'msh' file
+def write_msh(msh, file_name=None, mode="binary", mmg_fix=False):
+    """Writes a gmsh 'msh' file
 
     Parameters
     ------------
@@ -5911,127 +6227,179 @@ def write_msh(msh, file_name=None, mode='binary', mmg_fix=False):
 
     fn = msh.fn
 
-    if fn[0] == '~':
+    if fn[0] == "~":
         fn = os.path.expanduser(fn)
 
-    if mode not in ['ascii', 'binary']:
+    if mode not in ["ascii", "binary"]:
         raise ValueError("Only 'ascii' and 'binary' are allowed")
 
-    with open(fn, 'wb') as f:
-        if mode == 'ascii':
-            f.write(b'$MeshFormat\n2.2 0 8\n$EndMeshFormat\n')
+    with open(fn, "wb") as f:
+        if mode == "ascii":
+            f.write(b"$MeshFormat\n2.2 0 8\n$EndMeshFormat\n")
 
-        elif mode == 'binary':
-            f.write(b'$MeshFormat\n2.2 1 8\n')
-            f.write(struct.pack('i', 1))
-            f.write(b'\n$EndMeshFormat\n')
+        elif mode == "binary":
+            f.write(b"$MeshFormat\n2.2 1 8\n")
+            f.write(struct.pack("i", 1))
+            f.write(b"\n$EndMeshFormat\n")
 
         # write nodes
-        f.write(b'$Nodes\n')
-        f.write('{0}\n'.format(msh.nodes.nr).encode('ascii'))
+        f.write(b"$Nodes\n")
+        f.write("{0}\n".format(msh.nodes.nr).encode("ascii"))
 
-        if mode == 'ascii':
+        if mode == "ascii":
             for ii in range(msh.nodes.nr):
-                f.write((str(msh.nodes.node_number[ii]) + ' ' +
-                         str(msh.nodes.node_coord[ii][0]) + ' ' +
-                         str(msh.nodes.node_coord[ii][1]) + ' ' +
-                         str(msh.nodes.node_coord[ii][2]) + '\n').encode('ascii'))
+                f.write(
+                    (
+                        str(msh.nodes.node_number[ii])
+                        + " "
+                        + str(msh.nodes.node_coord[ii][0])
+                        + " "
+                        + str(msh.nodes.node_coord[ii][1])
+                        + " "
+                        + str(msh.nodes.node_coord[ii][2])
+                        + "\n"
+                    ).encode("ascii")
+                )
 
-        elif mode == 'binary':
-            node_number = msh.nodes.node_number.astype('int32')
-            node_coord = msh.nodes.node_coord.astype('float64')
+        elif mode == "binary":
+            node_number = msh.nodes.node_number.astype("int32")
+            node_coord = msh.nodes.node_coord.astype("float64")
             m = node_number[:, np.newaxis]
             for i in range(3):
-                nc = node_coord[:, i].astype('float64')
-                m = np.concatenate((m,
-                                    nc.view('int32').reshape(-1, 2)), axis=1)
+                nc = node_coord[:, i].astype("float64")
+                m = np.concatenate((m, nc.view("int32").reshape(-1, 2)), axis=1)
             f.write(m.tobytes())
-        f.write(b'$EndNodes\n')
+        f.write(b"$EndNodes\n")
         # write elements
-        f.write(b'$Elements\n')
-        f.write((str(msh.elm.nr) + '\n').encode('ascii'))
+        f.write(b"$Elements\n")
+        f.write((str(msh.elm.nr) + "\n").encode("ascii"))
 
-        if mode == 'ascii':
+        if mode == "ascii":
             for ii in range(msh.elm.nr):
-                line = str(msh.elm.elm_number[ii]) + ' ' + \
-                    str(msh.elm.elm_type[ii]) + ' ' + str(2) + ' ' +\
-                    str(msh.elm.tag1[ii]) + ' ' + str(msh.elm.tag2[ii]) + ' '
+                line = (
+                    str(msh.elm.elm_number[ii])
+                    + " "
+                    + str(msh.elm.elm_type[ii])
+                    + " "
+                    + str(2)
+                    + " "
+                    + str(msh.elm.tag1[ii])
+                    + " "
+                    + str(msh.elm.tag2[ii])
+                    + " "
+                )
 
                 if msh.elm.elm_type[ii] == 2:
-                    line += str(msh.elm.node_number_list[ii, :3]
-                                ).translate(None, '[](),') + '\n'
+                    line += (
+                        str(msh.elm.node_number_list[ii, :3]).translate(None, "[](),")
+                        + "\n"
+                    )
                 elif msh.elm.elm_type[ii] == 4:
-                    line += str(msh.elm.node_number_list[ii, :]
-                                ).translate(None, '[](),') + '\n'
+                    line += (
+                        str(msh.elm.node_number_list[ii, :]).translate(None, "[](),")
+                        + "\n"
+                    )
                 elif msh.elm.elm_type[ii] == 15:
-                    line += str(msh.elm.node_number_list[ii, :1]
-                                ).translate(None, '[](),') + '\n'
+                    line += (
+                        str(msh.elm.node_number_list[ii, :1]).translate(None, "[](),")
+                        + "\n"
+                    )
                 elif msh.elm.elm_type[ii] == 1:
-                    line += str(msh.elm.node_number_list[ii, :2]
-                                ).translate(None, '[](),') + '\n'
+                    line += (
+                        str(msh.elm.node_number_list[ii, :2]).translate(None, "[](),")
+                        + "\n"
+                    )
                 else:
                     raise IOError(
                         "ERROR: cant write meshes with elements of type",
-                        msh.elm.elm_type[ii])
+                        msh.elm.elm_type[ii],
+                    )
 
-                f.write(line.encode('ascii'))
+                f.write(line.encode("ascii"))
 
-        elif mode == 'binary':
+        elif mode == "binary":
             points = np.where(msh.elm.elm_type == 15)[0]
             if len(points > 0):
-                points_header = np.array((15, len(points), 2), 'int32')
-                points_number = msh.elm.elm_number[points].astype('int32')
-                points_tag1 = msh.elm.tag1[points].astype('int32')
-                points_tag2 = msh.elm.tag2[points].astype('int32')
-                points_node_list = msh.elm.node_number_list[
-                    points, :1].astype('int32')
+                points_header = np.array((15, len(points), 2), "int32")
+                points_number = msh.elm.elm_number[points].astype("int32")
+                points_tag1 = msh.elm.tag1[points].astype("int32")
+                points_tag2 = msh.elm.tag2[points].astype("int32")
+                points_node_list = msh.elm.node_number_list[points, :1].astype("int32")
                 f.write(points_header.tobytes())
-                f.write(np.concatenate((points_number[:, np.newaxis],
-                                        points_tag1[:, np.newaxis],
-                                        points_tag2[:, np.newaxis],
-                                        points_node_list), axis=1).tobytes())
+                f.write(
+                    np.concatenate(
+                        (
+                            points_number[:, np.newaxis],
+                            points_tag1[:, np.newaxis],
+                            points_tag2[:, np.newaxis],
+                            points_node_list,
+                        ),
+                        axis=1,
+                    ).tobytes()
+                )
             lines = np.where(msh.elm.elm_type == 1)[0]
             if len(lines > 0):
-                lines_header = np.array((1, len(lines), 2), 'int32')
-                lines_number = msh.elm.elm_number[lines].astype('int32')
-                lines_tag1 = msh.elm.tag1[lines].astype('int32')
-                lines_tag2 = msh.elm.tag2[lines].astype('int32')
-                lines_node_list = msh.elm.node_number_list[
-                    lines, :2].astype('int32')
+                lines_header = np.array((1, len(lines), 2), "int32")
+                lines_number = msh.elm.elm_number[lines].astype("int32")
+                lines_tag1 = msh.elm.tag1[lines].astype("int32")
+                lines_tag2 = msh.elm.tag2[lines].astype("int32")
+                lines_node_list = msh.elm.node_number_list[lines, :2].astype("int32")
                 f.write(lines_header.tobytes())
-                f.write(np.concatenate((lines_number[:, np.newaxis],
-                                        lines_tag1[:, np.newaxis],
-                                        lines_tag2[:, np.newaxis],
-                                        lines_node_list), axis=1).tobytes())
+                f.write(
+                    np.concatenate(
+                        (
+                            lines_number[:, np.newaxis],
+                            lines_tag1[:, np.newaxis],
+                            lines_tag2[:, np.newaxis],
+                            lines_node_list,
+                        ),
+                        axis=1,
+                    ).tobytes()
+                )
             triangles = np.where(msh.elm.elm_type == 2)[0]
             if len(triangles > 0):
-                triangles_header = np.array((2, len(triangles), 2), 'int32')
-                triangles_number = msh.elm.elm_number[triangles].astype('int32')
-                triangles_tag1 = msh.elm.tag1[triangles].astype('int32')
-                triangles_tag2 = msh.elm.tag2[triangles].astype('int32')
-                triangles_node_list = msh.elm.node_number_list[
-                    triangles, :3].astype('int32')
+                triangles_header = np.array((2, len(triangles), 2), "int32")
+                triangles_number = msh.elm.elm_number[triangles].astype("int32")
+                triangles_tag1 = msh.elm.tag1[triangles].astype("int32")
+                triangles_tag2 = msh.elm.tag2[triangles].astype("int32")
+                triangles_node_list = msh.elm.node_number_list[triangles, :3].astype(
+                    "int32"
+                )
                 f.write(triangles_header.tobytes())
-                f.write(np.concatenate((triangles_number[:, np.newaxis],
-                                        triangles_tag1[:, np.newaxis],
-                                        triangles_tag2[:, np.newaxis],
-                                        triangles_node_list), axis=1).tobytes())
+                f.write(
+                    np.concatenate(
+                        (
+                            triangles_number[:, np.newaxis],
+                            triangles_tag1[:, np.newaxis],
+                            triangles_tag2[:, np.newaxis],
+                            triangles_node_list,
+                        ),
+                        axis=1,
+                    ).tobytes()
+                )
 
             tetra = np.where(msh.elm.elm_type == 4)[0]
             if len(tetra > 0):
-                tetra_header = np.array((4, len(tetra), 2), 'int32')
-                tetra_number = msh.elm.elm_number[tetra].astype('int32')
-                tetra_tag1 = msh.elm.tag1[tetra].astype('int32')
-                tetra_tag2 = msh.elm.tag2[tetra].astype('int32')
-                tetra_node_list = msh.elm.node_number_list[tetra].astype('int32')
+                tetra_header = np.array((4, len(tetra), 2), "int32")
+                tetra_number = msh.elm.elm_number[tetra].astype("int32")
+                tetra_tag1 = msh.elm.tag1[tetra].astype("int32")
+                tetra_tag2 = msh.elm.tag2[tetra].astype("int32")
+                tetra_node_list = msh.elm.node_number_list[tetra].astype("int32")
 
                 f.write(tetra_header.tobytes())
-                f.write(np.concatenate((tetra_number[:, np.newaxis],
-                                        tetra_tag1[:, np.newaxis],
-                                        tetra_tag2[:, np.newaxis],
-                                        tetra_node_list), axis=1).tobytes())
+                f.write(
+                    np.concatenate(
+                        (
+                            tetra_number[:, np.newaxis],
+                            tetra_tag1[:, np.newaxis],
+                            tetra_tag2[:, np.newaxis],
+                            tetra_node_list,
+                        ),
+                        axis=1,
+                    ).tobytes()
+                )
 
-        f.write(b'$EndElements\n')
+        f.write(b"$EndElements\n")
 
     # write nodeData, if existent
     for nd in msh.nodedata:
@@ -6041,7 +6409,7 @@ def write_msh(msh, file_name=None, mode='binary', mmg_fix=False):
         eD.append_to_mesh(fn, mode)
 
 
-'''
+"""
 # Adds 1000 to the label of triangles, if less than 100
 def create_surface_labels(msh):
     triangles = np.where(msh.elm.elm_type == 2)[0]
@@ -6049,10 +6417,11 @@ def create_surface_labels(msh):
     msh.elm.tag1[triangles] += 1000
     msh.elm.tag2[triangles] += 1000
     return msh
-'''
+"""
+
 
 def read_res_file(fn_res, fn_pre=None):
-    """ Reads a .res file
+    """Reads a .res file
 
     Parameters
     ------------
@@ -6067,23 +6436,24 @@ def read_res_file(fn_res, fn_pre=None):
     ndarray
         values
     """
-    with open(fn_res, 'rb') as f:
+    with open(fn_res, "rb") as f:
         f.readline()  # skip first line
-        check, type_of_file = f.readline().decode('ascii').strip('\n').split(' ')
-        if check != '1.1':
-            raise IOError('Unexpected value in res!')
+        check, type_of_file = f.readline().decode("ascii").strip("\n").split(" ")
+        if check != "1.1":
+            raise IOError("Unexpected value in res!")
 
-        if type_of_file == '0':
-            v = np.loadtxt(f, comments='$', skiprows=3, usecols=[
-                           0], delimiter=' ', dtype=float)
+        if type_of_file == "0":
+            v = np.loadtxt(
+                f, comments="$", skiprows=3, usecols=[0], delimiter=" ", dtype=float
+            )
 
-        elif type_of_file == '1':
+        elif type_of_file == "1":
             f.readline()
             f.readline()
             f.readline()
-            s = b''
+            s = b""
             for line in f:
-                if line == b'$EndSolution\n':
+                if line == b"$EndSolution\n":
                     break
                 else:
                     s += line
@@ -6092,29 +6462,30 @@ def read_res_file(fn_res, fn_pre=None):
             v = cols[::2]
 
         else:
-            raise IOError(
-                'Do not recognize file type: %s for res file' % type_of_file)
+            raise IOError("Do not recognize file type: %s for res file" % type_of_file)
 
     if fn_pre is not None:
-        with open(fn_pre, 'br') as f:
-            assert "Resolution" in f.readline().decode('ascii'), 'Invalid .pre file'
-            main_resolution_number, number_of_dofdata = f.readline().decode('ascii')[:-1].split()
+        with open(fn_pre, "br") as f:
+            assert "Resolution" in f.readline().decode("ascii"), "Invalid .pre file"
+            main_resolution_number, number_of_dofdata = (
+                f.readline().decode("ascii")[:-1].split()
+            )
             main_resolution_number = int(main_resolution_number)
             number_of_dofdata = int(number_of_dofdata)
-            assert f.readline() == b"$EndResolution\n", 'Invalid .pre file'
-            assert b"$DofData" in f.readline(), 'Invalid .pre file'
+            assert f.readline() == b"$EndResolution\n", "Invalid .pre file"
+            assert b"$DofData" in f.readline(), "Invalid .pre file"
             [f.readline() for i in range(4)]
-            number_of_any_dof, number_of_dof = f.readline().decode('ascii')[:-1].split()
+            number_of_any_dof, number_of_dof = f.readline().decode("ascii")[:-1].split()
             number_of_any_dof = int(number_of_any_dof)
             number_of_dof = int(number_of_dof)
 
-        dof_type = np.loadtxt(fn_pre, comments='$',
-                              skiprows=9, usecols=[3], delimiter=' ',
-                              dtype=int)
+        dof_type = np.loadtxt(
+            fn_pre, comments="$", skiprows=9, usecols=[3], delimiter=" ", dtype=int
+        )
 
-        dof_data = np.loadtxt(fn_pre, comments='$',
-                              skiprows=9, usecols=[4], delimiter=' ',
-                              dtype=float)
+        dof_data = np.loadtxt(
+            fn_pre, comments="$", skiprows=9, usecols=[4], delimiter=" ", dtype=float
+        )
 
         vals = np.zeros(number_of_any_dof, dtype=float)
         vals[dof_type == 2] = dof_data[dof_type == 2]
@@ -6123,13 +6494,14 @@ def read_res_file(fn_res, fn_pre=None):
 
     return v
 
+
 def write_vtk(msh: Msh, file_name):
     import pyvista as pv
 
     type_mapping = np.zeros(16, dtype=np.int64)
-    type_mapping[15] = pv.CellType.VERTEX 
-    type_mapping[1] = pv.CellType.LINE 
-    type_mapping[2] = pv.CellType.TRIANGLE 
+    type_mapping[15] = pv.CellType.VERTEX
+    type_mapping[1] = pv.CellType.LINE
+    type_mapping[2] = pv.CellType.TRIANGLE
     type_mapping[4] = pv.CellType.TETRA
 
     point_number_mapping = np.zeros(16, dtype=np.int64)
@@ -6139,7 +6511,9 @@ def write_vtk(msh: Msh, file_name):
     point_number_mapping[4] = 4
 
     cell_types = type_mapping[msh.elm.elm_type]
-    cells = np.column_stack((point_number_mapping[msh.elm.elm_type], msh.elm.node_number_list - 1)).ravel()
+    cells = np.column_stack(
+        (point_number_mapping[msh.elm.elm_type], msh.elm.node_number_list - 1)
+    ).ravel()
     cells = cells[cells >= 0]
 
     grid = pv.UnstructuredGrid(cells, cell_types, msh.nodes.node_coord)
@@ -6150,9 +6524,10 @@ def write_vtk(msh: Msh, file_name):
     for elm_data in msh.elmdata:
         grid[elm_data.field_name] = elm_data.value
 
-    grid['tag'] = msh.elm.tag1
+    grid["tag"] = msh.elm.tag1
 
     grid.save(file_name)
+
 
 def read_vtk(file_name):
     import pyvista as pv
@@ -6176,25 +6551,27 @@ def read_vtk(file_name):
     i = 0
     k = 0
     while i < len(grid.cells):
-        node_number_list[k,0:grid.cells[i]] = grid.cells[i+1:i+1+grid.cells[i]]
+        node_number_list[k, 0 : grid.cells[i]] = grid.cells[
+            i + 1 : i + 1 + grid.cells[i]
+        ]
         elm_type[k] = point_number_mapping[grid.cells[i]]
         k += 1
         i += grid.cells[i] + 1
 
     node_number_list[node_number_list != -1] += 1
-     
+
     elm = Elements()
     elm.node_number_list = node_number_list
     elm.elm_type = elm_type
-    if 'tag' in grid.cell_data:
-        elm.tag1 = grid.cell_data['tag']
+    if "tag" in grid.cell_data:
+        elm.tag1 = grid.cell_data["tag"]
     else:
         elm.tag1 = np.zeros(elm.nr)
     elm.tag2 = elm.tag1.copy()
-    
+
     elm_data = []
     for key in grid.cell_data:
-        if key == 'tag':
+        if key == "tag":
             continue
         elm_data.append(ElementData(grid.cell_data[key], key))
 
@@ -6209,8 +6586,8 @@ def read_vtk(file_name):
     return msh
 
 
-def write_geo_spheres(positions, fn, values=None, name="", mode='bw'):
-    """ Writes a .geo file with spheres in specified positions
+def write_geo_spheres(positions, fn, values=None, name="", mode="bw"):
+    """Writes a .geo file with spheres in specified positions
 
     Parameters
     ------------
@@ -6227,23 +6604,27 @@ def write_geo_spheres(positions, fn, values=None, name="", mode='bw'):
 
     """
     if values is None:
-        values = np.zeros((len(positions), ))
+        values = np.zeros((len(positions),))
 
     if len(values) != len(positions):
         raise ValueError(
-            'The length of the vector of positions is different from the'
-            ' length of the vector of values')
+            "The length of the vector of positions is different from the"
+            " length of the vector of values"
+        )
 
     with open(fn, mode) as f:
-        f.write(('View"' + name + '"{\n').encode('ascii'))
+        f.write(('View"' + name + '"{\n').encode("ascii"))
         for p, v in zip(positions, values):
-            f.write(("SP(" + ", ".join([str(i) for i in p]) +
-                     "){" + str(v) + "};\n").encode('ascii'))
+            f.write(
+                (
+                    "SP(" + ", ".join([str(i) for i in p]) + "){" + str(v) + "};\n"
+                ).encode("ascii")
+            )
         f.write(b"};\n")
 
 
-def write_geo_vectors(positions, values, fn, name="", mode='bw'):
-    """ Writes a .geo file with vectors in specified positions
+def write_geo_vectors(positions, values, fn, name="", mode="bw"):
+    """Writes a .geo file with vectors in specified positions
 
     Parameters
     ------------
@@ -6262,27 +6643,31 @@ def write_geo_vectors(positions, values, fn, name="", mode='bw'):
     values = np.array(values)
     positions = np.array(positions)
     if values.shape[1] != 3:
-        raise ValueError('Values vector must have size (Nx3)')
+        raise ValueError("Values vector must have size (Nx3)")
 
     if positions.shape[1] != 3:
-        raise ValueError('Positions vector must have size (Nx3)')
+        raise ValueError("Positions vector must have size (Nx3)")
 
     if len(values) != len(positions):
         raise ValueError(
-            'The length of the vector of positions is different from the'
-            ' length of the vector of values')
+            "The length of the vector of positions is different from the"
+            " length of the vector of values"
+        )
 
     with open(fn, mode) as f:
-        f.write(('View"' + name + '"{\n').encode('ascii'))
+        f.write(('View"' + name + '"{\n').encode("ascii"))
         for p, v in zip(positions, values):
             f.write(
-                ("VP(" + ", ".join([str(i) for i in p]) + ")"
-                 "{" + ", ".join([str(i) for i in v]) + "};\n").encode('ascii'))
+                (
+                    "VP(" + ", ".join([str(i) for i in p]) + ")"
+                    "{" + ", ".join([str(i) for i in v]) + "};\n"
+                ).encode("ascii")
+            )
         f.write(b"};\n")
 
 
-def write_geo_axis_vectors(affine_matrix, fn, values=None, name="", mode='bw'):
-    """ Writes a .geo file with axis vectors transformed with the affine matrix
+def write_geo_axis_vectors(affine_matrix, fn, values=None, name="", mode="bw"):
+    """Writes a .geo file with axis vectors transformed with the affine matrix
 
     Parameters
     ------------
@@ -6299,36 +6684,46 @@ def write_geo_axis_vectors(affine_matrix, fn, values=None, name="", mode='bw'):
 
     """
     if affine_matrix.shape[0] != 4 or affine_matrix.shape[1] != 4:
-        raise ValueError('Affine matrix must have size (4x4)')
-    
+        raise ValueError("Affine matrix must have size (4x4)")
+
     if values is None:
         values = np.ones(4)
     else:
         values = np.array(values)
 
     if values.shape[0] != 4:
-        raise ValueError('values must have length 4')
+        raise ValueError("values must have length 4")
 
-    positions = np.tile(affine_matrix[:3, 3], (3,1))
+    positions = np.tile(affine_matrix[:3, 3], (3, 1))
     vectors = [
-        (affine_matrix @ np.array([1,0,0,0]))[:3] * values[0],
-        (affine_matrix @ np.array([0,1,0,0]))[:3] * values[1],
-        (affine_matrix @ np.array([0,0,1,0]))[:3] * values[2],
+        (affine_matrix @ np.array([1, 0, 0, 0]))[:3] * values[0],
+        (affine_matrix @ np.array([0, 1, 0, 0]))[:3] * values[1],
+        (affine_matrix @ np.array([0, 0, 1, 0]))[:3] * values[2],
     ]
 
     with open(fn, mode) as f:
-        f.write(('View"' + name + '"{\n').encode('ascii'))
+        f.write(('View"' + name + '"{\n').encode("ascii"))
         for p, v in zip(positions, vectors):
             f.write(
-                ("VP(" + ", ".join([str(i) for i in p]) + ")"
-                 "{" + ", ".join([str(i) for i in v]) + "};\n").encode('ascii'))
-        f.write(("SP(" + ", ".join([str(i) for i in positions[0]]) +
-                     "){" + str(values[3]) + "};\n").encode('ascii'))
+                (
+                    "VP(" + ", ".join([str(i) for i in p]) + ")"
+                    "{" + ", ".join([str(i) for i in v]) + "};\n"
+                ).encode("ascii")
+            )
+        f.write(
+            (
+                "SP("
+                + ", ".join([str(i) for i in positions[0]])
+                + "){"
+                + str(values[3])
+                + "};\n"
+            ).encode("ascii")
+        )
         f.write(b"};\n")
 
 
-def write_geo_lines(pos_start, pos_end, fn, values=None, name="", mode='bw'):
-    """ Writes a .geo file with lines between pos_start and pos_end
+def write_geo_lines(pos_start, pos_end, fn, values=None, name="", mode="bw"):
+    """Writes a .geo file with lines between pos_start and pos_end
 
     Parameters
     ------------
@@ -6353,33 +6748,43 @@ def write_geo_lines(pos_start, pos_end, fn, values=None, name="", mode='bw'):
     pos_end = np.array(pos_end)
 
     if pos_start.shape[1] != 3:
-        raise ValueError('Positions vector must have size (Nx3)')
+        raise ValueError("Positions vector must have size (Nx3)")
     if pos_end.shape[1] != 3:
-            raise ValueError('Positions vector must have size (Nx3)')
+        raise ValueError("Positions vector must have size (Nx3)")
     if values.shape[1] != 2:
-        raise ValueError('Values must have size (Nx2)')
+        raise ValueError("Values must have size (Nx2)")
 
     if len(pos_end) != len(pos_start):
         raise ValueError(
-            'The length of the vector of start positions is different from the'
-            ' length of the vector of end positions')
+            "The length of the vector of start positions is different from the"
+            " length of the vector of end positions"
+        )
     if len(values) != len(pos_start):
         raise ValueError(
-            'The length of the vector of positions is different from the'
-            ' length of the vector of values')
+            "The length of the vector of positions is different from the"
+            " length of the vector of values"
+        )
 
     with open(fn, mode) as f:
-        f.write(('View"' + name + '"{\n').encode('ascii'))
+        f.write(('View"' + name + '"{\n').encode("ascii"))
         for ps, pe, v in zip(pos_start, pos_end, values):
             f.write(
-                ("SL(" + ", ".join([str(i) for i in ps]) +
-                 ", "  + ", ".join([str(i) for i in pe]) + ")" +
-                 "{"   + ", ".join([str(i) for i in v])  + "};\n").encode('ascii'))
+                (
+                    "SL("
+                    + ", ".join([str(i) for i in ps])
+                    + ", "
+                    + ", ".join([str(i) for i in pe])
+                    + ")"
+                    + "{"
+                    + ", ".join([str(i) for i in v])
+                    + "};\n"
+                ).encode("ascii")
+            )
         f.write(b"};\n")
 
 
-def write_geo_text(positions, text, fn, name="", mode='bw'):
-    """ Writes a .geo file with text in specified positions
+def write_geo_text(positions, text, fn, name="", mode="bw"):
+    """Writes a .geo file with text in specified positions
 
     Parameters
     -----------
@@ -6394,20 +6799,27 @@ def write_geo_text(positions, text, fn, name="", mode='bw'):
 
     """
     if len(positions) != len(text):
-        raise ValueError('The length of the vector of positions is different from the' +
-                         'length of the list of text strings')
+        raise ValueError(
+            "The length of the vector of positions is different from the"
+            + "length of the list of text strings"
+        )
 
     with open(fn, mode) as f:
-        f.write(('View"' + name + '"{\n').encode('ascii'))
+        f.write(('View"' + name + '"{\n').encode("ascii"))
         for p, t in zip(positions, text):
-            f.write(("T3(" + ", ".join([str(i) for i in p]) +
-                     ', TextAttributes("FontSize", "24")'
-                     '){"' + t + '"};\n').encode('ascii'))
+            f.write(
+                (
+                    "T3("
+                    + ", ".join([str(i) for i in p])
+                    + ', TextAttributes("FontSize", "24")'
+                    '){"' + t + '"};\n'
+                ).encode("ascii")
+            )
         f.write(b"};\n")
 
 
-def write_geo_triangles(triangles, nodes, fn,  values=None, name="", mode="bw"):
-    """ Writes a .geo file with triangles and field
+def write_geo_triangles(triangles, nodes, fn, values=None, name="", mode="bw"):
+    """Writes a .geo file with triangles and field
 
     Parameters
     -----------
@@ -6433,24 +6845,24 @@ def write_geo_triangles(triangles, nodes, fn,  values=None, name="", mode="bw"):
 
     if len(values) != len(triangles):
         raise ValueError(
-            'The length of the vector of triangles is different from the'
-            ' length of the vector of values')
+            "The length of the vector of triangles is different from the"
+            " length of the vector of values"
+        )
 
     with open(fn, mode) as f:
-        f.write(('View"' + name + '"{\n').encode('ascii'))
+        f.write(('View"' + name + '"{\n').encode("ascii"))
         for t, v in zip(triangles, values):
             string = "ST("
             string += ", ".join([str(c) for c in nodes[t[0]]]) + ","
             string += ", ".join([str(c) for c in nodes[t[1]]]) + ","
             string += ", ".join([str(c) for c in nodes[t[2]]]) + ")"
             string += "{" + ",".join([str(vi) for vi in v]) + "};\n"
-            f.write(string.encode('ascii'))
+            f.write(string.encode("ascii"))
         f.write(b"};\n")
 
 
-
-def read_freesurfer_surface(fn, apply_transform : bool = False):
-    ''' Function to read FreeSurfer surface files
+def read_freesurfer_surface(fn, apply_transform: bool = False):
+    """Function to read FreeSurfer surface files
 
     Parameters
     ------------
@@ -6465,19 +6877,19 @@ def read_freesurfer_surface(fn, apply_transform : bool = False):
     msh: Msh()
         Mesh structure
 
-    '''
+    """
     vertex_coords, faces, meta = nibabel.freesurfer.io.read_geometry(
-        fn,
-        read_metadata=True
+        fn, read_metadata=True
     )
 
     if apply_transform:
-        vertex_coords = vertex_coords + meta['cras']
+        vertex_coords = vertex_coords + meta["cras"]
 
     return make_surface_mesh(vertex_coords, faces + 1)
 
-def write_freesurfer_surface(msh, fn, write_standard_header : bool = True):
-    ''' Writes a FreeSurfer surface
+
+def write_freesurfer_surface(msh, fn, write_standard_header: bool = True):
+    """Writes a FreeSurfer surface
     Only the surfaces (triangles) are writen to the FreeSurfer surface file
 
     Parameters
@@ -6488,29 +6900,29 @@ def write_freesurfer_surface(msh, fn, write_standard_header : bool = True):
         output file name
     write_standard_header : bool, optional
         If True, writes the standard header. If False, writes no header, by default True
-    '''
+    """
 
     m = msh.crop_mesh(elm_type=2)
     faces = m.elm.node_number_list[:, :3] - 1
     vertices = m.nodes.node_coord
 
-    stamp = f"Created by {os.getenv('USER')} on {str(datetime.datetime.now())} with SimNIBS"
+    stamp = (
+        f"Created by {os.getenv('USER')} on {str(datetime.datetime.now())} with SimNIBS"
+    )
 
     if write_standard_header:
-        affine= np.array([[-1.0, 0.0, 0.0],
-                          [ 0.0, 0.0, -1.0],
-                          [ 0.0, 1.0, 0.0]])
-        voxelsize=np.array([1.0, 1.0, 1.0])
+        affine = np.array([[-1.0, 0.0, 0.0], [0.0, 0.0, -1.0], [0.0, 1.0, 0.0]])
+        voxelsize = np.array([1.0, 1.0, 1.0])
         volume_info = {
-            'head': [2, 0, 20],
-            'valid': '1',
-            'filename': 'fake.nii.gz',
-            'volume': [256, 256, 256],
-            'voxelsize': voxelsize,
-            'xras': affine[0, :],
-            'yras': affine[1, :],
-            'zras': affine[2, :],
-            'cras': [0, 0, 0]
+            "head": [2, 0, 20],
+            "valid": "1",
+            "filename": "fake.nii.gz",
+            "volume": [256, 256, 256],
+            "voxelsize": voxelsize,
+            "xras": affine[0, :],
+            "yras": affine[1, :],
+            "zras": affine[2, :],
+            "cras": [0, 0, 0],
         }
         nibabel.freesurfer.io.write_geometry(fn, vertices, faces, stamp, volume_info)
     else:
@@ -6518,7 +6930,7 @@ def write_freesurfer_surface(msh, fn, write_standard_header : bool = True):
 
 
 def read_gifti_surface(fn):
-    ''' Reads a gifti surface
+    """Reads a gifti surface
 
     Parameters
     -----------
@@ -6529,14 +6941,19 @@ def read_gifti_surface(fn):
     ---------
     msh: Msh()
         mesh structure with geometrical information
-    '''
+    """
     s = nibabel.load(fn)
-    faces = np.array(s.get_arrays_from_intent('NIFTI_INTENT_TRIANGLE')[0].data, dtype=int)
-    nodes = np.array(s.get_arrays_from_intent('NIFTI_INTENT_POINTSET')[0].data, dtype=float)
+    faces = np.array(
+        s.get_arrays_from_intent("NIFTI_INTENT_TRIANGLE")[0].data, dtype=int
+    )
+    nodes = np.array(
+        s.get_arrays_from_intent("NIFTI_INTENT_POINTSET")[0].data, dtype=float
+    )
     return make_surface_mesh(nodes, faces + 1)
 
+
 def write_gifti_surface(msh, fn, ref_image=None):
-    ''' Writes mesh surfaces as a gifti file
+    """Writes mesh surfaces as a gifti file
 
     Parameters
     -----------
@@ -6544,24 +6961,39 @@ def write_gifti_surface(msh, fn, ref_image=None):
         Mesh object
     fn: str
         Name of file
-    '''
+    """
     if ref_image is not None:
         ref_image = nibabel.load(ref_image)
         header = ref_image.header
-        coordsys = ref_image.get_arrays_from_intent('NIFTI_INTENT_POINTSET')[0].coordsys
+        coordsys = ref_image.get_arrays_from_intent("NIFTI_INTENT_POINTSET")[0].coordsys
     else:
         header = None
         coordsys = nibabel.gifti.GiftiCoordSystem(0, 3, np.eye(4))
     # This metadata is needed for FreeView
     # NOT WORKING! I NEDD TO PUT THESE THINGS IN A CDATA FIELD SOMEHOW
-    metadata = nibabel.gifti.GiftiMetaData({
-        'VolGeomWidth': '256', 'VolGeomHeight': '256', 'VolGeomWidth': '256',
-        'VolGeomXsize': '1.0', 'VolGeomYsize': '1.0', 'VolGeomZsize': '1.0',
-        'VolGeomX_R': '-1.0', 'VolGeomX_A': '0.0', 'VolGeomX_S': '0.0',
-        'VolGeomY_R': '0.0', 'VolGeomY_A': '0.0', 'VolGeomY_S': '-1.0',
-        'VolGeomZ_R': '0.0', 'VolGeomZ_A': '1.0', 'VolGeomZ_S': '0.0',
-        'VolGeomC_R': '0.0', 'VolGeomC_A': '1.0', 'VolGeomC_S': '0.0',
-        'SurfaceCenterX': '0.0', 'SurfaceCenterY': '1.0', 'SurfaceCenterZ': '0.0'
+    metadata = nibabel.gifti.GiftiMetaData(
+        {
+            "VolGeomWidth": "256",
+            "VolGeomHeight": "256",
+            "VolGeomWidth": "256",
+            "VolGeomXsize": "1.0",
+            "VolGeomYsize": "1.0",
+            "VolGeomZsize": "1.0",
+            "VolGeomX_R": "-1.0",
+            "VolGeomX_A": "0.0",
+            "VolGeomX_S": "0.0",
+            "VolGeomY_R": "0.0",
+            "VolGeomY_A": "0.0",
+            "VolGeomY_S": "-1.0",
+            "VolGeomZ_R": "0.0",
+            "VolGeomZ_A": "1.0",
+            "VolGeomZ_S": "0.0",
+            "VolGeomC_R": "0.0",
+            "VolGeomC_A": "1.0",
+            "VolGeomC_S": "0.0",
+            "SurfaceCenterX": "0.0",
+            "SurfaceCenterY": "1.0",
+            "SurfaceCenterZ": "0.0",
         }
     )
 
@@ -6569,19 +7001,19 @@ def write_gifti_surface(msh, fn, ref_image=None):
     vertices = msh.nodes[:]
     faces = msh.elm[:, :3] - 1
     verts_da = nibabel.gifti.GiftiDataArray(
-        vertices.astype(np.float32), intent='NIFTI_INTENT_POINTSET',
-        coordsys=coordsys, meta=metadata
+        vertices.astype(np.float32),
+        intent="NIFTI_INTENT_POINTSET",
+        coordsys=coordsys,
+        meta=metadata,
     )
     faces_da = nibabel.gifti.GiftiDataArray(
-        faces.astype(np.int32), intent='NIFTI_INTENT_TRIANGLE',
+        faces.astype(np.int32),
+        intent="NIFTI_INTENT_TRIANGLE",
     )
     # as coordsys defaults to unity, we need to overwrite it to None for the triangles
     faces_da.coordsys = None
 
-    image = nibabel.gifti.GiftiImage(
-        header=header,
-        darrays=[verts_da, faces_da]
-    )
+    image = nibabel.gifti.GiftiImage(header=header, darrays=[verts_da, faces_da])
     # image = nibabel.GiftiImage(
     #     header=header,
     #     darrays=[verts_da, faces_da]
@@ -6590,7 +7022,7 @@ def write_gifti_surface(msh, fn, ref_image=None):
 
 
 def read_curv(fn):
-    ''' Reads a freesurfer .curv file
+    """Reads a freesurfer .curv file
 
     Parameters
     ------------
@@ -6601,31 +7033,31 @@ def read_curv(fn):
     ---------
     curv: np.ndarray
         array with file informatio
-    '''
+    """
     NEW_VERSION_MAGIC_NUMBER = 16777215
 
     def read_3byte_integer(f):
         b = f.read(3)
-        n = struct.unpack('>i', b'\x00' + b)[0]
+        n = struct.unpack(">i", b"\x00" + b)[0]
         return n
 
-    with open(fn, 'rb') as f:
+    with open(fn, "rb") as f:
         # Read magic number as a 3 byte integer
         magic = read_3byte_integer(f)
         if magic == NEW_VERSION_MAGIC_NUMBER:
             vnum = struct.unpack(">i", f.read(4))[0]
             fnum = struct.unpack(">i", f.read(4))[0]
             vals_per_vertex = struct.unpack(">i", f.read(4))[0]
-            curv = np.fromfile(f, np.dtype('>f'), vnum)
+            curv = np.fromfile(f, np.dtype(">f"), vnum)
 
         else:
             fnum = read_3byte_integer(f)
-            curv = np.fromfile(f, np.dtype('>f'), magic) / 100.
+            curv = np.fromfile(f, np.dtype(">f"), magic) / 100.0
     return curv
 
 
 def write_curv(fn, curv, fnum):
-    ''' Writes a freesurfer .curv file
+    """Writes a freesurfer .curv file
 
     Parameters
     ------------
@@ -6635,36 +7067,36 @@ def write_curv(fn, curv, fnum):
         Data array to be written
     fnum: int
         Number of faces in the mesh
-    '''
+    """
+
     def write_3byte_integer(f, n):
-        b1 = struct.pack('B', (n >> 16) & 255)
-        b2 = struct.pack('B', (n >> 8) & 255)
-        b3 = struct.pack('B', (n & 255))
+        b1 = struct.pack("B", (n >> 16) & 255)
+        b2 = struct.pack("B", (n >> 8) & 255)
+        b3 = struct.pack("B", (n & 255))
         f.write(b1)
         f.write(b2)
         f.write(b3)
 
-
     NEW_VERSION_MAGIC_NUMBER = 16777215
     vnum = len(curv)
-    with open(fn, 'wb') as f:
+    with open(fn, "wb") as f:
         write_3byte_integer(f, NEW_VERSION_MAGIC_NUMBER)
         f.write(struct.pack(">i", int(vnum)))
-        f.write(struct.pack('>i', int(fnum)))
-        f.write(struct.pack('>i', 1))
-        f.write(curv.astype('>f').tobytes())
+        f.write(struct.pack(">i", int(fnum)))
+        f.write(struct.pack(">i", 1))
+        f.write(curv.astype(">f").tobytes())
 
 
 def _middle_surface(wm_surface, gm_surface, depth):
     interp_surface = copy.deepcopy(wm_surface)
-    interp_surface.nodes.node_coord = \
-        depth * wm_surface.nodes.node_coord + \
-        (1 - depth) * gm_surface.nodes.node_coord
+    interp_surface.nodes.node_coord = (
+        depth * wm_surface.nodes.node_coord + (1 - depth) * gm_surface.nodes.node_coord
+    )
     return interp_surface
 
 
 def read_stl(fn):
-    ''' Reads mesh surface in a .stl file
+    """Reads mesh surface in a .stl file
 
     Parameters
     -----------
@@ -6675,7 +7107,7 @@ def read_stl(fn):
     ---------
     msh: Msh
         Mesh with surface
-    '''
+    """
     # test if ascii. If not, assume binary
     with open(fn, "rb") as f:
         try:
@@ -6694,7 +7126,7 @@ def read_stl(fn):
             np.fromfile(f, dtype=np.uint32, count=1)[0]
             data = np.fromfile(f, dtype=np.uint16, count=-1)
         data = data.reshape((-1, 25))[:, :24].copy().view(np.float32)
-        mesh_flat = data[:, 3:].reshape(-1, 3) #  discard the triangle normals
+        mesh_flat = data[:, 3:].reshape(-1, 3)  #  discard the triangle normals
 
     else:
         mesh_flat = []
@@ -6705,17 +7137,16 @@ def read_stl(fn):
                     mesh_flat.append(line[1:])
         mesh_flat = np.array(mesh_flat, dtype=float)
 
-    _, uidx, iidx = np.unique(mesh_flat, axis=0, return_index=True,
-                              return_inverse=True)
+    _, uidx, iidx = np.unique(mesh_flat, axis=0, return_index=True, return_inverse=True)
     q = np.argsort(uidx)
     vertices = mesh_flat[uidx[q]]
     faces = np.argsort(q)[iidx].reshape(-1, 3)
 
-    return make_surface_mesh(vertices, faces+1)
+    return make_surface_mesh(vertices, faces + 1)
 
 
 def read_off(fn):
-    ''' Reads mesh surfaces in a .off file
+    """Reads mesh surfaces in a .off file
 
     Parameters
     -----------
@@ -6726,7 +7157,7 @@ def read_off(fn):
     ---------
     msh: Msh
         Mesh with surface
-    '''
+    """
 
     with open(fn) as f:
         # Read first line. This should be "OFF"
@@ -6741,12 +7172,13 @@ def read_off(fn):
         n_verts, n_faces, _ = list(map(int, line.split()))
 
         # Now read the data
-        vertices = np.fromfile(f, dtype=float, count=3*n_verts, sep=' ')
+        vertices = np.fromfile(f, dtype=float, count=3 * n_verts, sep=" ")
         vertices = vertices.reshape(n_verts, 3)
-        faces = np.fromfile(f, dtype=int, count=4*n_faces, sep=' ')
+        faces = np.fromfile(f, dtype=int, count=4 * n_faces, sep=" ")
         faces = faces.reshape(n_faces, 4)[:, 1:]
 
-    return make_surface_mesh(vertices, faces+1)
+    return make_surface_mesh(vertices, faces + 1)
+
 
 def read(fn):
     """Read a mesh from disk. Reads gii,[ mesh,] msh, off, stl, and freesurface
@@ -6768,15 +7200,15 @@ def read(fn):
 
     if ext == ".gii":
         msh = read_gifti_surface(fn)
-    #elif ext == ".mesh":
+    # elif ext == ".mesh":
     #    msh = read_medit(fn)
     elif ext == ".msh":
-        msh = read_msh(fn) # m arg not supported...
+        msh = read_msh(fn)  # m arg not supported...
     elif ext == ".off":
         msh = read_off(fn)
     elif ext == ".stl":
         msh = read_stl(fn)
-    else: # freesurfer files have all sorts of extentions
+    else:  # freesurfer files have all sorts of extentions
         try:
             msh = read_freesurfer_surface(fn)
         except OSError:
@@ -6787,7 +7219,7 @@ def read(fn):
 
 
 def write_off(msh, fn):
-    ''' Writes mesh surfaces as an .off file
+    """Writes mesh surfaces as an .off file
 
     Parameters
     -----------
@@ -6795,7 +7227,7 @@ def write_off(msh, fn):
         Mesh object
     fn: str
         Name of file
-    '''
+    """
     msh = msh.crop_mesh(elm_type=2)
     vertices = msh.nodes[:]
     faces = msh.elm[:, :3] - 1
@@ -6804,13 +7236,17 @@ def write_off(msh, fn):
         f.write("# File created by ... \n\n".encode())
         np.savetxt(f, np.array([len(vertices), len(faces), 0])[None, :], fmt="%u")
         np.savetxt(f, vertices, fmt="%0.6f")
-        np.savetxt(f, np.concatenate(
-            (np.repeat(faces.shape[1], len(faces))[:, None], faces),
-            axis=1).astype(np.uint), fmt="%u")
+        np.savetxt(
+            f,
+            np.concatenate(
+                (np.repeat(faces.shape[1], len(faces))[:, None], faces), axis=1
+            ).astype(np.uint),
+            fmt="%u",
+        )
 
 
 def write_stl(msh, fn, binary=True):
-    ''' Writes mesh surfaces as a .stl file
+    """Writes mesh surfaces as a .stl file
 
     Parameters
     -----------
@@ -6818,41 +7254,52 @@ def write_stl(msh, fn, binary=True):
         Mesh object
     fn: str
         Name of file
-    '''
+    """
     msh = msh.crop_mesh(elm_type=2)
     vertices = msh.nodes[:]
     faces = msh.elm[:, :3] - 1
     tnormals = msh.triangle_normals()[:]
     mesh = vertices[faces]
 
-    data = np.concatenate((tnormals, np.reshape(mesh, [len(faces), 9])),
-                          axis=1).astype(np.float32)
+    data = np.concatenate((tnormals, np.reshape(mesh, [len(faces), 9])), axis=1).astype(
+        np.float32
+    )
 
     if binary:
         with open(fn, "wb") as f:
             f.write(np.zeros(80, dtype=np.uint8))
             f.write(np.uint32(len(faces)))
-            f.write(np.concatenate(
-                (data.astype(np.float32, order="C", copy=False).view(np.uint16),
-                 np.zeros((data.shape[0], 1), dtype=np.uint16)), axis=1).reshape(-1).tobytes())
+            f.write(
+                np.concatenate(
+                    (
+                        data.astype(np.float32, order="C", copy=False).view(np.uint16),
+                        np.zeros((data.shape[0], 1), dtype=np.uint16),
+                    ),
+                    axis=1,
+                )
+                .reshape(-1)
+                .tobytes()
+            )
     else:
         with open(fn, "w") as f:
             f.write("solid MESH\n")
             for t in range(len(data)):
-                f.write((
-                    " facet normal {0} {1} {2}\n"
-                    "  outer loop\n"
-                    "   vertex {3} {4} {5}\n"
-                    "   vertex {6} {7} {8}\n"
-                    "   vertex {9} {10} {11}\n"
-                    "  endloop\n"
-                    " endfacet\n")
-                    .format(*data[t, :]))
+                f.write(
+                    (
+                        " facet normal {0} {1} {2}\n"
+                        "  outer loop\n"
+                        "   vertex {3} {4} {5}\n"
+                        "   vertex {6} {7} {8}\n"
+                        "   vertex {9} {10} {11}\n"
+                        "  endloop\n"
+                        " endfacet\n"
+                    ).format(*data[t, :])
+                )
             f.write("endsolid MESH\n")
 
 
 def read_medit(fn):
-    ''' Read MEDIT ".mesh" file
+    """Read MEDIT ".mesh" file
 
     Parameters
     -----------
@@ -6863,14 +7310,14 @@ def read_medit(fn):
     --------
     mesh: Msh
         Mesh class
-    '''
-    with open(fn, 'r') as f:
-        if not f.readline().startswith('MeshVersionFormatted'):
-            raise IOError('invalid mesh format')
-        if f.readline().strip() != 'Dimension 3':
-            raise IOError('Can only read 3D meshes')
-        if f.readline().strip() != 'Vertices':
-            raise IOError('invalid mesh format')
+    """
+    with open(fn, "r") as f:
+        if not f.readline().startswith("MeshVersionFormatted"):
+            raise IOError("invalid mesh format")
+        if f.readline().strip() != "Dimension 3":
+            raise IOError("Can only read 3D meshes")
+        if f.readline().strip() != "Vertices":
+            raise IOError("invalid mesh format")
         n_vertices = int(f.readline().strip())
         assert n_vertices > 0
         vertices = np.loadtxt(f, dtype=float, max_rows=n_vertices)[:, :-1]
@@ -6878,31 +7325,32 @@ def read_medit(fn):
         elm = Elements()
         while True:
             element_type = f.readline().strip()
-            if element_type == 'Triangles':
+            if element_type == "Triangles":
                 elm_type = 2
-            elif element_type == 'Tetrahedra':
+            elif element_type == "Tetrahedra":
                 elm_type = 4
-            elif element_type == 'End':
+            elif element_type == "End":
                 break
             else:
-                raise IOError(f'Cant read element type: {element_type}')
+                raise IOError(f"Cant read element type: {element_type}")
             n_elements = int(f.readline().strip())
             elements_tag = np.loadtxt(f, dtype=int, max_rows=n_elements)
             elements = elements_tag[:, :-1]
             tag = elements_tag[:, -1]
             if elements.shape[1] == 3:
-                elements = np.hstack((elements, -1*np.ones((n_elements, 1), int)))
+                elements = np.hstack((elements, -1 * np.ones((n_elements, 1), int)))
             elm.node_number_list = np.vstack((elm.node_number_list, elements))
-            elm.elm_type = np.hstack((elm.elm_type, elm_type*np.ones(n_elements, int)))
+            elm.elm_type = np.hstack(
+                (elm.elm_type, elm_type * np.ones(n_elements, int))
+            )
             elm.tag1 = np.hstack((elm.tag1, tag))
 
         elm.tag2 = elm.tag1.copy()
         return Msh(nodes, elm)
 
 
-
 def open_in_gmsh(fn, new_thread=False):
-    ''' Opens the mesh in gmsh
+    """Opens the mesh in gmsh
 
     Parameters
     ------------
@@ -6911,12 +7359,12 @@ def open_in_gmsh(fn, new_thread=False):
     new_thread: bool
         Wether to open gmsh in a new thread. Defaut: False
 
-    '''
-    gmsh_bin = path2bin('gmsh')
+    """
+    gmsh_bin = path2bin("gmsh")
     if new_thread:
-        t = threading.Thread(target=subprocess.run,
-                             args=([gmsh_bin, fn], ),
-                             kwargs={'check': True})
+        t = threading.Thread(
+            target=subprocess.run, args=([gmsh_bin, fn],), kwargs={"check": True}
+        )
         t.daemon = False  # thread dies with the program
         t.start()
     else:
@@ -6937,9 +7385,9 @@ def _hash_rows(array, mult=1000003, dtype=np.uint64):
     return hash_array
 
 
-
 def _fix_indexing_one(index):
-    '''Fix indexing to allow getting and setting items with one-idexed arrays'''
+    """Fix indexing to allow getting and setting items with one-idexed arrays"""
+
     def fix_slice(slc):
         start = slc.start
         stop = slc.stop
@@ -6948,20 +7396,20 @@ def _fix_indexing_one(index):
             if start > 0:
                 start -= 1
             elif start == 0:
-                raise IndexError('Cant get item 0 in one-indexed array')
+                raise IndexError("Cant get item 0 in one-indexed array")
             else:
-                raise IndexError('Cant get negative slices in one-indexed array')
+                raise IndexError("Cant get negative slices in one-indexed array")
 
         if stop is not None:
             if stop > 0:
                 stop -= 1
             elif stop == 0:
-                raise IndexError('Cant get item 0 in one-indexed array')
+                raise IndexError("Cant get item 0 in one-indexed array")
             else:
-                raise IndexError('Cant get negative slices in one-indexed array')
+                raise IndexError("Cant get negative slices in one-indexed array")
 
         if step is not None and step < 0:
-            raise IndexError('Cant get negative slices in one-indexed array')
+            raise IndexError("Cant get negative slices in one-indexed array")
 
         return slice(start, stop, step)
 
@@ -6971,7 +7419,7 @@ def _fix_indexing_one(index):
             return idx_array
         else:
             if np.any(idx_array == 0):
-                raise IndexError('Cant get item 0 in one-indexed array')
+                raise IndexError("Cant get item 0 in one-indexed array")
             idx_array[idx_array > 0] -= 1
             return idx_array
 
@@ -6996,7 +7444,7 @@ def _fix_indexing_one(index):
         if index < 0:
             return index
         if index == 0:
-            raise IndexError('Cant get item 0 in one-indexed array')
+            raise IndexError("Cant get item 0 in one-indexed array")
 
     elif isinstance(index, slice):
         return fix_slice(index)
@@ -7015,11 +7463,13 @@ def _fix_indexing_one(index):
     else:
         return index
 
+
 def _getitem_one_indexed(array, index):
     index = _fix_indexing_one(index)
     return array.__getitem__(index)
 
-class _GetitemTester():
+
+class _GetitemTester:
     def __init__(self, array):
         self.array = array
 
@@ -7049,13 +7499,19 @@ def load_subject_surfaces(
         for h in sub_files.hemispheres
     }
 
+
 def load_subject_morph_data(
-    sub_files: SubjectFiles, data: str, subsampling: Union[int, None] = None,
+    sub_files: SubjectFiles,
+    data: str,
+    subsampling: Union[int, None] = None,
 ):
     return {
-        h: nibabel.freesurfer.read_morph_data(sub_files.get_morph_data(h, data, subsampling))
+        h: nibabel.freesurfer.read_morph_data(
+            sub_files.get_morph_data(h, data, subsampling)
+        )
         for h in sub_files.hemispheres
     }
+
 
 def load_reference_surfaces(surface: str, resolution: Union[int, None] = None):
     return {
@@ -7064,7 +7520,9 @@ def load_reference_surfaces(surface: str, resolution: Union[int, None] = None):
     }
 
 
-def load_freesurfer_surfaces(fs_sub: FreeSurferSubject, surface: str, coord: str = "surface ras") -> dict[str, Msh]:
+def load_freesurfer_surfaces(
+    fs_sub: FreeSurferSubject, surface: str, coord: str = "surface ras"
+) -> dict[str, Msh]:
     """Load surfaces from a FreeSurfer subject directory.
 
     Parameters
@@ -7085,10 +7543,18 @@ def load_freesurfer_surfaces(fs_sub: FreeSurferSubject, surface: str, coord: str
     assert coord in {"ras", "surface ras"}
 
     apply_transform = True if coord == "ras" else False
-    return {h: read_freesurfer_surface(s, apply_transform) for h,s in fs_sub.get_surfaces(surface).items()}
+    return {
+        h: read_freesurfer_surface(s, apply_transform)
+        for h, s in fs_sub.get_surfaces(surface).items()
+    }
 
 
-def split(m: Msh, iterations: int = 1, hierarchy: tuple[int] = None, skin_tag: int = ElementTags.SCALP) -> Msh:
+def split(
+    m: Msh,
+    iterations: int = 1,
+    hierarchy: tuple[int] = None,
+    skin_tag: int = ElementTags.SCALP,
+) -> Msh:
     """Splits every edge in the mesh in its middle. Surface triangles are split into 4 new triangles,
     tetrahedra are split into 8 new tetrahedra. To reduce tetrahedra count and increase tetrahedra quality, mmg is used.
     The final mesh will have old_triangle_count * 4 * iterations triangles and between
@@ -7130,37 +7596,62 @@ def split(m: Msh, iterations: int = 1, hierarchy: tuple[int] = None, skin_tag: i
                 if edge in edge_to_new_node_idx:
                     continue
 
-                new_node_coord.append((m.nodes.node_coord[edge[0]] + m.nodes.node_coord[edge[1]]) / 2.0)
+                new_node_coord.append(
+                    (m.nodes.node_coord[edge[0]] + m.nodes.node_coord[edge[1]]) / 2.0
+                )
                 edge_to_new_node_idx[edge] = len(new_node_coord) + m.nodes.nr - 1
                 edge_to_new_node_idx[edge[::-1]] = edge_to_new_node_idx[edge]
 
-            for new_tetra_nodes in [[node_indxs[0], node_indxs[1], node_indxs[2], node_indxs[3]],
-                                    [node_indxs[1], node_indxs[2], node_indxs[3], node_indxs[0]],
-                                    [node_indxs[2], node_indxs[3], node_indxs[0], node_indxs[1]],
-                                    [node_indxs[3], node_indxs[0], node_indxs[1], node_indxs[2]]]:
-                new_tetra.append([new_tetra_nodes[0],
-                                  edge_to_new_node_idx[(new_tetra_nodes[0], new_tetra_nodes[1])],
-                                  edge_to_new_node_idx[(new_tetra_nodes[0], new_tetra_nodes[2])],
-                                  edge_to_new_node_idx[(new_tetra_nodes[0], new_tetra_nodes[3])],
-                                  ])
-            new_tetra.append([edge_to_new_node_idx[(node_indxs[0], node_indxs[1])],
-                              edge_to_new_node_idx[(node_indxs[0], node_indxs[2])],
-                              edge_to_new_node_idx[(node_indxs[0], node_indxs[3])],
-                              edge_to_new_node_idx[(node_indxs[1], node_indxs[2])]])
-            new_tetra.append([edge_to_new_node_idx[(node_indxs[0], node_indxs[1])],
-                              edge_to_new_node_idx[(node_indxs[0], node_indxs[3])],
-                              edge_to_new_node_idx[(node_indxs[1], node_indxs[2])],
-                              edge_to_new_node_idx[(node_indxs[1], node_indxs[3])]])
-            new_tetra.append([edge_to_new_node_idx[(node_indxs[0], node_indxs[2])],
-                              edge_to_new_node_idx[(node_indxs[0], node_indxs[3])],
-                              edge_to_new_node_idx[(node_indxs[1], node_indxs[2])],
-                              edge_to_new_node_idx[(node_indxs[2], node_indxs[3])]])
-            new_tetra.append([edge_to_new_node_idx[(node_indxs[0], node_indxs[3])],
-                              edge_to_new_node_idx[(node_indxs[1], node_indxs[2])],
-                              edge_to_new_node_idx[(node_indxs[1], node_indxs[3])],
-                              edge_to_new_node_idx[(node_indxs[2], node_indxs[3])]])
+            for new_tetra_nodes in [
+                [node_indxs[0], node_indxs[1], node_indxs[2], node_indxs[3]],
+                [node_indxs[1], node_indxs[2], node_indxs[3], node_indxs[0]],
+                [node_indxs[2], node_indxs[3], node_indxs[0], node_indxs[1]],
+                [node_indxs[3], node_indxs[0], node_indxs[1], node_indxs[2]],
+            ]:
+                new_tetra.append(
+                    [
+                        new_tetra_nodes[0],
+                        edge_to_new_node_idx[(new_tetra_nodes[0], new_tetra_nodes[1])],
+                        edge_to_new_node_idx[(new_tetra_nodes[0], new_tetra_nodes[2])],
+                        edge_to_new_node_idx[(new_tetra_nodes[0], new_tetra_nodes[3])],
+                    ]
+                )
+            new_tetra.append(
+                [
+                    edge_to_new_node_idx[(node_indxs[0], node_indxs[1])],
+                    edge_to_new_node_idx[(node_indxs[0], node_indxs[2])],
+                    edge_to_new_node_idx[(node_indxs[0], node_indxs[3])],
+                    edge_to_new_node_idx[(node_indxs[1], node_indxs[2])],
+                ]
+            )
+            new_tetra.append(
+                [
+                    edge_to_new_node_idx[(node_indxs[0], node_indxs[1])],
+                    edge_to_new_node_idx[(node_indxs[0], node_indxs[3])],
+                    edge_to_new_node_idx[(node_indxs[1], node_indxs[2])],
+                    edge_to_new_node_idx[(node_indxs[1], node_indxs[3])],
+                ]
+            )
+            new_tetra.append(
+                [
+                    edge_to_new_node_idx[(node_indxs[0], node_indxs[2])],
+                    edge_to_new_node_idx[(node_indxs[0], node_indxs[3])],
+                    edge_to_new_node_idx[(node_indxs[1], node_indxs[2])],
+                    edge_to_new_node_idx[(node_indxs[2], node_indxs[3])],
+                ]
+            )
+            new_tetra.append(
+                [
+                    edge_to_new_node_idx[(node_indxs[0], node_indxs[3])],
+                    edge_to_new_node_idx[(node_indxs[1], node_indxs[2])],
+                    edge_to_new_node_idx[(node_indxs[1], node_indxs[3])],
+                    edge_to_new_node_idx[(node_indxs[2], node_indxs[3])],
+                ]
+            )
 
-        m.nodes.node_coord = np.concatenate((m.nodes.node_coord, new_node_coord), axis=0)
+        m.nodes.node_coord = np.concatenate(
+            (m.nodes.node_coord, new_node_coord), axis=0
+        )
         m.elm.node_number_list = np.array(new_tetra) + 1
         m.elm.elm_type = 4 * np.ones(len(new_tetra), dtype=int)
         m.elm.tag1 = np.array(tetra_tags)
@@ -7171,8 +7662,20 @@ def split(m: Msh, iterations: int = 1, hierarchy: tuple[int] = None, skin_tag: i
     tmp_file = tempfile.NamedTemporaryFile(suffix=".msh")
     write_msh(m, tmp_file.name, mmg_fix=True)
 
-    cmd = [file_finder.path2bin("mmg3d_O3"), "-v", "0", "-rmc", "-nofem", "-hgrad",
-           "-1", "-nosurf", "-in", tmp_file.name, "-out", tmp_file.name]
+    cmd = [
+        file_finder.path2bin("mmg3d_O3"),
+        "-v",
+        "0",
+        "-rmc",
+        "-nofem",
+        "-hgrad",
+        "-1",
+        "-nosurf",
+        "-in",
+        tmp_file.name,
+        "-out",
+        tmp_file.name,
+    ]
 
     spawn_process(cmd)
 
@@ -7186,19 +7689,19 @@ def split(m: Msh, iterations: int = 1, hierarchy: tuple[int] = None, skin_tag: i
 
 
 def _format_table(table):
-    """helper function for Msh.fields_summary and 
+    """helper function for Msh.fields_summary and
     tes_flex_optimization.get_summary_text
-    
+
     converts a table into a string for printing
-    """    
+    """
     entry_sizes = np.array([[len(e) for e in row] for row in table])
     col_sizes = np.max(entry_sizes, axis=0)
-    align_string = ['{:<' + str(cs) + '}' for cs in col_sizes]
-    t = ''
+    align_string = ["{:<" + str(cs) + "}" for cs in col_sizes]
+    t = ""
     for i, row in enumerate(table):
-        t += '|'
-        t += ' |'.join(a_s.format(col) for a_s, col in zip(align_string, row))
-        t += ' |\n'
+        t += "|"
+        t += " |".join(a_s.format(col) for a_s, col in zip(align_string, row))
+        t += " |\n"
         if i == 0:
-            t += '|' + '|'.join((cs+1) * '-' for cs in col_sizes) + '|\n'
+            t += "|" + "|".join((cs + 1) * "-" for cs in col_sizes) + "|\n"
     return t

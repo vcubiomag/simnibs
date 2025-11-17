@@ -518,9 +518,9 @@ class TestFailJsonSchema:
             jsonschema.validate(coil_unsupported_property, tcd_json_schema)
 
         coil_unsupported_property = deepcopy(full_tcd_coil_dict)
-        coil_unsupported_property["stimulatorList"][0]["waveformList"][0][
-            "type"
-        ] = "There is no type"
+        coil_unsupported_property["stimulatorList"][0]["waveformList"][0]["type"] = (
+            "There is no type"
+        )
         with pytest.raises(jsonschema.ValidationError):
             jsonschema.validate(coil_unsupported_property, tcd_json_schema)
 

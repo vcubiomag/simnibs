@@ -1,15 +1,16 @@
-'''
-    This example runs tDCS simulations with a bipolar montage for five subjects
-    The dataset with the five head models is avaliable at https://osf.io/ah5eu/
-    please look at the "group_average" for how to do a simple analysis of the group data
-    
-    Copyright (c) 2019 SimNIBS developers. Licensed under the GPL v3.
-'''
+"""
+This example runs tDCS simulations with a bipolar montage for five subjects
+The dataset with the five head models is avaliable at https://osf.io/ah5eu/
+please look at the "group_average" for how to do a simple analysis of the group data
+
+Copyright (c) 2019 SimNIBS developers. Licensed under the GPL v3.
+"""
+
 import os
 from simnibs import sim_struct, run_simnibs
 
 # Set the subjects
-subjects = ['sub01', 'sub09', 'sub10', 'sub12', 'sub15']
+subjects = ["sub01", "sub09", "sub10", "sub12", "sub15"]
 
 # Set a TDCSLIST structure with the simulation set-up
 tdcslist = sim_struct.TDCSLIST()
@@ -17,24 +18,24 @@ tdcslist.currents = [0.001, -0.001]
 
 anode = tdcslist.add_electrode()
 anode.channelnr = 1
-anode.centre = 'C3'
-anode.pos_ydir = 'C1'
-anode.shape = 'rect'
+anode.centre = "C3"
+anode.pos_ydir = "C1"
+anode.shape = "rect"
 anode.dimensions = [50, 50]
 anode.thickness = 4
 
 
 cathode = tdcslist.add_electrode()
 cathode.channelnr = 2
-cathode.centre = 'AF4'
-cathode.pos_ydir = 'F6'
-cathode.shape = 'rect'
+cathode.centre = "AF4"
+cathode.pos_ydir = "F6"
+cathode.shape = "rect"
 cathode.dimensions = [50, 70]
 cathode.thickness = 4
 
 # create main results folder
-if not os.path.exists('bipolar'):
-    os.mkdir('bipolar')
+if not os.path.exists("bipolar"):
+    os.mkdir("bipolar")
 
 # Run the simulation in each subject
 for sub in subjects:
@@ -42,9 +43,9 @@ for sub in subjects:
     s = sim_struct.SESSION()
     s.map_to_fsavg = True
     s.map_to_MNI = True
-    s.fields = 'eEjJ'
-    s.subpath = 'm2m_' + sub
-    s.pathfem = os.path.join('bipolar', sub)
+    s.fields = "eEjJ"
+    s.subpath = "m2m_" + sub
+    s.pathfem = os.path.join("bipolar", sub)
     # Don't open in gmsh
     s.open_in_gmsh = False
     # Add the tdcslist we defined above

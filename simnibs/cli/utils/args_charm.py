@@ -93,12 +93,12 @@ no_t1 = CommandLineArgument(
 fs_subjects_dir = CommandLineArgument(
     ["--fs-dir"],
     dict(
-        type = str,
+        type=str,
         help="""If you have a FreeSurfer run of your subject, you can pass the
                     subject directory and CHARM will simply grab the surfaces
                     and spherical registrations from there instead of
                     estimating them. The segmentation will be updated based on
-                    these surfaces according to the settings in the .ini file."""
+                    these surfaces according to the settings in the .ini file.""",
     ),
 )
 use_settings = CommandLineArgument(

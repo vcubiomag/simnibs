@@ -1,13 +1,13 @@
-''' Example of an optimization with two targets
+"""Example of an optimization with two targets
 
 Copyright (c) 2019 SimNIBS developers. Licensed under the GPL v3.
-'''
+"""
 
 import simnibs
 
 opt = simnibs.opt_struct.TDCSoptimize()
-opt.leadfield_hdf = 'leadfield/ernie_leadfield_EEG10-10_UI_Jurak_2007.hdf5'
-opt.name = 'optimization/two_targets'
+opt.leadfield_hdf = "leadfield/ernie_leadfield_EEG10-10_UI_Jurak_2007.hdf5"
+opt.name = "optimization/two_targets"
 
 opt.max_total_current = 4e-3
 opt.max_individual_current = 2e-3
@@ -21,6 +21,6 @@ target_left.intensity = 0.2
 target_right = opt.add_target()
 target_right.positions = [36.0, 2.5, 72.6]
 target_right.intensity = 0.2
-target_right.directions = "negative normal" # reverse direction
+target_right.directions = "negative normal"  # reverse direction
 
 simnibs.run_simnibs(opt)

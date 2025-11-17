@@ -3,7 +3,9 @@ import numpy as np
 import scipy.io
 
 
-def try_to_read_matlab_field(matlab_structure, field_name, field_type, alternative=None):
+def try_to_read_matlab_field(
+    matlab_structure, field_name, field_type, alternative=None
+):
     """
     Function for flexibilly reading a field from a matlab .mat file
     Tries to read the field with the specified name
@@ -23,7 +25,11 @@ def try_to_read_matlab_field(matlab_structure, field_name, field_type, alternati
     """
 
     try:
-        if isinstance(matlab_structure[field_name][0], np.ndarray) and len(matlab_structure[field_name][0]) == 1 and field_type is not list:
+        if (
+            isinstance(matlab_structure[field_name][0], np.ndarray)
+            and len(matlab_structure[field_name][0]) == 1
+            and field_type is not list
+        ):
             return field_type(matlab_structure[field_name][0][0])
 
         return field_type(matlab_structure[field_name][0])
@@ -34,6 +40,7 @@ def try_to_read_matlab_field(matlab_structure, field_name, field_type, alternati
     except (TypeError, KeyError, IndexError, ValueError):
         pass
     return alternative
+
 
 def dict_from_matlab(matlab_structure):
     """Turns a matlab structure into a normal python dict
@@ -68,18 +75,26 @@ def dict_from_matlab(matlab_structure):
     for name in keys:
         value = matlab_structure[name]
         if isinstance(value, np.ndarray):
-            #unpack structure if necessary
-            if value.size == 1 and isinstance(value[0], np.ndarray) and np.issubdtype(value[0][0].dtype, np.void):
+            # unpack structure if necessary
+            if (
+                value.size == 1
+                and isinstance(value[0], np.ndarray)
+                and np.issubdtype(value[0][0].dtype, np.void)
+            ):
                 value = value[0][0]
-            
-            #handle list of dicts
-            if value.size > 1 and isinstance(value[0], np.ndarray) and np.issubdtype(value[0][0].dtype, np.void):
+
+            # handle list of dicts
+            if (
+                value.size > 1
+                and isinstance(value[0], np.ndarray)
+                and np.issubdtype(value[0][0].dtype, np.void)
+            ):
                 result[name] = []
                 for elm in value[0]:
                     result[name].append(dict_from_matlab(elm))
                 continue
 
-            #create dict from structure or reduce list
+            # create dict from structure or reduce list
             if np.issubdtype(value.dtype, np.void):
                 result[name] = dict_from_matlab(value)
             else:
@@ -89,11 +104,12 @@ def dict_from_matlab(matlab_structure):
         else:
             result[name] = value
 
-        #remove empty dicts
+        # remove empty dicts
         if name in result and isinstance(result[name], dict):
             if len(result[name]) == 0:
                 del result[name]
     return result
+
 
 def _reduce_array(array):
     # double reduce for arrays inside of lists
@@ -111,11 +127,12 @@ def _reduce_array(array):
 
         if len(result) == 0:
             return None
-        
+
     if np.issubdtype(np.array(result).dtype, np.str_):
         result = strip_strings(result)
 
     return result
+
 
 def strip_strings(input):
     if isinstance(input, str):
@@ -125,15 +142,16 @@ def strip_strings(input):
     else:
         return input
 
+
 def remove_None(src):
-    '''Substitutes None by an empty char array '''
+    """Substitutes None by an empty char array"""
     if src is None:
-        src = ''
+        src = ""
     return src
 
 
 def read_mat(fn):
-    ''' Reads a ".mat" file
+    """Reads a ".mat" file
 
     Parameters
     ----------------
@@ -144,54 +162,60 @@ def read_mat(fn):
     -----------
     struct:
         Structure defined by .mat file
-    '''
+    """
     if not os.path.isfile(fn):
-        raise IOError('File: {0} does not exist'.format(fn))
-    if os.path.splitext(fn)[1] != '.mat':
+        raise IOError("File: {0} does not exist".format(fn))
+    if os.path.splitext(fn)[1] != ".mat":
         raise IOError('SimNIBS only accepts matlab ".mat" files')
     try:
         mat = scipy.io.loadmat(fn, struct_as_record=True, squeeze_me=False)
     except:
         raise IOError("Could not open file. It was possibly saved with -v7.3")
     try:
-        structure_type = mat['type'][0]
+        structure_type = mat["type"][0]
     except:
         try:
-            keys = [k for k in mat.keys() if not k.startswith('__')]
+            keys = [k for k in mat.keys() if not k.startswith("__")]
             if len(keys) > 1:
-                raise IOError(
-                    'Could not open .mat file. Nested structure?')
-            structure_type = mat[keys[0]][0]['type'][0][0]
+                raise IOError("Could not open .mat file. Nested structure?")
+            structure_type = mat[keys[0]][0]["type"][0][0]
             mat = mat[keys[0]][0][0]
         except:
-            raise IOError(
-                "Could not access structure type in this .mat file")
+            raise IOError("Could not access structure type in this .mat file")
 
-    if structure_type.lower() == 'session':
+    if structure_type.lower() == "session":
         from ..simulation.sim_struct import SESSION
+
         structure = SESSION(matlab_struct=mat)
-    elif structure_type.lower() == 'tdcsleadfield':
+    elif structure_type.lower() == "tdcsleadfield":
         from ..simulation.sim_struct import TDCSLEADFIELD
+
         structure = TDCSLEADFIELD(matlab_struct=mat)
-    elif structure_type.lower() == 'tmsoptimize':
+    elif structure_type.lower() == "tmsoptimize":
         from ..optimization.opt_struct import TMSoptimize
+
         structure = TMSoptimize.read_mat_struct(mat)
-    elif structure_type.lower() == 'tdcsoptimize':
+    elif structure_type.lower() == "tdcsoptimize":
         from ..optimization.opt_struct import TDCSoptimize
+
         structure = TDCSoptimize.read_mat_struct(mat)
-    elif structure_type.lower() == 'tdcsdistributedoptimize':
+    elif structure_type.lower() == "tdcsdistributedoptimize":
         from ..optimization.opt_struct import TDCSDistributedOptimize
+
         structure = TDCSDistributedOptimize.read_mat_struct(mat)
-    elif structure_type.lower() == 'tmsflexoptimization':
+    elif structure_type.lower() == "tmsflexoptimization":
         from ..optimization.opt_struct import TmsFlexOptimization
+
         structure = TmsFlexOptimization(dict_from_matlab(mat))
-    elif structure_type.lower() == 'tesflexoptimization':
+    elif structure_type.lower() == "tesflexoptimization":
         from ..optimization.opt_struct import TesFlexOptimization
+
         structure = TesFlexOptimization(dict_from_matlab(mat))
-    elif structure_type.lower() == 'regionofinterest':
+    elif structure_type.lower() == "regionofinterest":
         from .region_of_interest import RegionOfInterest
+
         structure = RegionOfInterest(dict_from_matlab(mat))
     else:
-        raise IOError('Not a valid structure type!')
+        raise IOError("Not a valid structure type!")
 
     return structure

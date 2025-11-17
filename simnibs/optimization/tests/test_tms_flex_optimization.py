@@ -337,7 +337,6 @@ class TestEMagOptimization:
         np.testing.assert_allclose(coil_affine, affine_after)
 
 
-
 class TestAutoInit:
     def test_auto_init(self, sphere3_msh: Msh):
         roi = RegionOfInterest()
@@ -393,11 +392,15 @@ class TestToFromDict:
         mat_path = os.path.join(tmp_path, "test.mat")
 
         scipy.io.savemat(mat_path, tms_flex_opt.to_dict())
-        tms_flex_opt_loaded = TmsFlexOptimization(dict_from_matlab(scipy.io.loadmat(mat_path)))
+        tms_flex_opt_loaded = TmsFlexOptimization(
+            dict_from_matlab(scipy.io.loadmat(mat_path))
+        )
         assert tms_flex_opt.__dict__ == tms_flex_opt_loaded.__dict__
 
-        scipy.io.savemat(mat_path, {'instance': tms_flex_opt.to_dict()})
-        tms_flex_opt_loaded = TmsFlexOptimization(dict_from_matlab(scipy.io.loadmat(mat_path)['instance']))
+        scipy.io.savemat(mat_path, {"instance": tms_flex_opt.to_dict()})
+        tms_flex_opt_loaded = TmsFlexOptimization(
+            dict_from_matlab(scipy.io.loadmat(mat_path)["instance"])
+        )
         assert tms_flex_opt.__dict__ == tms_flex_opt_loaded.__dict__
 
     def test_writ_read_mat(self, tmp_path: Path):
@@ -449,7 +452,9 @@ class TestToFromDict:
         mat_path = os.path.join(tmp_path, "test.mat")
         scipy.io.savemat(mat_path, tms_flex_opt.to_dict())
 
-        tms_flex_opt_loaded = TmsFlexOptimization(dict_from_matlab(scipy.io.loadmat(mat_path)))
+        tms_flex_opt_loaded = TmsFlexOptimization(
+            dict_from_matlab(scipy.io.loadmat(mat_path))
+        )
 
         dict_before = tms_flex_opt.__dict__.copy()
         dict_after = tms_flex_opt_loaded.__dict__.copy()

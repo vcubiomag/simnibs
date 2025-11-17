@@ -1,6 +1,6 @@
-''' Nifti viewer Based on the OrthoSlicer3D from nibabel
+"""Nifti viewer Based on the OrthoSlicer3D from nibabel
 Modified to handle overlays
-'''
+"""
 
 import numpy as np
 import nibabel as nib
@@ -9,7 +9,8 @@ import matplotlib.pyplot as plt
 from nibabel.affines import voxel_sizes
 from nibabel.orientations import aff2axcodes, axcodes2ornt
 import simnibs
-'''
+
+"""
 The NiftiViewer class is based on the OthoSlicer3D class from nibabel, and has the following license
 
 The MIT License
@@ -42,11 +43,13 @@ THE SOFTWARE.
 
 
 Modifications by Guilherme Saturnino, 2019
-'''
+"""
 
 
 class NiftiViewer(object):
-    def __init__(self, volume, affine=None, title=None, cmap='gray', clim=None, alpha=1.):
+    def __init__(
+        self, volume, affine=None, title=None, cmap="gray", clim=None, alpha=1.0
+    ):
         """
         Parameters
         ----------
@@ -78,12 +81,12 @@ class NiftiViewer(object):
 
         volume = np.asanyarray(volume)
         if volume.ndim < 3:
-            raise ValueError('volume must have at least 3 dimensions')
+            raise ValueError("volume must have at least 3 dimensions")
         if np.iscomplexobj(volume):
             raise TypeError("Complex data not supported")
         affine = np.array(affine, float) if affine is not None else np.eye(4)
         if affine.shape != (4, 4):
-            raise ValueError('affine must be a 4x4 matrix')
+            raise ValueError("affine must be a 4x4 matrix")
         # determine our orientation
         self._affine = affine
         codes = axcodes2ornt(aff2axcodes(self._affine))
@@ -95,7 +98,7 @@ class NiftiViewer(object):
         # current volume info
         self._volume_dims = volume.shape[3:]
         if len(self._volume_dims) > 0:
-            raise NotImplementedError('Cannot handle 4-D Datasets')
+            raise NotImplementedError("Cannot handle 4-D Datasets")
         self._volumes = []
 
         # ^ +---------+   ^ +---------+
@@ -127,31 +130,46 @@ class NiftiViewer(object):
 
         # set up axis crosshairs
         self._crosshairs = [None] * 3
-        r = [self._scalers[self._order[2]] / self._scalers[self._order[1]],
-             self._scalers[self._order[2]] / self._scalers[self._order[0]],
-             self._scalers[self._order[1]] / self._scalers[self._order[0]]]
+        r = [
+            self._scalers[self._order[2]] / self._scalers[self._order[1]],
+            self._scalers[self._order[2]] / self._scalers[self._order[0]],
+            self._scalers[self._order[1]] / self._scalers[self._order[0]],
+        ]
         self._sizes = [volume.shape[order] for order in self._order]
-        for ii, xax, yax, ratio, label in zip([0, 1, 2], [1, 0, 0], [2, 2, 1],
-                                              r, ('SAIP', 'SRIL', 'ARPL')):
+        for ii, xax, yax, ratio, label in zip(
+            [0, 1, 2], [1, 0, 0], [2, 2, 1], r, ("SAIP", "SRIL", "ARPL")
+        ):
             ax = self._axes[ii]
-            vert = ax.plot([0] * 2, [-0.5, self._sizes[yax] - 0.5],
-                           color=(0, 1, 0), linestyle='-')[0]
-            horiz = ax.plot([-0.5, self._sizes[xax] - 0.5], [0] * 2,
-                            color=(0, 1, 0), linestyle='-')[0]
+            vert = ax.plot(
+                [0] * 2, [-0.5, self._sizes[yax] - 0.5], color=(0, 1, 0), linestyle="-"
+            )[0]
+            horiz = ax.plot(
+                [-0.5, self._sizes[xax] - 0.5], [0] * 2, color=(0, 1, 0), linestyle="-"
+            )[0]
             self._crosshairs[ii] = dict(vert=vert, horiz=horiz)
             # add text labels (top, right, bottom, left)
             lims = [0, self._sizes[xax], 0, self._sizes[yax]]
             bump = 0.01
-            poss = [[lims[1] / 2., lims[3]],
-                    [(1 + bump) * lims[1], lims[3] / 2.],
-                    [lims[1] / 2., 0],
-                    [lims[0] - bump * lims[1], lims[3] / 2.]]
-            anchors = [['center', 'bottom'], ['left', 'center'],
-                       ['center', 'top'], ['right', 'center']]
+            poss = [
+                [lims[1] / 2.0, lims[3]],
+                [(1 + bump) * lims[1], lims[3] / 2.0],
+                [lims[1] / 2.0, 0],
+                [lims[0] - bump * lims[1], lims[3] / 2.0],
+            ]
+            anchors = [
+                ["center", "bottom"],
+                ["left", "center"],
+                ["center", "top"],
+                ["right", "center"],
+            ]
             for pos, anchor, lab in zip(poss, anchors, label):
-                ax.text(pos[0], pos[1], lab,
-                        horizontalalignment=anchor[0],
-                        verticalalignment=anchor[1])
+                ax.text(
+                    pos[0],
+                    pos[1],
+                    lab,
+                    horizontalalignment=anchor[0],
+                    verticalalignment=anchor[1],
+                )
             ax.axis(lims)
             ax.set_aspect(ratio)
             ax.patch.set_visible(False)
@@ -163,25 +181,25 @@ class NiftiViewer(object):
 
         self._figs = set([a.figure for a in self._axes])
         for fig in self._figs:
-            fig.canvas.mpl_connect('scroll_event', self._on_scroll)
-            fig.canvas.mpl_connect('motion_notify_event', self._on_mouse)
-            fig.canvas.mpl_connect('button_press_event', self._on_mouse)
+            fig.canvas.mpl_connect("scroll_event", self._on_scroll)
+            fig.canvas.mpl_connect("motion_notify_event", self._on_mouse)
+            fig.canvas.mpl_connect("button_press_event", self._on_mouse)
 
         # actually set data meaningfully
         self.add_overlay(volume, cmap=cmap, clim=clim, alpha=alpha, draw=False)
         self._position = np.zeros(4)
-        self._position[3] = 1.  # convenience for affine multiplication
+        self._position[3] = 1.0  # convenience for affine multiplication
         self._changing = False  # keep track of status to avoid loops
         plt.draw()
         for fig in self._figs:
             fig.canvas.draw_idle()
             fig.canvas.draw()
-        plt.pause(1e-3) # give a little bit of time for the renderer (needed on MacOS)
-        self._set_position(0., 0., 0.)
+        plt.pause(1e-3)  # give a little bit of time for the renderer (needed on MacOS)
+        self._set_position(0.0, 0.0, 0.0)
         self._draw()
 
-    def add_overlay(self, vol, cmap='gray', clim=None, alpha=1., draw=True):
-        '''
+    def add_overlay(self, vol, cmap="gray", clim=None, alpha=1.0, draw=True):
+        """
         volume : array-like
             The data that will be overlaid. Must have the same dimensions as the original
             plot
@@ -191,20 +209,25 @@ class NiftiViewer(object):
             Limits to use for plotting. Default: 1 and 99th percentiles
         alpha: float
             transparency value
-        '''
+        """
         if len(self._volumes) > 0 and vol.shape != self._volumes[0].shape:
-            raise ValueError('Cannot add overlay, different shape')
+            raise ValueError("Cannot add overlay, different shape")
         # add volume
         self._volumes.append(vol)
         if clim is None:
-            clim = np.percentile(vol, (1., 99.))
+            clim = np.percentile(vol, (1.0, 99.0))
         # create new images
         ims = []
         for ii, xax, yax in zip([0, 1, 2], [1, 0, 0], [2, 2, 1]):
             d = np.zeros((self._sizes[yax], self._sizes[xax]))
             im = self._axes[ii].imshow(
-                d, aspect=1, cmap=cmap, clim=clim, alpha=alpha,
-                interpolation='nearest', origin='lower'
+                d,
+                aspect=1,
+                cmap=cmap,
+                clim=clim,
+                alpha=alpha,
+                interpolation="nearest",
+                origin="lower",
             )
             ims.append(im)
         self._ims.append(ims)
@@ -212,22 +235,25 @@ class NiftiViewer(object):
             self.set_position()
 
     def __repr__(self):
-        title = '' if self._title is None else ('%s ' % self._title)
-        vol = '' if self.n_volumes <= 1 else (', %s' % self.n_volumes)
-        r = ('<%s: %s(%s, %s, %s%s)>'
-             % (self.__class__.__name__, title, self._sizes[0], self._sizes[1],
-                self._sizes[2], vol))
+        title = "" if self._title is None else ("%s " % self._title)
+        vol = "" if self.n_volumes <= 1 else (", %s" % self.n_volumes)
+        r = "<%s: %s(%s, %s, %s%s)>" % (
+            self.__class__.__name__,
+            title,
+            self._sizes[0],
+            self._sizes[1],
+            self._sizes[2],
+            vol,
+        )
         return r
 
     # User-level functions ###################################################
     def show(self):
-        """Show the slicer in blocking mode; convenience for ``plt.show()``
-        """
+        """Show the slicer in blocking mode; convenience for ``plt.show()``"""
         plt.show()
 
     def close(self):
-        """Close the viewer figures
-        """
+        """Close the viewer figures"""
         for f in self._figs:
             plt.close(f)
 
@@ -296,21 +322,21 @@ class NiftiViewer(object):
                 loc = self._sizes[ii] - loc
             loc = [loc] * 2
             if ii == 0:
-                self._crosshairs[2]['vert'].set_xdata(loc)
-                self._crosshairs[1]['vert'].set_xdata(loc)
+                self._crosshairs[2]["vert"].set_xdata(loc)
+                self._crosshairs[1]["vert"].set_xdata(loc)
             elif ii == 1:
-                self._crosshairs[2]['horiz'].set_ydata(loc)
-                self._crosshairs[0]['vert'].set_xdata(loc)
+                self._crosshairs[2]["horiz"].set_ydata(loc)
+                self._crosshairs[0]["vert"].set_xdata(loc)
             else:  # ii == 2
-                self._crosshairs[1]['horiz'].set_ydata(loc)
-                self._crosshairs[0]['horiz'].set_ydata(loc)
+                self._crosshairs[1]["horiz"].set_ydata(loc)
+                self._crosshairs[0]["horiz"].set_ydata(loc)
 
             self._changing = False
 
     # Matplotlib handlers ####################################################
     def _in_axis(self, event):
         """Return axis index if within one of our axes, else None"""
-        if getattr(event, 'inaxes') is None:
+        if getattr(event, "inaxes") is None:
             return None
         for ii, ax in enumerate(self._axes):
             if event.inaxes is ax:
@@ -318,16 +344,16 @@ class NiftiViewer(object):
 
     def _on_scroll(self, event):
         """Handle mpl scroll wheel event"""
-        assert event.button in ('up', 'down')
+        assert event.button in ("up", "down")
         ii = self._in_axis(event)
         if ii is None:
             return
         assert ii in range(4)
-        dv = 10. if event.key is not None and 'control' in event.key else 1.
-        dv *= 1. if event.button == 'up' else -1.
+        dv = 10.0 if event.key is not None and "control" in event.key else 1.0
+        dv *= 1.0 if event.button == "up" else -1.0
         dv *= -1 if self._flips[ii] else 1
         val = self._data_idx[ii] + dv
-        coords = [self._data_idx[k] for k in range(3)] + [1.]
+        coords = [self._data_idx[k] for k in range(3)] + [1.0]
         coords[ii] = val
         self._set_position(*np.dot(self._affine, coords)[:3])
         self._draw()
@@ -345,7 +371,7 @@ class NiftiViewer(object):
             x, y = event.xdata, event.ydata
             x = self._sizes[xax] - x if self._flips[xax] else x
             y = self._sizes[yax] - y if self._flips[yax] else y
-            idxs = [None, None, None, 1.]
+            idxs = [None, None, None, 1.0]
             idxs[xax] = x
             idxs[yax] = y
             idxs[ii] = self._data_idx[ii]
@@ -365,11 +391,13 @@ class NiftiViewer(object):
                     ax.draw_artist(line)
             ax.figure.canvas.blit(ax.bbox)
 
+
 def check_segmentation(fn_subject):
     from scipy import ndimage
     import matplotlib.pylab as pl
     from matplotlib.colors import ListedColormap
-    files = simnibs.SubjectFiles(fn_subject + '.msh')
+
+    files = simnibs.SubjectFiles(fn_subject + ".msh")
     T1 = nib.load(files.T1)
     masks = nib.load(files.final_contr).get_fdata()
     lines = np.linalg.norm(np.gradient(masks), axis=0) > 0
@@ -377,16 +405,17 @@ def check_segmentation(fn_subject):
     viewer = NiftiViewer(T1.get_fdata(), T1.affine)
     cmap = pl.cm.jet
     my_cmap = cmap(np.arange(cmap.N))
-    my_cmap[:,-1] = np.linspace(0, 1, cmap.N)
+    my_cmap[:, -1] = np.linspace(0, 1, cmap.N)
     my_cmap = ListedColormap(my_cmap)
     viewer.add_overlay(lines, cmap=my_cmap)
     viewer.show()
 
-if __name__ == '__main__':
-    #from simnibs import templates
-    #image = nib.load(templates.mni_volume)
-    #viewer = NiftiViewer(image.get_fdata(), image.affine)
-    #overlay = np.random.random(image.get_fdata().shape)
-    #viewer.add_overlay(overlay, cmap='viridis', alpha=0.5)
-    #viewer.show()
-    check_segmentation('/Users/gbs/simnibs_examples/ernie/ernie')
+
+if __name__ == "__main__":
+    # from simnibs import templates
+    # image = nib.load(templates.mni_volume)
+    # viewer = NiftiViewer(image.get_fdata(), image.affine)
+    # overlay = np.random.random(image.get_fdata().shape)
+    # viewer.add_overlay(overlay, cmap='viridis', alpha=0.5)
+    # viewer.show()
+    check_segmentation("/Users/gbs/simnibs_examples/ernie/ernie")

@@ -640,20 +640,19 @@ class TestRoiResultVisualization:
         assert int(result_vis.head_mesh_opt.View[12].ColormapNumber) == 6
         assert len(result_vis.head_mesh_opt.View) == 13
 
-
     def test_file_name_including_underscores(self, sphere3_msh: mesh_io.Msh, tmp_path):
         input_mesh = deepcopy(sphere3_msh)
-        #Create Roi 1
+        # Create Roi 1
         roi_1 = RegionOfInterest()
         roi_1.load_mesh(input_mesh)
         roi_1.apply_tissue_mask(1003, "intersection")
 
-        #Create Roi 2
+        # Create Roi 2
         roi_2 = RegionOfInterest()
         roi_2.load_mesh(input_mesh)
         roi_2.apply_tissue_mask(1004, "intersection")
 
-        #Create result mesh 1
+        # Create result mesh 1
         result_mesh_1_file_path = os.path.join(tmp_path, "test_1_TDCS_scalar.msh")
         result_mesh_1 = deepcopy(sphere3_msh)
         opt_1 = gmsh_view.Visualization(result_mesh_1)
@@ -689,7 +688,7 @@ class TestRoiResultVisualization:
         result_mesh_1.write(result_mesh_1_file_path)
         opt_1.write_opt(result_mesh_1_file_path)
 
-        #Create result mesh 2
+        # Create result mesh 2
         result_mesh_2_file_path = os.path.join(tmp_path, "test_2_TMS_scalar.msh")
         result_mesh_2 = deepcopy(sphere3_msh)
         opt_2 = gmsh_view.Visualization(result_mesh_2)
@@ -745,48 +744,56 @@ class TestRoiResultVisualization:
 
         result_vis.create_visualization()
 
-        result_vis.head_mesh_data_name_to_gmsh_view['mesh_1__elm_test_2'].VectorType = 6
-        result_vis.remove_field_from_head_mesh('mesh_2__elm_test_2')
+        result_vis.head_mesh_data_name_to_gmsh_view["mesh_1__elm_test_2"].VectorType = 6
+        result_vis.remove_field_from_head_mesh("mesh_2__elm_test_2")
 
         assert result_vis.head_mesh is not None
         assert result_vis.head_mesh_opt is not None
         assert isinstance(result_vis.head_mesh_opt.View, list)
         assert result_vis.surface_mesh is None
 
-        #Test for all node data fields 
-        assert result_vis.head_mesh.nodedata[0].field_name == 'mesh_1__node_test_1'
+        # Test for all node data fields
+        assert result_vis.head_mesh.nodedata[0].field_name == "mesh_1__node_test_1"
         assert int(result_vis.head_mesh_opt.View[0].ColormapNumber) == 1
-        assert result_vis.head_mesh.nodedata[1].field_name == 'mesh_1__node_test_2'
+        assert result_vis.head_mesh.nodedata[1].field_name == "mesh_1__node_test_2"
         assert int(result_vis.head_mesh_opt.View[1].ColormapNumber) == 2
-        assert result_vis.head_mesh.nodedata[2].field_name == 'mesh_2__node_test_1'
+        assert result_vis.head_mesh.nodedata[2].field_name == "mesh_2__node_test_1"
         assert int(result_vis.head_mesh_opt.View[2].ColormapNumber) == 7
-        assert result_vis.head_mesh.nodedata[3].field_name == 'mesh_2__node_test_2'
+        assert result_vis.head_mesh.nodedata[3].field_name == "mesh_2__node_test_2"
         assert int(result_vis.head_mesh_opt.View[3].ColormapNumber) == 8
-        assert result_vis.head_mesh.nodedata[4].field_name == 'node_test_y'
-        assert int(result_vis.head_mesh_opt.View[4].ColormapNumber) == 2 # default value
+        assert result_vis.head_mesh.nodedata[4].field_name == "node_test_y"
+        assert (
+            int(result_vis.head_mesh_opt.View[4].ColormapNumber) == 2
+        )  # default value
         assert len(result_vis.head_mesh.nodedata) == 5
 
-        #Test for the Roi element data fields
-        assert result_vis.head_mesh.elmdata[0].field_name == 'roi'
-        assert int(result_vis.head_mesh_opt.View[5].ColormapNumber) == 2 # default value
+        # Test for the Roi element data fields
+        assert result_vis.head_mesh.elmdata[0].field_name == "roi"
+        assert (
+            int(result_vis.head_mesh_opt.View[5].ColormapNumber) == 2
+        )  # default value
         assert int(result_vis.head_mesh_opt.View[5].ShowScale) == 0
-        assert result_vis.head_mesh.elmdata[1].field_name == 'anti_roi'
-        assert int(result_vis.head_mesh_opt.View[6].ColormapNumber) == 2 # default value
+        assert result_vis.head_mesh.elmdata[1].field_name == "anti_roi"
+        assert (
+            int(result_vis.head_mesh_opt.View[6].ColormapNumber) == 2
+        )  # default value
         assert int(result_vis.head_mesh_opt.View[6].ShowScale) == 0
 
-        #Test for all element data fields
-        assert result_vis.head_mesh.elmdata[2].field_name == 'mesh_1__elm_test_1'
+        # Test for all element data fields
+        assert result_vis.head_mesh.elmdata[2].field_name == "mesh_1__elm_test_1"
         assert int(result_vis.head_mesh_opt.View[7].ColormapNumber) == 3
-        assert result_vis.head_mesh.elmdata[3].field_name == 'mesh_1__elm_test_2'
+        assert result_vis.head_mesh.elmdata[3].field_name == "mesh_1__elm_test_2"
         assert int(result_vis.head_mesh_opt.View[8].VectorType) == 6
         assert int(result_vis.head_mesh_opt.View[8].ColormapNumber) == 4
-        assert result_vis.head_mesh.elmdata[4].field_name == 'mesh_2__elm_test_1'
+        assert result_vis.head_mesh.elmdata[4].field_name == "mesh_2__elm_test_1"
         assert int(result_vis.head_mesh_opt.View[9].ColormapNumber) == 9
-        assert result_vis.head_mesh.elmdata[5].field_name == 'elm_test_x'
-        assert int(result_vis.head_mesh_opt.View[10].ColormapNumber) == 2 # default value
+        assert result_vis.head_mesh.elmdata[5].field_name == "elm_test_x"
+        assert (
+            int(result_vis.head_mesh_opt.View[10].ColormapNumber) == 2
+        )  # default value
         assert len(result_vis.head_mesh.elmdata) == 6
 
-        #Test for geo views
+        # Test for geo views
         assert int(result_vis.head_mesh_opt.View[11].ColormapNumber) == 5
         assert int(result_vis.head_mesh_opt.View[12].ColormapNumber) == 11
         assert int(result_vis.head_mesh_opt.View[13].ColormapNumber) == 6

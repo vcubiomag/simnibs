@@ -1,24 +1,24 @@
 #!/usr/bin/python2.7 -u
 # -*- coding: utf-8 -*-\
-'''
-    Structures for the GUI head model
-    This program is part of the SimNIBS package.
-    Please check on www.simnibs.org how to cite our work in publications.
+"""
+Structures for the GUI head model
+This program is part of the SimNIBS package.
+Please check on www.simnibs.org how to cite our work in publications.
 
-    Copyright (C) 2015-2018 Guilherme B Saturnino, Extended 2022 by Konstantin Weise
+Copyright (C) 2015-2018 Guilherme B Saturnino, Extended 2022 by Konstantin Weise
 
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or any later version.
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or any later version.
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-'''
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+"""
 
 import gc
 import numpy as np
@@ -26,15 +26,14 @@ import numpy as np
 from . import cgal
 
 
-class Surface():
-
+class Surface:
     def __init__(self, mesh, labels):
         """
         Class for working with mesh surfaces
 
         Parameters:
         ----------------
-        mesh - gmsh mesh structure 
+        mesh - gmsh mesh structure
         labels - mesh labels with the surfaces of interest
 
         Notes:
@@ -85,7 +84,7 @@ class Surface():
         # it's filled up in the order the nodes appear in the mesh triangles
         # The nodes_dict makes the link between the gmsh numbering and the new
         # numbering
-        nodes_dict = np.zeros(mesh.nodes.nr + 1, dtype='int')
+        nodes_dict = np.zeros(mesh.nodes.nr + 1, dtype="int")
 
         # Sees if labels is an array or just a number, it must be an array
         try:
@@ -96,58 +95,66 @@ class Surface():
         # We need to create a dictionary, linking the "new node numbers" to the
         # old ones
         label_triangles = []
-        self.surf2msh_triangles = np.empty(0, dtype='int')
+        self.surf2msh_triangles = np.empty(0, dtype="int")
 
         for label in labels:
-            label_triangles.append(np.where(np.logical_and(
-                mesh.elm.elm_type == 2, mesh.elm.tag1 == label))[0])
+            label_triangles.append(
+                np.where(
+                    np.logical_and(mesh.elm.elm_type == 2, mesh.elm.tag1 == label)
+                )[0]
+            )
 
         if len(label_triangles) == 0:
-            raise ValueError('No triangles with tags: ' + str(labels) + ' found')
+            raise ValueError("No triangles with tags: " + str(labels) + " found")
 
         for ii in range(len(labels)):
             self.surf2msh_triangles = np.union1d(
-                self.surf2msh_triangles, label_triangles[ii])
+                self.surf2msh_triangles, label_triangles[ii]
+            )
 
         # Creates a unique list of all triangle nodes.
         self.surf2msh_nodes = np.unique(
-            mesh.elm.node_number_list[self.surf2msh_triangles, :3].reshape(-1))
+            mesh.elm.node_number_list[self.surf2msh_triangles, :3].reshape(-1)
+        )
 
         nr_unique = np.size(self.surf2msh_nodes)
-        np_range = np.array(range(nr_unique), dtype='int')
-        #nodes_dict[old_index] = new_index
+        np_range = np.array(range(nr_unique), dtype="int")
+        # nodes_dict[old_index] = new_index
         nodes_dict[self.surf2msh_nodes] = np_range
 
         # Gets the new node numbers
         self.tr_nodes = nodes_dict[
-            mesh.elm.node_number_list[self.surf2msh_triangles, :3]]
+            mesh.elm.node_number_list[self.surf2msh_triangles, :3]
+        ]
 
         # and the positions in appropriate order
         self.nodes = mesh.nodes.node_coord[self.surf2msh_nodes - 1]
-        self.nodes_normals = np.zeros(
-            [np.size(self.surf2msh_nodes), 3], dtype='float')
+        self.nodes_normals = np.zeros([np.size(self.surf2msh_nodes), 3], dtype="float")
 
         self.nodes_areas = np.zeros(
-            [np.size(self.surf2msh_nodes), ], dtype='float')
+            [
+                np.size(self.surf2msh_nodes),
+            ],
+            dtype="float",
+        )
 
         # positions of each triangle's node
         tr_pos = self.nodes[self.tr_nodes]
 
         # triangles normals and areas
         self.tr_normals = np.cross(
-            tr_pos[:, 1] - tr_pos[:, 0], tr_pos[:, 2] - tr_pos[:, 0])
+            tr_pos[:, 1] - tr_pos[:, 0], tr_pos[:, 2] - tr_pos[:, 0]
+        )
         self.tr_areas = 0.5 * np.linalg.norm(self.tr_normals, axis=1)
         self.tr_normals /= 2 * self.tr_areas[:, np.newaxis]
 
         # defining the normal of a node as being the average of the normals of
         # surrounding triangles
         for ii in range(len(self.surf2msh_triangles)):
-            self.nodes_normals[self.tr_nodes[ii]
-                               ] += self.tr_normals[ii][np.newaxis, :]
-            self.nodes_areas[self.tr_nodes[ii]] += 1. / 3. * self.tr_areas[ii]
+            self.nodes_normals[self.tr_nodes[ii]] += self.tr_normals[ii][np.newaxis, :]
+            self.nodes_areas[self.tr_nodes[ii]] += 1.0 / 3.0 * self.tr_areas[ii]
 
-        self.nodes_normals /= np.linalg.norm(self.nodes_normals,
-                                             axis=1)[:, np.newaxis]
+        self.nodes_normals /= np.linalg.norm(self.nodes_normals, axis=1)[:, np.newaxis]
 
         # out if the normals point inside or outside, calculates the center of
         # the mesh
@@ -191,13 +198,19 @@ class Surface():
         UdotV = np.sum(u * v, 1)
         WdotV = np.sum(w * v, 1)
         WdotU = np.sum(w * u, 1)
-        denominator = (UdotV)**2 - (len2u) * (len2v)
+        denominator = (UdotV) ** 2 - (len2u) * (len2v)
         s = (UdotV * WdotV - len2v * WdotU) / denominator
         t = (UdotV * WdotU - len2u * WdotV) / denominator
 
-        triangles = np.arange(len(self.tr_nodes), dtype='int')
-        candidates = triangles[(perp_project > delta) * (s > -delta) * (
-            t > -delta) * (s + t < 1 + delta) * (r > delta) * (r < 1 + delta)]
+        triangles = np.arange(len(self.tr_nodes), dtype="int")
+        candidates = triangles[
+            (perp_project > delta)
+            * (s > -delta)
+            * (t > -delta)
+            * (s + t < 1 + delta)
+            * (r > delta)
+            * (r < 1 + delta)
+        ]
 
         if len(candidates) == 0:
             if return_index:
@@ -208,8 +221,11 @@ class Surface():
         else:
             # most of the time, there will only be one candidate
             triangle_index = candidates[np.argmax(r[candidates])]
-            intersect_point = V0[triangle_index, :] + s[triangle_index] * \
-                u[triangle_index, :] + t[triangle_index] * v[triangle_index, :]
+            intersect_point = (
+                V0[triangle_index, :]
+                + s[triangle_index] * u[triangle_index, :]
+                + t[triangle_index] * v[triangle_index, :]
+            )
             intersect_normal = self.tr_normals[triangle_index]
             if return_index:
                 return triangle_index, intersect_point, intersect_normal
@@ -221,15 +237,13 @@ class Surface():
         point_proj = None
         normal = None
         if reference is None:
-            node_index = np.argmin(
-                np.linalg.norm(point - self.nodes, axis=1))
+            node_index = np.argmin(np.linalg.norm(point - self.nodes, axis=1))
             point_proj = self.nodes[node_index]
             normal = self.nodes_normals[node_index]
         while point_proj is None and f < 10:
             P1 = reference + f * (point - reference)
             P0 = reference
-            triangle_index, point_proj, normal = self.interceptRay(
-                P1, P0, True)
+            triangle_index, point_proj, normal = self.interceptRay(P1, P0, True)
             f += 0.2
 
         return point_proj, normal
@@ -237,13 +251,13 @@ class Surface():
     def getTangentCoordinates(self, normal):
         # orthogonalization with the basis
         if normal[2] > 0.95:
-            u = np.array([1, 0, 0], 'float')
-            v = np.array([0, 1, 0], 'float')
+            u = np.array([1, 0, 0], "float")
+            v = np.array([0, 1, 0], "float")
             return u, v
         bases = []
-        bases.append(np.array([1, 0, 0], 'float'))
-        bases.append(np.array([0, 1, 0], 'float'))
-        bases.append(np.array([0, 0, 1], 'float'))
+        bases.append(np.array([1, 0, 0], "float"))
+        bases.append(np.array([0, 1, 0], "float"))
+        bases.append(np.array([0, 0, 1], "float"))
         tangents = []
         # orthogonalize using the 2 smallest components
         dirs = [0, 1, 2]
@@ -253,9 +267,12 @@ class Surface():
         tangents[0] = tangents[0] / np.linalg.norm(tangents[0])
 
         tangents.append(bases[dirs[1]])
-        tangents[1] = tangents[1] - tangents[1].dot(normal) *\
-            normal - tangents[1].dot(tangents[0]) * tangents[0]
-            
+        tangents[1] = (
+            tangents[1]
+            - tangents[1].dot(normal) * normal
+            - tangents[1].dot(tangents[0]) * tangents[0]
+        )
+
         tangents[1] = tangents[1] / np.linalg.norm(tangents[1])
 
         # gets the standard vectors
@@ -287,11 +304,11 @@ class Surface():
         return new_normal
 
     # Given 2 points, calculates a transformation matrix for a coordinate system which has:
-    #self.center in p1
+    # self.center in p1
     # y axis going from p1 to p2
     def calculateMatSimnibs(self, p1, p2, skin_distance=4):
-        p1_np = np.array(p1, 'float')
-        p2_np = np.array(p2, 'float')
+        p1_np = np.array(p1, "float")
+        p2_np = np.array(p2, "float")
         center, z_axis = self.projectPoint(p1_np, smooth=True)
         z_axis = -1 * z_axis
         center = center - skin_distance * z_axis
@@ -306,25 +323,20 @@ class Surface():
             y_axis = y_axis - y_axis.dot(z_axis) * z_axis
             y_axis /= np.linalg.norm(y_axis)
 
-
         x_axis = np.cross(y_axis, z_axis)
 
         matsimnibs = [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]
 
-        (matsimnibs[0][0], matsimnibs[1][0],
-         matsimnibs[2][0]) = x_axis.tolist()
-        (matsimnibs[0][1], matsimnibs[1][1],
-         matsimnibs[2][1]) = y_axis.tolist()
-        (matsimnibs[0][2], matsimnibs[1][2],
-         matsimnibs[2][2]) = z_axis.tolist()
-        (matsimnibs[0][3], matsimnibs[1][3],
-         matsimnibs[2][3]) = center.tolist()
+        (matsimnibs[0][0], matsimnibs[1][0], matsimnibs[2][0]) = x_axis.tolist()
+        (matsimnibs[0][1], matsimnibs[1][1], matsimnibs[2][1]) = y_axis.tolist()
+        (matsimnibs[0][2], matsimnibs[1][2], matsimnibs[2][2]) = z_axis.tolist()
+        (matsimnibs[0][3], matsimnibs[1][3], matsimnibs[2][3]) = center.tolist()
         matsimnibs[3][3] = 1
 
         return matsimnibs
 
     def calculateDistance(self, p1):
-        p1_np = np.array(p1, 'float')
+        p1_np = np.array(p1, "float")
         center, z_axis = self.projectPoint(p1_np, smooth=True)
         return np.linalg.norm(p1_np - center)
 
@@ -336,7 +348,7 @@ class Surface():
         return np.argmin(np.sum(np.square(self.tr_centers - point), 1))
 
     def intersect_segment(self, near, far):
-        ''' Finds the triangle (if any) that intersects a line segment
+        """Finds the triangle (if any) that intersects a line segment
 
         Parameters
         ------------
@@ -351,19 +363,17 @@ class Surface():
             Pairs of indices with the line segment index and the triangle index
         intercpt_pos (M, 3) array:
             Positions where the interceptions occur
-        '''
+        """
         # Using CGAL AABB https://doc.cgal.org/latest/AABB_tree/index.html
         if near.ndim == 1:
             near = near[None, :]
         if far.ndim == 1:
             far = far[None, :]
         if not (near.shape[1] == 3 and far.shape[1] == 3):
-            raise ValueError('near and far points should be arrays of size (N, 3)')
+            raise ValueError("near and far points should be arrays of size (N, 3)")
 
         indices, points = cgal.segment_triangle_intersection(
-            self.nodes[:],
-            self.tr_nodes,
-            near, far
+            self.nodes[:], self.tr_nodes, near, far
         )
         # if len(indices) > 0:
         #     indices[:, 1] = self.elm.triangles[indices[:, 1]]

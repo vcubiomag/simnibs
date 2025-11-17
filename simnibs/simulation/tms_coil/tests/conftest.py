@@ -23,6 +23,7 @@ from simnibs.utils import file_finder
 
 from .... import SIMNIBSDIR
 
+
 @pytest.fixture(scope="module")
 def minimal_tcd_coil_dict() -> dict[str, Any]:
     coil_dict = {
@@ -366,6 +367,7 @@ def full_tcd_coil() -> TmsCoil:
         [[0, 1], [1, 2, 3]],
     )
     return coil
+
 
 @pytest.fixture(scope="module")
 def tcd_json_schema():

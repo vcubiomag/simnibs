@@ -165,16 +165,29 @@ limits = [[-300.0, 300.0], [-200.0, 200.0], [-100.0, 300.0]]
 resolution = [2, 2, 2]
 
 # Creating two example stimulator with a name, a brand and a maximum dI/dt
-stimulator_1 = TmsStimulator("Example Stimulator 1", "Example Stimulator Brand", 122.22e6)
-stimulator_2 = TmsStimulator("Example Stimulator 2", "Example Stimulator Brand", 102.45e6)
+stimulator_1 = TmsStimulator(
+    "Example Stimulator 1", "Example Stimulator Brand", 122.22e6
+)
+stimulator_2 = TmsStimulator(
+    "Example Stimulator 2", "Example Stimulator Brand", 102.45e6
+)
 
 # Creating the line segments from a list of wire path points
-line_element_figure_of_8 = LineSegmentElements(stimulator_1, wire_path_figure_of_8, name="Figure_of_8")
-line_element_figure_of_8_90 = LineSegmentElements(stimulator_2, wire_path_figure_of_8_90, name="Figure_of_8_90")
+line_element_figure_of_8 = LineSegmentElements(
+    stimulator_1, wire_path_figure_of_8, name="Figure_of_8"
+)
+line_element_figure_of_8_90 = LineSegmentElements(
+    stimulator_2, wire_path_figure_of_8_90, name="Figure_of_8_90"
+)
 
 # Creating the TMS coil with its element, a name, a brand, a version, the limits and the resolution
 tms_coil = TmsCoil(
-    [line_element_figure_of_8, line_element_figure_of_8_90], "Example Coil", "Example Coil Brand", "V1.0", limits, resolution
+    [line_element_figure_of_8, line_element_figure_of_8_90],
+    "Example Coil",
+    "Example Coil Brand",
+    "V1.0",
+    limits,
+    resolution,
 )
 
 # Generating a coil casing that has a specified distance from the coil windings
@@ -185,4 +198,3 @@ tms_coil.generate_element_casings(
 # Write the coil to a tcd file
 os.mkdir("coil_example")
 tms_coil.write(os.path.join("coil_example", "two_stimulator_example_coil.tcd"))
-

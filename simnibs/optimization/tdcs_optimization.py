@@ -128,7 +128,7 @@ class TDCSoptimize:
             return "element"
         else:
             raise ValueError(
-                "Could not find if the leadfield is node- or " "element-based"
+                "Could not find if the leadfield is node- or element-based"
             )
 
     @property
@@ -144,9 +144,9 @@ class TDCSoptimize:
     def leadfield(self, leadfield):
         if leadfield is not None:
             assert leadfield.ndim == 3, "leadfield should be 3 dimensional"
-            assert (
-                leadfield.shape[2] == 3
-            ), "Size of last dimension of leadfield should be 3"
+            assert leadfield.shape[2] == 3, (
+                "Size of last dimension of leadfield should be 3"
+            )
         self._leadfield = leadfield
 
     @property
@@ -359,17 +359,21 @@ class TDCSoptimize:
                 a.lf_type = self.lf_type
 
     def _assert_valid_currents(
-            self,
-            max_total_current: float | None = None,
-            max_individual_current: float | None = None,
-        ):
+        self,
+        max_total_current: float | None = None,
+        max_individual_current: float | None = None,
+    ):
         if max_total_current is None:
             max_total_current = self.max_total_current
         if max_individual_current is None:
             max_individual_current = self.max_individual_current
 
-        assert max_total_current > 0, f"`max_total_current` must be positive (got {max_total_current})"
-        assert max_individual_current > 0, f"`max_individual_current` must be positive (got {max_individual_current})"
+        assert max_total_current > 0, (
+            f"`max_total_current` must be positive (got {max_total_current})"
+        )
+        assert max_individual_current > 0, (
+            f"`max_individual_current` must be positive (got {max_individual_current})"
+        )
         assert max_total_current >= max_individual_current
 
     def optimize(self, fn_out_mesh=None, fn_out_csv=None):
@@ -393,9 +397,9 @@ class TDCSoptimize:
         assert self.leadfield is not None, "Leadfield not defined"
         assert self.mesh is not None, "Mesh not defined"
         if self.max_active_electrodes is not None:
-            assert (
-                self.max_active_electrodes > 1
-            ), "The maximum number of active electrodes should be at least 2"
+            assert self.max_active_electrodes > 1, (
+                "The maximum number of active electrodes should be at least 2"
+            )
 
         self._assert_valid_currents()
         max_total_current = self.max_total_current
@@ -936,7 +940,9 @@ class TDCStarget:
 
     @intensity.setter
     def intensity(self, value):
-        assert value > 0, "Please provide a positive target intensity (if a negative intensity is desired, please invert the target direction)."
+        assert value > 0, (
+            "Please provide a positive target intensity (if a negative intensity is desired, please invert the target direction)."
+        )
         self._intensity = value
 
     @property
@@ -947,13 +953,17 @@ class TDCStarget:
     def directions(self, value):
         value = None if value == "none" else value
         if isinstance(value, str):
-            assert value in {"normal", "negative normal"}, f"Invalid value for `directions`. If a string, it must be 'none', 'normal', or 'negative normal' (got {value})"
+            assert value in {"normal", "negative normal"}, (
+                f"Invalid value for `directions`. If a string, it must be 'none', 'normal', or 'negative normal' (got {value})"
+            )
         elif value is None:
             if self.max_angle is not None:
                 raise ValueError("Cannot constrain angle in magnitude optimizations.")
         else:
             value = np.atleast_2d(value)
-            assert value.shape[1] == 3, f"If `directions` is an array, it must be Nx3 (got {value.shape})"
+            assert value.shape[1] == 3, (
+                f"If `directions` is an array, it must be Nx3 (got {value.shape})"
+            )
 
         self._directions = value
 
@@ -990,7 +1000,9 @@ class TDCStarget:
                 elif n == 1:
                     mapping = np.zeros(m, dtype=int)
 
-                directions = self.directions / np.linalg.norm(self.directions, axis=1, keepdims=True)
+                directions = self.directions / np.linalg.norm(
+                    self.directions, axis=1, keepdims=True
+                )
                 return directions[mapping]
 
     @classmethod
@@ -1054,8 +1066,9 @@ class TDCStarget:
             weights = self.mesh.elements_volumes_and_areas().value
         else:
             raise ValueError(
-                "Invalid lf_type: {0}, should be "
-                '"element" or "node"'.format(self.lf_type)
+                'Invalid lf_type: {0}, should be "element" or "node"'.format(
+                    self.lf_type
+                )
             )
 
         return weights
@@ -1113,8 +1126,9 @@ class TDCStarget:
             field_type = mesh_io.ElementData
         else:
             raise ValueError(
-                "lf_type must be 'node' or 'element'."
-                " Got: {0} instead".format(self.lf_type)
+                "lf_type must be 'node' or 'element'. Got: {0} instead".format(
+                    self.lf_type
+                )
             )
 
         indexes, mapping = _find_indexes(
@@ -1176,8 +1190,9 @@ class TDCStarget:
             weights = self.mesh.elements_volumes_and_areas()[indexes]
         else:
             raise ValueError(
-                "lf_type must be 'node' or 'element'."
-                " Got: {0} instead".format(self.lf_type)
+                "lf_type must be 'node' or 'element'. Got: {0} instead".format(
+                    self.lf_type
+                )
             )
 
         return np.average(components, weights=weights)
@@ -1227,8 +1242,9 @@ class TDCStarget:
             weights = self.mesh.elements_volumes_and_areas()[indexes]
         else:
             raise ValueError(
-                "lf_type must be 'node' or 'element'."
-                " Got: {0} instead".format(self.lf_type)
+                "lf_type must be 'node' or 'element'. Got: {0} instead".format(
+                    self.lf_type
+                )
             )
         weights *= norm
         return np.average(angles, weights=weights)
@@ -1387,8 +1403,9 @@ class TDCSavoid:
             f = np.ones(self.mesh.elm.nr)
         else:
             raise ValueError(
-                "lf_type must be 'node' or 'element'."
-                " Got: {0} instead".format(self.lf_type)
+                "lf_type must be 'node' or 'element'. Got: {0} instead".format(
+                    self.lf_type
+                )
             )
 
         indexes = self._get_avoid_region()
@@ -1435,8 +1452,9 @@ class TDCSavoid:
             weight = self.mesh.elements_volumes_and_areas()[indexes]
         else:
             raise ValueError(
-                "lf_type must be 'node' or 'element'."
-                " Got: {0} instead".format(self.lf_type)
+                "lf_type must be 'node' or 'element'. Got: {0} instead".format(
+                    self.lf_type
+                )
             )
 
         return np.average(v, weights=weight)
@@ -1571,7 +1589,6 @@ class TDCSDistributedOptimize:
         min_img_value=0,
         open_in_gmsh=True,
     ):
-
         self._tdcs_opt_obj = TDCSoptimize(
             leadfield_hdf=leadfield_hdf,
             max_total_current=max_total_current,
@@ -1904,9 +1921,9 @@ class TDCSDistributedOptimize:
         assert self.leadfield is not None, "Leadfield not defined"
         assert self.mesh is not None, "Mesh not defined"
         if self.max_active_electrodes is not None:
-            assert (
-                self.max_active_electrodes > 1
-            ), "The maximum number of active electrodes should be at least 2"
+            assert self.max_active_electrodes > 1, (
+                "The maximum number of active electrodes should be at least 2"
+            )
 
         self._tdcs_opt_obj._assert_valid_currents(
             self.max_total_current, self.max_individual_current
@@ -2205,9 +2222,9 @@ class TESOptimizationProblem(TESConstraints):
         self.leadfield = leadfield
         self.weights = np.ones(self.n_target) if weights is None else np.array(weights)
 
-        assert (
-            self.weights.shape[0] == self.n_target
-        ), "Please define one weight per leadfield element"
+        assert self.weights.shape[0] == self.n_target, (
+            "Please define one weight per leadfield element"
+        )
 
         self.P = self._calc_P_mat()
         self.Q = self._calc_Q_mat()
@@ -2239,9 +2256,9 @@ class TESOptimizationProblem(TESConstraints):
         assert target_direction.shape[1] == 3, "A direction must have 3 dimentions"
 
         target_indices = np.atleast_1d(target_indices)
-        assert len(target_indices) == len(
-            target_direction
-        ), "Please define one direction per target"
+        assert len(target_indices) == len(target_direction), (
+            "Please define one direction per target"
+        )
 
         target_direction = target_direction / np.linalg.norm(
             target_direction, axis=1, keepdims=True
@@ -2255,9 +2272,7 @@ class TESOptimizationProblem(TESConstraints):
         return l_vec @ self.P  # add a reference channel
 
     def _calc_Q_mat(
-        self,
-        indices: None | npt.NDArray = None,
-        weights: None | npt.NDArray = None
+        self, indices: None | npt.NDArray = None, weights: None | npt.NDArray = None
     ):
         """Calculate the energy matrix, Q, for optimization
 
@@ -2339,7 +2354,6 @@ class TESLinearConstrained(TESOptimizationProblem):
     def __init__(
         self, leadfield, max_total_current=1e5, max_el_current=1e5, weights=None
     ):
-
         super().__init__(leadfield, max_total_current, max_el_current, weights)
         self.l = np.empty((0, self.n), dtype=float)
         self.target_means = np.empty(0, dtype=float)
@@ -2405,7 +2419,6 @@ class TESLinearAngleConstrained(TESOptimizationProblem):
         weights=None,
         target_weights=None,
     ):
-
         super().__init__(leadfield, max_total_current, max_el_current, weights)
         target_weights = self.weights if target_weights is None else target_weights
 
@@ -2439,7 +2452,6 @@ class TESLinearElecConstrained(TESLinearConstrained):
     def __init__(
         self, n_elec, leadfield, max_total_current=1e5, max_el_current=1e5, weights=None
     ):
-
         super().__init__(leadfield, max_total_current, max_el_current, weights)
         self.n_elec = n_elec
 
@@ -2670,7 +2682,6 @@ class TESNormElecConstrained(TESNormConstrained):
     def __init__(
         self, n_elec, leadfield, max_total_current=1e5, max_el_current=1e5, weights=None
     ):
-
         super().__init__(leadfield, max_total_current, max_el_current, weights)
         self.n_elec = n_elec
 
@@ -2831,7 +2842,6 @@ class TESDistributedElecConstrained(TESDistributed):
         max_total_current=1e4,
         max_el_current=1e4,
     ):
-
         super().__init__(
             leadfield, target_field, weights, max_total_current, max_el_current
         )
@@ -2901,9 +2911,9 @@ def _linear_constrained_tes_opt(
     extra_eq=None,
     log_level=10,
 ):
-    assert (
-        l_vec.shape[0] == target_mean.shape[0]
-    ), "Please specify one target mean per target"
+    assert l_vec.shape[0] == target_mean.shape[0], (
+        "Please specify one target mean per target"
+    )
     assert l_vec.shape[1] == Q.shape[0]
 
     scale = max_total_current
@@ -2993,7 +3003,6 @@ def _linear_angle_constrained_tes_opt(
     eps_angle=1e-1,
     log_level=20,
 ):
-
     max_angle = np.deg2rad(max_angle)
     logger.log(log_level, "Running optimization with angle constraint")
     max_iter = 20
@@ -3477,17 +3486,17 @@ def _least_squares_tes_opt(
 
 
 def _active_set_QP(
-        l_vec: npt.NDArray,
-        Q: npt.NDArray,
-        C: npt.NDArray,
-        d: npt.NDArray,
-        x0: npt.NDArray,
-        A: None | npt.NDArray =None,
-        b: None | npt.NDArray = None,
-        tol_primal: float = 1e-5,
-        tol_feasibility_x0: float = 1e-5,
-        tol_zero_div: float = 1e-9,
-    ):
+    l_vec: npt.NDArray,
+    Q: npt.NDArray,
+    C: npt.NDArray,
+    d: npt.NDArray,
+    x0: npt.NDArray,
+    A: None | npt.NDArray = None,
+    b: None | npt.NDArray = None,
+    tol_primal: float = 1e-5,
+    tol_feasibility_x0: float = 1e-5,
+    tol_zero_div: float = 1e-9,
+):
     """Solves the problem
 
         minimize    l^T x + 1/2 x^T Q x
@@ -3536,9 +3545,13 @@ def _active_set_QP(
     active = np.abs(C.dot(x) - d) < tol_feasibility_x0
 
     # Check feasibility of x0
-    assert np.all(C.dot(x) <= d + tol_feasibility_x0), f"Infeasible start ({C.dot(x)} > {d}) [{C.dot(x) <= d + tol_feasibility_x0}]"
+    assert np.all(C.dot(x) <= d + tol_feasibility_x0), (
+        f"Infeasible start ({C.dot(x)} > {d}) [{C.dot(x) <= d + tol_feasibility_x0}]"
+    )
     if A is not None and b is not None:
-        assert np.allclose(A.dot(x), b, atol=tol_feasibility_x0), f"Infeasible start ({A.dot(x)} != {b})"
+        assert np.allclose(A.dot(x), b, atol=tol_feasibility_x0), (
+            f"Infeasible start ({A.dot(x)} != {b})"
+        )
 
     # if not np.allclose(A.dot(x0), b, atol=eps):
     #     print(f"Infeasible start ({A.dot(x0)} != {b})")

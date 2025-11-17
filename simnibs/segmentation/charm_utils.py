@@ -6,7 +6,13 @@ import numpy as np
 import numpy.typing as npt
 from functools import partial
 from scipy import ndimage
-from scipy.ndimage import gaussian_filter, binary_dilation, binary_erosion, binary_fill_holes, binary_opening
+from scipy.ndimage import (
+    gaussian_filter,
+    binary_dilation,
+    binary_erosion,
+    binary_fill_holes,
+    binary_opening,
+)
 from scipy.ndimage import affine_transform
 from scipy.ndimage import label
 from scipy.io import loadmat
@@ -36,10 +42,9 @@ def _register_atlas_to_input_affine(
     noneck,
     init_transform=None,
     world_to_world_transform_matrix=None,
-    scaling_center = [0.0, -100.0, 0.0],
-    k_values = [20.0, 10.0, 5.0]
+    scaling_center=[0.0, -100.0, 0.0],
+    k_values=[20.0, 10.0, 5.0],
 ):
-
     # Import the affine registration function
     scales = init_atlas_settings["affine_scales"]
     thetas = init_atlas_settings["affine_rotations"]
@@ -49,7 +54,9 @@ def _register_atlas_to_input_affine(
     neck_search_bounds = init_atlas_settings["neck_search_bounds"]
     ds_factor = init_atlas_settings["downsampling_factor_affine"]
 
-    affine = simnibs_samseg.AffineWholeHead(T1, affine_mesh_collection_name, template_file_name)
+    affine = simnibs_samseg.AffineWholeHead(
+        T1, affine_mesh_collection_name, template_file_name
+    )
 
     init_options = simnibs_samseg.initializationOptions(
         pitchAngles=thetas_rad,
@@ -70,7 +77,7 @@ def _register_atlas_to_input_affine(
         targetDownsampledVoxelSpacing=ds_factor,
         visualizer=visualizer,
         noneck=noneck,
-        Ks=k_values
+        Ks=k_values,
     )
 
     affine.saveResults(
@@ -125,7 +132,6 @@ def _denoise_input_and_save(input_name, output_name):
 
 
 def _init_atlas_affine(t1_scan, mni_template, affine_settings):
-
     registerer = simnibs_samseg.gems.KvlAffineRegistration(
         affine_settings["translation_scale"],
         affine_settings["max_iter"],
@@ -160,7 +166,6 @@ def _estimate_parameters(
     user_model_specifications=None,
     parameter_filename=None,
 ):
-
     ds_targets = segment_settings["downsampling_targets"]
     kernel_size = segment_settings["bias_kernel_width"]
     bg_mask_sigma = segment_settings["background_mask_sigma"]
@@ -193,7 +198,9 @@ def _estimate_parameters(
 
     if user_model_specifications is None:
         user_model_specifications = {
-            "atlasFileName": os.path.join(path_to_segment_folder, "atlas_level2.txt.gz"),
+            "atlasFileName": os.path.join(
+                path_to_segment_folder, "atlas_level2.txt.gz"
+            ),
             "biasFieldSmoothingKernelSize": kernel_size,
             "brainMaskingSmoothingSigma": bg_mask_sigma,
             "brainMaskingThreshold": bg_mask_th,
@@ -244,7 +251,6 @@ def _post_process_segmentation(
     upper_mask,
     debug=False,
 ):
-
     logger.info("Upsampling bias corrected images.")
     for input_number, bias_corrected in enumerate(bias_corrected_image_names):
         corrected_input = nib.load(bias_corrected)
@@ -256,13 +262,15 @@ def _post_process_segmentation(
 
     # Next we need to reconstruct the segmentation with the upsampled data
     # and map it into the simnibs tissues
-    upsampled_tissues, upper_part = simnibs_samseg.simnibs_segmentation_utils.segmentUpsampled(
-        upsampled_image_names,
-        tissue_settings,
-        parameters_and_inputs,
-        transformed_template_name,
-        affine_atlas,
-        csf_factor,
+    upsampled_tissues, upper_part = (
+        simnibs_samseg.simnibs_segmentation_utils.segmentUpsampled(
+            upsampled_image_names,
+            tissue_settings,
+            parameters_and_inputs,
+            transformed_template_name,
+            affine_atlas,
+            csf_factor,
+        )
     )
 
     del parameters_and_inputs
@@ -295,9 +303,7 @@ def _clean_brain(label_img, tissues, unass, se, se_n, vol_limit=10):
     # First combine the WM and GM
     brain = (label_img == tissues["WM"]) | (label_img == tissues["GM"])
     dil = binary_dilation(
-        _get_largest_components(
-            binary_erosion(brain, se_n, 1), se, vol_limit
-        ),
+        _get_largest_components(binary_erosion(brain, se_n, 1), se, vol_limit),
         se,
         1,
     )
@@ -309,9 +315,7 @@ def _clean_brain(label_img, tissues, unass, se, se_n, vol_limit=10):
     brain_csf = brain | csf
     # Vol limit in voxels
     dil = binary_dilation(
-        _get_largest_components(
-            binary_erosion(brain_csf, se, 1), se_n, vol_limit=80
-        ),
+        _get_largest_components(binary_erosion(brain_csf, se, 1), se_n, vol_limit=80),
         se,
         1,
     )
@@ -347,7 +351,8 @@ def _get_skull(label_img, brain_csf, tissues, se_n, se, num_iter=2, vol_limit=50
             binary_erosion(skull_inner, se, num_iter), se_n, vol_limit
         ),
         se,
-        num_iter)
+        num_iter,
+    )
 
     dil = bone & skull_outer & skull_inner
     return bone, skull_outer, dil
@@ -383,7 +388,9 @@ def _clean_muscles(label_img, unass, tissues, se, num_iter=1):
     unass |= dil ^ muscle
 
 
-def _clean_scalp(label_img, unass, skull_outer, tissues, se, se_n, num_iter=2, num_limit=1):
+def _clean_scalp(
+    label_img, unass, skull_outer, tissues, se, se_n, num_iter=2, num_limit=1
+):
     # And finally the scalp
     scalp = label_img == tissues["Scalp"]
     eyes = label_img == tissues["Eyes"]
@@ -430,7 +437,6 @@ def _ensure_skull(label_img, tissues, se, num_iter=1):
     label_img[SKULL_outer] = tissues["Compact_bone"]
     # Relabel air pockets to air
     label_img[label_img == tissues["Air_pockets"]] = 0
-
 
 
 def _morphological_operations(label_img, upper_part, simnibs_tissues):
@@ -612,9 +618,9 @@ def label_unassigned_elements(
 
     return labeling
 
+
 def _smooth(label_img, simnibs_tissues, tissues_to_smooth):
-    """Smooth some of the tissues for "nicer" tissue labelings.
-    """
+    """Smooth some of the tissues for "nicer" tissue labelings."""
     labs = label_img.copy()
     max_val = np.zeros_like(label_img, dtype=np.float32)
     for i, t in enumerate(simnibs_tissues):
@@ -819,9 +825,7 @@ def _fillin_gm_layer(
     mask = mask_from_surface(
         m.nodes[:], m.elm[:, :3] - 1, label_affine, label_img.shape
     )
-    mask = binary_dilation(mask, iterations=1) * ~binary_erosion(
-        mask, iterations=1
-    )
+    mask = binary_dilation(mask, iterations=1) * ~binary_erosion(mask, iterations=1)
     mask[exclude_img] = 0
 
     # relabel WM and CSF parts to GM
@@ -869,18 +873,18 @@ def _open_sulci(
     # mask2 = binary_dilation(mask2,iterations=2)
     # label_img[ (label_img == tissue_labels['GM'])* ~mask2 ] = tissue_labels['CSF']
     brainthickness = _calc_thickness(mask2)
-    label_img[
-        (brainthickness <= 2.0) * (label_img == tissue_labels["GM"])
-    ] = tissue_labels["CSF"]
+    label_img[(brainthickness <= 2.0) * (label_img == tissue_labels["GM"])] = (
+        tissue_labels["CSF"]
+    )
 
     return label_img
 
 
 def update_labeling_from_cortical_surfaces(
-        m2m: SubjectFiles,
-        protect: dict[str, npt.ArrayLike],
-        tissue_mapping: dict[str, int],
-    ):
+    m2m: SubjectFiles,
+    protect: dict[str, npt.ArrayLike],
+    tissue_mapping: dict[str, int],
+):
     """
 
     Generate a gray matter mask based on the estimated pial surfaces and use
@@ -927,12 +931,12 @@ def update_labeling_from_cortical_surfaces(
     white = load_subject_surfaces(m2m, "white")
     white = white["lh"].join_mesh(white["rh"])
     white_surf_mask = mask_from_surface(
-        white.nodes[:], white.elm[:,:3]-1, sm_label_img.affine, sm_label_img.shape
+        white.nodes[:], white.elm[:, :3] - 1, sm_label_img.affine, sm_label_img.shape
     )
     pial = load_subject_surfaces(m2m, "pial")
     pial = pial["lh"].join_mesh(pial["rh"])
     pial_surf_mask = mask_from_surface(
-        pial.nodes[:], pial.elm[:,:3]-1, sm_label_img.affine, sm_label_img.shape
+        pial.nodes[:], pial.elm[:, :3] - 1, sm_label_img.affine, sm_label_img.shape
     )
 
     # Update using morphological operations
@@ -951,8 +955,8 @@ def update_labeling_from_cortical_surfaces(
 
 
 def update_labeling_from_cortical_surfaces_(
-        sm_labeling, fs_labeling, wm_surf_mask, gm_surf_mask, protect, tissue_mapping
-    ):
+    sm_labeling, fs_labeling, wm_surf_mask, gm_surf_mask, protect, tissue_mapping
+):
     ndim = sm_labeling.ndim
 
     # (1) Build masks
@@ -975,7 +979,9 @@ def update_labeling_from_cortical_surfaces_(
     wm_ignore_mask = binary_dilation(wm_ignore_mask, iterations=2)
 
     # Ensure a layer of CSF
-    bone = np.isin(sm_labeling, (tissue_mapping["Compact_bone"], tissue_mapping["Spongy_bone"]))
+    bone = np.isin(
+        sm_labeling, (tissue_mapping["Compact_bone"], tissue_mapping["Spongy_bone"])
+    )
     se = ndimage.generate_binary_structure(ndim, ndim)
     dilated_bone = binary_dilation(bone, se)
     csf_mask_shrunk = (sm_labeling == tissue_mapping["CSF"]) & ~dilated_bone
@@ -984,14 +990,14 @@ def update_labeling_from_cortical_surfaces_(
     # (2) Apply
 
     # GM to CSF
-    replace = (sm_labeling == tissue_mapping['GM']) & ~(gm_surf_mask | gm_extra_mask)
-    sm_labeling[replace] = tissue_mapping['CSF']
+    replace = (sm_labeling == tissue_mapping["GM"]) & ~(gm_surf_mask | gm_extra_mask)
+    sm_labeling[replace] = tissue_mapping["CSF"]
     # WM to GM
-    replace = (sm_labeling == tissue_mapping['WM']) & ~(wm_surf_mask | wm_extra_mask)
-    sm_labeling[replace] = tissue_mapping['GM']
+    replace = (sm_labeling == tissue_mapping["WM"]) & ~(wm_surf_mask | wm_extra_mask)
+    sm_labeling[replace] = tissue_mapping["GM"]
     # GM to WM
-    replace = (sm_labeling == tissue_mapping['GM']) & wm_surf_mask & ~wm_ignore_mask
-    sm_labeling[replace] = tissue_mapping['WM']
+    replace = (sm_labeling == tissue_mapping["GM"]) & wm_surf_mask & ~wm_ignore_mask
+    sm_labeling[replace] = tissue_mapping["WM"]
     # CSF to GM
     replace = csf_mask_shrunk & gm_surf_mask & ~wm_surf_mask & ~csf_ignore_mask
     sm_labeling[replace] = tissue_mapping["GM"]
@@ -999,8 +1005,9 @@ def update_labeling_from_cortical_surfaces_(
     return sm_labeling
 
 
-def _cut_and_combine_labels(fn_tissue_labeling_upsampled, fn_mni_template,
-                            fn_affine, tms_settings, n_dil=40):
+def _cut_and_combine_labels(
+    fn_tissue_labeling_upsampled, fn_mni_template, fn_affine, tms_settings, n_dil=40
+):
     """
     Cut away neck of tissue_labeling_upsampled.nii.gz and
     combine some of the labels. Overwrites the original file.
@@ -1024,21 +1031,25 @@ def _cut_and_combine_labels(fn_tissue_labeling_upsampled, fn_mni_template,
     """
     # cut label image using MNI mask
     logger.info("Cutting neck region using MNI mask")
-    label_image  = nib.load(fn_tissue_labeling_upsampled)
-    label_buffer = np.round(label_image.get_fdata()).astype( np.uint16 )  # Cast to uint16, otherwise meshing complains
+    label_image = nib.load(fn_tissue_labeling_upsampled)
+    label_buffer = np.round(label_image.get_fdata()).astype(
+        np.uint16
+    )  # Cast to uint16, otherwise meshing complains
     label_affine = label_image.affine
 
-    mni_image  = nib.load(fn_mni_template)
+    mni_image = nib.load(fn_mni_template)
     mni_buffer = np.ones(mni_image.shape, dtype=bool)
     mni_affine = mni_image.affine
 
-    trafo = loadmat(fn_affine)['worldToWorldTransformMatrix']
+    trafo = loadmat(fn_affine)["worldToWorldTransformMatrix"]
 
-    upperhead = volumetric_affine((mni_buffer, mni_affine),
-                                  np.linalg.inv(trafo),
-                                  target_space_affine=label_affine,
-                                  target_dimensions=label_image.shape,
-                                  intorder=0)
+    upperhead = volumetric_affine(
+        (mni_buffer, mni_affine),
+        np.linalg.inv(trafo),
+        target_space_affine=label_affine,
+        target_dimensions=label_image.shape,
+        intorder=0,
+    )
     upperhead = binary_dilation(upperhead, iterations=n_dil)
     label_buffer[~upperhead] = 0
 

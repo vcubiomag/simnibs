@@ -23,6 +23,7 @@ from simnibs.simulation.tms_coil.tms_stimulator import TmsStimulator
 
 from . import SIMNIBSDIR
 
+
 def pytest_addoption(parser):
     parser.addoption(
         "--runslow", action="store_true", default=False, help="run slow tests"
@@ -42,34 +43,38 @@ def pytest_collection_modifyitems(config, items):
         if "slow" in item.keywords:
             item.add_marker(skip_slow)
 
+
 @pytest.fixture(scope="module")
 def sphere3_msh():
     fn = os.path.join(SIMNIBSDIR, "_internal_resources", "testing_files", "sphere3.msh")
     return Msh(fn=fn)
 
+
 @pytest.fixture(scope="module")
 def example_dataset():
     url = (
-        f'https://github.com/simnibs/example-dataset/releases/'
-        'download/v4.0-lowres/ernie_lowres_V2.zip'
+        f"https://github.com/simnibs/example-dataset/releases/"
+        "download/v4.0-lowres/ernie_lowres_V2.zip"
     )
-    fn_folder = os.path.abspath(os.path.join(os.path.dirname(__file__), 'test_data'))
+    fn_folder = os.path.abspath(os.path.join(os.path.dirname(__file__), "test_data"))
     tmpname = tempfile.mktemp(".zip")
     # Download the dataset
     with requests.get(url, stream=True) as r:
         r.raw.read = functools.partial(r.raw.read, decode_content=True)
-        with open(tmpname, 'wb') as f:
+        with open(tmpname, "wb") as f:
             shutil.copyfileobj(r.raw, f)
     # Unzip the dataset
     with zipfile.ZipFile(tmpname) as z:
-        z.extractall(fn_folder, )
+        z.extractall(
+            fn_folder,
+        )
     os.remove(tmpname)
     yield fn_folder
     try:
         shutil.rmtree(fn_folder)
         pass
     except:
-        print('Could not remove example dataset folder')
+        print("Could not remove example dataset folder")
 
 
 @pytest.fixture(scope="module")

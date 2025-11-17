@@ -13,6 +13,7 @@ def resolve_subject_id_path(subid):
 
 # Arguments
 
+
 @dataclass()
 class CommandLineArgument:
     flags: list  # [str]
@@ -28,12 +29,13 @@ def add_argument(parser, argument: CommandLineArgument):
 
 # Parser
 
+
 @dataclass()
 class CommandLineParser:
     name: str
     kwargs: dict
 
-    def add_to(self, parser, parents = None):
+    def add_to(self, parser, parents=None):
         if parents is None:
             parents = []
         return parser.add_parser(self.name, parents=parents, **self.kwargs)

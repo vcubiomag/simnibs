@@ -1,4 +1,3 @@
-
 import os
 import tempfile
 import subprocess
@@ -8,8 +7,9 @@ import shutil
 
 from ..utils.file_finder import path2bin, Templates
 
+
 class Visualization:
-    ''' Defines a visualization for a 3D mesh
+    """Defines a visualization for a 3D mesh
 
     Parameters
     ------------
@@ -32,11 +32,12 @@ class Visualization:
 
     merge: list
         Files to be merged
-    '''
-    def __init__(self, mesh, cond=None,add_logo=False):
+    """
+
+    def __init__(self, mesh, cond=None, add_logo=False):
         if isinstance(mesh, str):
-            if not mesh.endswith('.msh'):
-                raise ValueError('mesh file name should end with .msh')
+            if not mesh.endswith(".msh"):
+                raise ValueError("mesh file name should end with .msh")
         self.General = General(add_logo)
         self.Mesh = Mesh()
         self.View = View()
@@ -46,62 +47,61 @@ class Visualization:
         self.merge = []
 
     def __str__(self):
-        string = str(self.General) + '\n'
-        string += str(self.Mesh) + '\n'
+        string = str(self.General) + "\n"
+        string += str(self.Mesh) + "\n"
         try:
-            string += '\n'.join([str(v) for v in self.View])
+            string += "\n".join([str(v) for v in self.View])
         except:
             string += str(self.View)
         return string
 
     def show(self, new_thread=False):
-        ''' Shows the mesh in gmsh
+        """Shows the mesh in gmsh
 
         Parameters
         -----------
         new_thread: bool (optional)
             Wether to show the mesh in a new thread. Default: False
-        '''
+        """
         if self.mesh is None:
-            raise ValueError('Mesh not set!')
+            raise ValueError("Mesh not set!")
 
-        with tempfile.NamedTemporaryFile(suffix='.msh') as f:
+        with tempfile.NamedTemporaryFile(suffix=".msh") as f:
             mesh_fn = f.name
         self.mesh.write(mesh_fn)
-        geo_fn = mesh_fn + '.opt'
+        geo_fn = mesh_fn + ".opt"
         self._write(geo_fn)
-        command = [path2bin('gmsh'), mesh_fn]
-        
+        command = [path2bin("gmsh"), mesh_fn]
+
         fn_list = [mesh_fn, geo_fn]
-        if hasattr(self.General, 'BackgroundImageFileName'):
-            fn_list.append(os.path.join(os.path.dirname(mesh_fn), '.lg.png'))
-            
+        if hasattr(self.General, "BackgroundImageFileName"):
+            fn_list.append(os.path.join(os.path.dirname(mesh_fn), ".lg.png"))
+
         if new_thread:
-            t = threading.Thread(
-                target=_run, args=(command, fn_list))
+            t = threading.Thread(target=_run, args=(command, fn_list))
             t.start()
         else:
             _run(command, fn_list)
 
     def write_opt(self, fn_mesh):
-        ''' Writes a .opt file
+        """Writes a .opt file
 
         Parameters
         -----------
         fn_mesh: str
             Name of mesh file ('msh'). Will add the '.opt' suffix
-        '''
+        """
         fn_out = fn_mesh + ".opt"
         self._write(fn_out)
 
     def add_view(self, **kwargs):
-        ''' adds a View entry to the current visualization object
+        """adds a View entry to the current visualization object
 
         Parameters
         -----------
         kwargs:
             Argumets to be passed to the View object
-        '''
+        """
         try:
             len(self.View)
         except TypeError:
@@ -110,8 +110,8 @@ class Visualization:
         self.View.append(new_view)
         return new_view
 
-    def add_merge(self, fn, append_views_from_geo = False):
-        ''' adds a file to be merged to the current Visualization
+    def add_merge(self, fn, append_views_from_geo=False):
+        """adds a file to be merged to the current Visualization
 
         Parameters
         -----------
@@ -122,29 +122,35 @@ class Visualization:
             if true, all views in the geo file will be appended to the
             Visualization, thereby guessing hopefully useful
             visualization settings from the view name
-        '''
+        """
         self.merge.append(fn)
         if append_views_from_geo:
-            with open(fn, 'r') as fp:
+            with open(fn, "r") as fp:
                 content = fp.read()
                 fp.close()
-                views = [line for line in content.split('\n') if "View" in line]
+                views = [line for line in content.split("\n") if "View" in line]
                 for view in views:
-                    if 'scalp' in view:
-                    	self.add_view(ColormapNumber=8, ColormapAlpha=.3,
-                                   Visible=0, ShowScale=0)
-                    elif 'electrode_currents' in view:
-                    	self.add_view(ColormapNumber=10, ColormapAlpha=.5, Visible=1)
-                    elif 'coil_casing' in view:
-                    	self.add_view(ColorTable=_gray_red_lightblue_blue_cm(),
-                               Visible=1, ShowScale=0, CustomMin=-0.5,
-                               CustomMax=3.5, RangeType=2)
+                    if "scalp" in view:
+                        self.add_view(
+                            ColormapNumber=8, ColormapAlpha=0.3, Visible=0, ShowScale=0
+                        )
+                    elif "electrode_currents" in view:
+                        self.add_view(ColormapNumber=10, ColormapAlpha=0.5, Visible=1)
+                    elif "coil_casing" in view:
+                        self.add_view(
+                            ColorTable=_gray_red_lightblue_blue_cm(),
+                            Visible=1,
+                            ShowScale=0,
+                            CustomMin=-0.5,
+                            CustomMax=3.5,
+                            RangeType=2,
+                        )
                     else:
-                    	self.add_view(ShowScale=0)
+                        self.add_view(ShowScale=0)
 
-    def _write(self, fn, mode='w'):
+    def _write(self, fn, mode="w"):
         with open(fn, mode) as f:
-            f.write('// Visualization File Created by SimNIBS\n')
+            f.write("// Visualization File Created by SimNIBS\n")
             dirname = os.path.dirname(fn)
             [f.write(f'Merge "{os.path.relpath(m, dirname)}";\n') for m in self.merge]
             f.write(str(self.PhysicalNames))
@@ -155,16 +161,15 @@ class Visualization:
             except TypeError:
                 f.write(str(self.View))
             f.write(self._visibility_str())
-            
-        if hasattr(self.General, 'BackgroundImageFileName'):
+
+        if hasattr(self.General, "BackgroundImageFileName"):
             try:
-                shutil.copyfile(Templates().simnibs_logo,
-                                os.path.join(os.path.dirname(fn), '.lg.png')
-                                )
+                shutil.copyfile(
+                    Templates().simnibs_logo,
+                    os.path.join(os.path.dirname(fn), ".lg.png"),
+                )
             except:
                 pass
-                    
-                
 
     def _visibility_str(self):
         if self.visibility is None or len(self.visibility) == 0:
@@ -173,12 +178,12 @@ class Visualization:
         view = "\n".join(
             [
                 'Hide "*";',
-                'Show {',
-                f'Volume{vis_str};',
-                f'Surface{vis_str};',
-                f'Curve{vis_str};',
-                f'Point{vis_str};',
-                '}',
+                "Show {",
+                f"Volume{vis_str};",
+                f"Surface{vis_str};",
+                f"Curve{vis_str};",
+                f"Point{vis_str};",
+                "}",
             ]
         )
         return view
@@ -189,52 +194,52 @@ class Visualization:
             view = self.View
         except IndexError:
             view = [self.View]
-        assert len(view) == len(fn_out), \
-                'Please define one name per view'
-        with tempfile.NamedTemporaryFile(suffix='.msh') as f:
+        assert len(view) == len(fn_out), "Please define one name per view"
+        with tempfile.NamedTemporaryFile(suffix=".msh") as f:
             mesh_fn = f.name
         self.mesh.write(mesh_fn)
-        with tempfile.NamedTemporaryFile(suffix='.geo', delete=False, mode='w') as f:
-            f.write('// Visualization File Created by SimNIBS\n')
+        with tempfile.NamedTemporaryFile(suffix=".geo", delete=False, mode="w") as f:
+            f.write("// Visualization File Created by SimNIBS\n")
             f.write('Merge "{0}";\n'.format(mesh_fn))
             f.write(str(self.General))
             f.write(str(self.Mesh))
             for fn, v in zip(fn_out, view):
                 if v.indx is None:
-                    raise ValueError('Please assign an index to all views')
+                    raise ValueError("Please assign an index to all views")
                 fn = os.path.abspath(fn)
                 f.write(str(v))
-                f.write('View[{0}].Visible = 1;\n'.format(v.indx))
-                f.write('Draw;\n')
+                f.write("View[{0}].Visible = 1;\n".format(v.indx))
+                f.write("Draw;\n")
                 f.write('Print "{0}";\n'.format(fn))
-                f.write('Sleep {0};\n'.format(sleep))
-                f.write('View[{0}].Visible = 0;\n'.format(v.indx))
-            f.write('Exit;\n')
+                f.write("Sleep {0};\n".format(sleep))
+                f.write("View[{0}].Visible = 0;\n".format(v.indx))
+            f.write("Exit;\n")
             geo_fn = f.name
 
-        if hasattr(self.General, 'BackgroundImageFileName'):
+        if hasattr(self.General, "BackgroundImageFileName"):
             try:
-                shutil.copyfile(Templates().simnibs_logo,
-                                os.path.join(os.path.dirname(mesh_fn), '.lg.png')
-                                )
+                shutil.copyfile(
+                    Templates().simnibs_logo,
+                    os.path.join(os.path.dirname(mesh_fn), ".lg.png"),
+                )
             except:
                 pass
 
         fn_list = [mesh_fn, geo_fn]
-        if hasattr(self.General, 'BackgroundImageFileName'):
-            fn_list.append(os.path.join(os.path.dirname(mesh_fn), '.lg.png'))
-        
-        _run([path2bin('gmsh'), geo_fn], fn_list)
+        if hasattr(self.General, "BackgroundImageFileName"):
+            fn_list.append(os.path.join(os.path.dirname(mesh_fn), ".lg.png"))
+
+        _run([path2bin("gmsh"), geo_fn], fn_list)
 
 
 class General(object):
-    ''' General Gmsh visualization options.
+    """General Gmsh visualization options.
     For more information see http://gmsh.info/doc/texinfo/gmsh.html
 
     Attributes
     -----------
     Color: dict
-        gmsh General.Color options (so far "Background" and "Foreground") 
+        gmsh General.Color options (so far "Background" and "Foreground")
     BackgroundGradient: 0,1,2 or 3
         type of background color gradient (0: no gradient)
     FieldWidth: int
@@ -291,11 +296,10 @@ class General(object):
     References
     ------------
      `Gmsh documentation <http://gmsh.info/doc/texinfo/gmsh.html>`_
-    '''
-    def __init__(self, add_logo = False, **kwargs):
-        self.Color = {'Background': 'White',
-                      'Foreground': 'Black'
-                      }
+    """
+
+    def __init__(self, add_logo=False, **kwargs):
+        self.Color = {"Background": "White", "Foreground": "Black"}
         self.BackgroundGradient = 0
         self.FieldWidth = 449
         self.MaxX = 15.0
@@ -322,26 +326,26 @@ class General(object):
         self.VectorType = 1
         self.SmallAxes = 1
         if add_logo:
-            self.BackgroundImageFileName = "\".lg.png\"";
-            self.BackgroundImageWidth = 160;
-            self.BackgroundImageHeight = 27;
-            self.BackgroundImagePositionX = -180;
-            self.BackgroundImagePositionY = 20;
+            self.BackgroundImageFileName = '".lg.png"'
+            self.BackgroundImageWidth = 160
+            self.BackgroundImageHeight = 27
+            self.BackgroundImagePositionX = -180
+            self.BackgroundImagePositionY = 20
         self.__dict__.update(kwargs)
 
     def __str__(self):
-        string = ''
+        string = ""
         for k, v in self.__dict__.items():
             if isinstance(v, dict):
                 for k2, v2 in v.items():
-                    string += 'General.{0}.{1} = {2};\n'.format(k, k2, v2)
+                    string += "General.{0}.{1} = {2};\n".format(k, k2, v2)
             else:
-                string += 'General.{0} = {1};\n'.format(k, v)
+                string += "General.{0} = {1};\n".format(k, v)
         return string
 
 
 class Mesh(object):
-    ''' Mesh Gmsh visualization options.
+    """Mesh Gmsh visualization options.
     For more information see http://gmsh.info/doc/texinfo/gmsh.html
 
     Attributes
@@ -365,9 +369,12 @@ class Mesh(object):
     ------------
      `Gmsh documentation <http://gmsh.info/doc/texinfo/gmsh.html>`_
 
-    '''
+    """
+
     def __init__(self, **kwargs):
-        self.AngleSmoothNormals = 180  # Threshold angle below which normals are not smoothed
+        self.AngleSmoothNormals = (
+            180  # Threshold angle below which normals are not smoothed
+        )
         self.SmoothNormals = 1  # Smooth the mesh normals?
         self.SurfaceEdges = 0  # Display edges of surface mesh?
         self.SurfaceFaces = 1  # Display faces of surface mesh?
@@ -377,13 +384,13 @@ class Mesh(object):
         self.__dict__.update(kwargs)
 
     def __str__(self):
-        string = ''
+        string = ""
         for k, v in self.__dict__.items():
-            if k == 'Color':
+            if k == "Color":
                 c_st = str(v)
-                st = c_st.replace('Color', 'Mesh.Color')
+                st = c_st.replace("Color", "Mesh.Color")
             else:
-                st = 'Mesh.{0} = {1};\n'.format(k, v)
+                st = "Mesh.{0} = {1};\n".format(k, v)
             # st = st.replace('[', '{').replace(']', '}')
             string += st
 
@@ -391,7 +398,7 @@ class Mesh(object):
 
 
 class Color(object):
-    ''' Gmsh visualization Color options.
+    """Gmsh visualization Color options.
     For more information see http://gmsh.info/doc/texinfo/gmsh.html
 
     Attributes
@@ -412,7 +419,7 @@ class Color(object):
     ------------
      `Gmsh documentation <http://gmsh.info/doc/texinfo/gmsh.html>`_
 
-    '''
+    """
 
     def __init__(self, **kwargs):
         self.One = [230, 230, 230]  # Color 1 in color carousel
@@ -428,16 +435,16 @@ class Color(object):
         self.__dict__.update(kwargs)
 
     def __str__(self):
-        string = ''
+        string = ""
         for k, v in self.__dict__.items():
-            st = 'Color.{0} = {1};\n'.format(k, v)
-            st = st.replace('[', '{').replace(']', '}')
+            st = "Color.{0} = {1};\n".format(k, v)
+            st = st.replace("[", "{").replace("]", "}")
             string += st
         return string
 
 
 class View(object):
-    ''' Gmsh visualization View options.
+    """Gmsh visualization View options.
     For more information see http://gmsh.info/doc/texinfo/gmsh.html
 
     Parameters
@@ -477,7 +484,8 @@ class View(object):
     ------------
      `Gmsh documentation <http://gmsh.info/doc/texinfo/gmsh.html>`_
 
-    '''
+    """
+
     def __init__(self, indx=None, **kwargs):
         self.CenterGlyphs = 1
         self.GlyphLocation = 1
@@ -494,36 +502,35 @@ class View(object):
         self.__dict__.update(kwargs)
 
     def _color_table_string(self):
-        st = '{'
-        st += ', '.join(
-            ['{' + ', '.join([str(i) for i in c]) + '}'
-             for c in self.ColorTable])
-        st += '}'
+        st = "{"
+        st += ", ".join(
+            ["{" + ", ".join([str(i) for i in c]) + "}" for c in self.ColorTable]
+        )
+        st += "}"
         return st
 
     def __str__(self):
-        string = ''
-        exclude = ['indx', 'ColorTable']
+        string = ""
+        exclude = ["indx", "ColorTable"]
         if self.indx is None:
-            add = 'View.'
+            add = "View."
         else:
-            add = 'View[%d].' % self.indx
+            add = "View[%d]." % self.indx
 
         if self.ColorTable is not None:
-            st = add + 'ColorTable = {0};\n'.format(
-                        self._color_table_string())
+            st = add + "ColorTable = {0};\n".format(self._color_table_string())
             string += st
-            exclude += ['ColormapNumber']
+            exclude += ["ColormapNumber"]
 
         for k, v in self.__dict__.items():
             if k not in exclude:
-                st = add + '{0} = {1};\n'.format(k, v)
+                st = add + "{0} = {1};\n".format(k, v)
                 string += st
         return string
 
 
 class PhysicalNames(object):
-    ''' physical names of volumes and surfaces.
+    """physical names of volumes and surfaces.
     For more information see http://gmsh.info/doc/texinfo/gmsh.html
 
     Parameters
@@ -539,47 +546,54 @@ class PhysicalNames(object):
     ------------
      `Gmsh documentation <http://gmsh.info/doc/texinfo/gmsh.html>`_
 
-    '''
+    """
+
     def __init__(self, m, cond):
         self.PhysicalSurfaces = dict()
         self.PhysicalVolumes = dict()
 
         if cond is not None:
-            tri_tags=np.unique(m.elm.tag1[m.elm.elm_type==2])
-            tet_tags=np.unique(m.elm.tag1[m.elm.elm_type==4])
+            tri_tags = np.unique(m.elm.tag1[m.elm.elm_type == 2])
+            tet_tags = np.unique(m.elm.tag1[m.elm.elm_type == 4])
 
             cond_names = [c.name for c in cond]
 
             if tet_tags.size > 0 and len(cond_names) < np.max(tet_tags):
-                raise ValueError('The cond_list size is too small'
-                                 ', should be at least of size {0}'
-                                 ''.format(np.max(tet_tags)))
+                raise ValueError(
+                    "The cond_list size is too small"
+                    ", should be at least of size {0}"
+                    "".format(np.max(tet_tags))
+                )
             for i in tet_tags:
-                if cond_names[i-1] is not None:
+                if cond_names[i - 1] is not None:
                     if i < 100:
-                        self.PhysicalVolumes[i] = ' '+cond_names[i-1]
+                        self.PhysicalVolumes[i] = " " + cond_names[i - 1]
                     else:
-                        self.PhysicalVolumes[i] = cond_names[i-1]
+                        self.PhysicalVolumes[i] = cond_names[i - 1]
 
             for i in tri_tags:
-                if i < 100 and (cond_names[i-1] is not None):
-                    self.PhysicalSurfaces[i] = ' '+cond_names[i-1]
-                if i > 1000 and i < 1100 and (cond_names[i-1001] is not None):
-                    self.PhysicalSurfaces[i] = ' '+cond_names[i-1001]
+                if i < 100 and (cond_names[i - 1] is not None):
+                    self.PhysicalSurfaces[i] = " " + cond_names[i - 1]
+                if i > 1000 and i < 1100 and (cond_names[i - 1001] is not None):
+                    self.PhysicalSurfaces[i] = " " + cond_names[i - 1001]
                 if i > 1100 and i < 1500:
-                    self.PhysicalSurfaces[i] = str(i-1100)+' top'
+                    self.PhysicalSurfaces[i] = str(i - 1100) + " top"
                 if i > 1500 and i < 2000:
-                    self.PhysicalSurfaces[i] = str(i-1500)
+                    self.PhysicalSurfaces[i] = str(i - 1500)
                 if i > 2100:
-                    self.PhysicalSurfaces[i] = str(i-2100)+' plug'
+                    self.PhysicalSurfaces[i] = str(i - 2100) + " plug"
 
     def __str__(self):
-        string = ''
+        string = ""
         for key in self.PhysicalVolumes:
-            st = 'Physical Volume (\"{1}\",{0}) = {{ {0} }};\n'.format(key, self.PhysicalVolumes[key])
+            st = 'Physical Volume ("{1}",{0}) = {{ {0} }};\n'.format(
+                key, self.PhysicalVolumes[key]
+            )
             string += st
         for key in self.PhysicalSurfaces:
-            st = 'Physical Surface (\"{1}\",{0}) = {{ {0} }};\n'.format(key, self.PhysicalSurfaces[key])
+            st = 'Physical Surface ("{1}",{0}) = {{ {0} }};\n'.format(
+                key, self.PhysicalSurfaces[key]
+            )
             string += st
         return string
 
@@ -593,306 +607,309 @@ def _run(command, remove=[]):
 
 def _coolwarm_cm():
     # from http://www.kennethmoreland.com/color-maps/
-    cm = np.array([
-        [59,76,192],
-        [60,78,194],
-        [61,80,195],
-        [62,81,197],
-        [63,83,198],
-        [64,85,200],
-        [66,87,201],
-        [67,88,203],
-        [68,90,204],
-        [69,92,206],
-        [70,93,207],
-        [71,95,209],
-        [73,97,210],
-        [74,99,211],
-        [75,100,213],
-        [76,102,214],
-        [77,104,215],
-        [79,105,217],
-        [80,107,218],
-        [81,109,219],
-        [82,110,221],
-        [84,112,222],
-        [85,114,223],
-        [86,115,224],
-        [87,117,225],
-        [89,119,226],
-        [90,120,228],
-        [91,122,229],
-        [93,123,230],
-        [94,125,231],
-        [95,127,232],
-        [96,128,233],
-        [98,130,234],
-        [99,131,235],
-        [100,133,236],
-        [102,135,237],
-        [103,136,238],
-        [104,138,239],
-        [106,139,239],
-        [107,141,240],
-        [108,142,241],
-        [110,144,242],
-        [111,145,243],
-        [112,147,243],
-        [114,148,244],
-        [115,150,245],
-        [116,151,246],
-        [118,153,246],
-        [119,154,247],
-        [120,156,247],
-        [122,157,248],
-        [123,158,249],
-        [124,160,249],
-        [126,161,250],
-        [127,163,250],
-        [129,164,251],
-        [130,165,251],
-        [131,167,252],
-        [133,168,252],
-        [134,169,252],
-        [135,171,253],
-        [137,172,253],
-        [138,173,253],
-        [140,174,254],
-        [141,176,254],
-        [142,177,254],
-        [144,178,254],
-        [145,179,254],
-        [147,181,255],
-        [148,182,255],
-        [149,183,255],
-        [151,184,255],
-        [152,185,255],
-        [153,186,255],
-        [155,187,255],
-        [156,188,255],
-        [158,190,255],
-        [159,191,255],
-        [160,192,255],
-        [162,193,255],
-        [163,194,255],
-        [164,195,254],
-        [166,196,254],
-        [167,197,254],
-        [168,198,254],
-        [170,199,253],
-        [171,199,253],
-        [172,200,253],
-        [174,201,253],
-        [175,202,252],
-        [176,203,252],
-        [178,204,251],
-        [179,205,251],
-        [180,205,251],
-        [182,206,250],
-        [183,207,250],
-        [184,208,249],
-        [185,208,248],
-        [187,209,248],
-        [188,210,247],
-        [189,210,247],
-        [190,211,246],
-        [192,212,245],
-        [193,212,245],
-        [194,213,244],
-        [195,213,243],
-        [197,214,243],
-        [198,214,242],
-        [199,215,241],
-        [200,215,240],
-        [201,216,239],
-        [203,216,238],
-        [204,217,238],
-        [205,217,237],
-        [206,217,236],
-        [207,218,235],
-        [208,218,234],
-        [209,219,233],
-        [210,219,232],
-        [211,219,231],
-        [213,219,230],
-        [214,220,229],
-        [215,220,228],
-        [216,220,227],
-        [217,220,225],
-        [218,220,224],
-        [219,220,223],
-        [220,221,222],
-        [221,221,221],
-        [222,220,219],
-        [223,220,218],
-        [224,219,216],
-        [225,219,215],
-        [226,218,214],
-        [227,218,212],
-        [228,217,211],
-        [229,216,209],
-        [230,216,208],
-        [231,215,206],
-        [232,215,205],
-        [232,214,203],
-        [233,213,202],
-        [234,212,200],
-        [235,212,199],
-        [236,211,197],
-        [236,210,196],
-        [237,209,194],
-        [238,209,193],
-        [238,208,191],
-        [239,207,190],
-        [240,206,188],
-        [240,205,187],
-        [241,204,185],
-        [241,203,184],
-        [242,202,182],
-        [242,201,181],
-        [243,200,179],
-        [243,199,178],
-        [244,198,176],
-        [244,197,174],
-        [245,196,173],
-        [245,195,171],
-        [245,194,170],
-        [245,193,168],
-        [246,192,167],
-        [246,191,165],
-        [246,190,163],
-        [246,188,162],
-        [247,187,160],
-        [247,186,159],
-        [247,185,157],
-        [247,184,156],
-        [247,182,154],
-        [247,181,152],
-        [247,180,151],
-        [247,178,149],
-        [247,177,148],
-        [247,176,146],
-        [247,174,145],
-        [247,173,143],
-        [247,172,141],
-        [247,170,140],
-        [247,169,138],
-        [247,167,137],
-        [247,166,135],
-        [246,164,134],
-        [246,163,132],
-        [246,161,131],
-        [246,160,129],
-        [245,158,127],
-        [245,157,126],
-        [245,155,124],
-        [244,154,123],
-        [244,152,121],
-        [244,151,120],
-        [243,149,118],
-        [243,147,117],
-        [242,146,115],
-        [242,144,114],
-        [241,142,112],
-        [241,141,111],
-        [240,139,109],
-        [240,137,108],
-        [239,136,106],
-        [238,134,105],
-        [238,132,103],
-        [237,130,102],
-        [236,129,100],
-        [236,127,99],
-        [235,125,97],
-        [234,123,96],
-        [233,121,95],
-        [233,120,93],
-        [232,118,92],
-        [231,116,90],
-        [230,114,89],
-        [229,112,88],
-        [228,110,86],
-        [227,108,85],
-        [227,106,83],
-        [226,104,82],
-        [225,102,81],
-        [224,100,79],
-        [223,98,78],
-        [222,96,77],
-        [221,94,75],
-        [220,92,74],
-        [218,90,73],
-        [217,88,71],
-        [216,86,70],
-        [215,84,69],
-        [214,82,67],
-        [213,80,66],
-        [212,78,65],
-        [210,75,64],
-        [209,73,62],
-        [208,71,61],
-        [207,69,60],
-        [205,66,59],
-        [204,64,57],
-        [203,62,56],
-        [202,59,55],
-        [200,57,54],
-        [199,54,53],
-        [198,51,52],
-        [196,49,50],
-        [195,46,49],
-        [193,43,48],
-        [192,40,47],
-        [190,37,46],
-        [189,34,45],
-        [188,30,44],
-        [186,26,43],
-        [185,22,41],
-        [183,17,40],
-        [181,11,39],
-        [180,4,38]
-    ], dtype=int)
-    alpha = np.abs(np.arange(len(cm)) - len(cm)/2)**1.5
-    alpha = (alpha * 255/alpha.max()).astype(int)
+    cm = np.array(
+        [
+            [59, 76, 192],
+            [60, 78, 194],
+            [61, 80, 195],
+            [62, 81, 197],
+            [63, 83, 198],
+            [64, 85, 200],
+            [66, 87, 201],
+            [67, 88, 203],
+            [68, 90, 204],
+            [69, 92, 206],
+            [70, 93, 207],
+            [71, 95, 209],
+            [73, 97, 210],
+            [74, 99, 211],
+            [75, 100, 213],
+            [76, 102, 214],
+            [77, 104, 215],
+            [79, 105, 217],
+            [80, 107, 218],
+            [81, 109, 219],
+            [82, 110, 221],
+            [84, 112, 222],
+            [85, 114, 223],
+            [86, 115, 224],
+            [87, 117, 225],
+            [89, 119, 226],
+            [90, 120, 228],
+            [91, 122, 229],
+            [93, 123, 230],
+            [94, 125, 231],
+            [95, 127, 232],
+            [96, 128, 233],
+            [98, 130, 234],
+            [99, 131, 235],
+            [100, 133, 236],
+            [102, 135, 237],
+            [103, 136, 238],
+            [104, 138, 239],
+            [106, 139, 239],
+            [107, 141, 240],
+            [108, 142, 241],
+            [110, 144, 242],
+            [111, 145, 243],
+            [112, 147, 243],
+            [114, 148, 244],
+            [115, 150, 245],
+            [116, 151, 246],
+            [118, 153, 246],
+            [119, 154, 247],
+            [120, 156, 247],
+            [122, 157, 248],
+            [123, 158, 249],
+            [124, 160, 249],
+            [126, 161, 250],
+            [127, 163, 250],
+            [129, 164, 251],
+            [130, 165, 251],
+            [131, 167, 252],
+            [133, 168, 252],
+            [134, 169, 252],
+            [135, 171, 253],
+            [137, 172, 253],
+            [138, 173, 253],
+            [140, 174, 254],
+            [141, 176, 254],
+            [142, 177, 254],
+            [144, 178, 254],
+            [145, 179, 254],
+            [147, 181, 255],
+            [148, 182, 255],
+            [149, 183, 255],
+            [151, 184, 255],
+            [152, 185, 255],
+            [153, 186, 255],
+            [155, 187, 255],
+            [156, 188, 255],
+            [158, 190, 255],
+            [159, 191, 255],
+            [160, 192, 255],
+            [162, 193, 255],
+            [163, 194, 255],
+            [164, 195, 254],
+            [166, 196, 254],
+            [167, 197, 254],
+            [168, 198, 254],
+            [170, 199, 253],
+            [171, 199, 253],
+            [172, 200, 253],
+            [174, 201, 253],
+            [175, 202, 252],
+            [176, 203, 252],
+            [178, 204, 251],
+            [179, 205, 251],
+            [180, 205, 251],
+            [182, 206, 250],
+            [183, 207, 250],
+            [184, 208, 249],
+            [185, 208, 248],
+            [187, 209, 248],
+            [188, 210, 247],
+            [189, 210, 247],
+            [190, 211, 246],
+            [192, 212, 245],
+            [193, 212, 245],
+            [194, 213, 244],
+            [195, 213, 243],
+            [197, 214, 243],
+            [198, 214, 242],
+            [199, 215, 241],
+            [200, 215, 240],
+            [201, 216, 239],
+            [203, 216, 238],
+            [204, 217, 238],
+            [205, 217, 237],
+            [206, 217, 236],
+            [207, 218, 235],
+            [208, 218, 234],
+            [209, 219, 233],
+            [210, 219, 232],
+            [211, 219, 231],
+            [213, 219, 230],
+            [214, 220, 229],
+            [215, 220, 228],
+            [216, 220, 227],
+            [217, 220, 225],
+            [218, 220, 224],
+            [219, 220, 223],
+            [220, 221, 222],
+            [221, 221, 221],
+            [222, 220, 219],
+            [223, 220, 218],
+            [224, 219, 216],
+            [225, 219, 215],
+            [226, 218, 214],
+            [227, 218, 212],
+            [228, 217, 211],
+            [229, 216, 209],
+            [230, 216, 208],
+            [231, 215, 206],
+            [232, 215, 205],
+            [232, 214, 203],
+            [233, 213, 202],
+            [234, 212, 200],
+            [235, 212, 199],
+            [236, 211, 197],
+            [236, 210, 196],
+            [237, 209, 194],
+            [238, 209, 193],
+            [238, 208, 191],
+            [239, 207, 190],
+            [240, 206, 188],
+            [240, 205, 187],
+            [241, 204, 185],
+            [241, 203, 184],
+            [242, 202, 182],
+            [242, 201, 181],
+            [243, 200, 179],
+            [243, 199, 178],
+            [244, 198, 176],
+            [244, 197, 174],
+            [245, 196, 173],
+            [245, 195, 171],
+            [245, 194, 170],
+            [245, 193, 168],
+            [246, 192, 167],
+            [246, 191, 165],
+            [246, 190, 163],
+            [246, 188, 162],
+            [247, 187, 160],
+            [247, 186, 159],
+            [247, 185, 157],
+            [247, 184, 156],
+            [247, 182, 154],
+            [247, 181, 152],
+            [247, 180, 151],
+            [247, 178, 149],
+            [247, 177, 148],
+            [247, 176, 146],
+            [247, 174, 145],
+            [247, 173, 143],
+            [247, 172, 141],
+            [247, 170, 140],
+            [247, 169, 138],
+            [247, 167, 137],
+            [247, 166, 135],
+            [246, 164, 134],
+            [246, 163, 132],
+            [246, 161, 131],
+            [246, 160, 129],
+            [245, 158, 127],
+            [245, 157, 126],
+            [245, 155, 124],
+            [244, 154, 123],
+            [244, 152, 121],
+            [244, 151, 120],
+            [243, 149, 118],
+            [243, 147, 117],
+            [242, 146, 115],
+            [242, 144, 114],
+            [241, 142, 112],
+            [241, 141, 111],
+            [240, 139, 109],
+            [240, 137, 108],
+            [239, 136, 106],
+            [238, 134, 105],
+            [238, 132, 103],
+            [237, 130, 102],
+            [236, 129, 100],
+            [236, 127, 99],
+            [235, 125, 97],
+            [234, 123, 96],
+            [233, 121, 95],
+            [233, 120, 93],
+            [232, 118, 92],
+            [231, 116, 90],
+            [230, 114, 89],
+            [229, 112, 88],
+            [228, 110, 86],
+            [227, 108, 85],
+            [227, 106, 83],
+            [226, 104, 82],
+            [225, 102, 81],
+            [224, 100, 79],
+            [223, 98, 78],
+            [222, 96, 77],
+            [221, 94, 75],
+            [220, 92, 74],
+            [218, 90, 73],
+            [217, 88, 71],
+            [216, 86, 70],
+            [215, 84, 69],
+            [214, 82, 67],
+            [213, 80, 66],
+            [212, 78, 65],
+            [210, 75, 64],
+            [209, 73, 62],
+            [208, 71, 61],
+            [207, 69, 60],
+            [205, 66, 59],
+            [204, 64, 57],
+            [203, 62, 56],
+            [202, 59, 55],
+            [200, 57, 54],
+            [199, 54, 53],
+            [198, 51, 52],
+            [196, 49, 50],
+            [195, 46, 49],
+            [193, 43, 48],
+            [192, 40, 47],
+            [190, 37, 46],
+            [189, 34, 45],
+            [188, 30, 44],
+            [186, 26, 43],
+            [185, 22, 41],
+            [183, 17, 40],
+            [181, 11, 39],
+            [180, 4, 38],
+        ],
+        dtype=int,
+    )
+    alpha = np.abs(np.arange(len(cm)) - len(cm) / 2) ** 1.5
+    alpha = (alpha * 255 / alpha.max()).astype(int)
     cm = np.append(cm, alpha[:, None], axis=1)
     return cm
 
 
 def _label_cm():
-   # colormap containing the label colors
-    cm = np.zeros((255,4),dtype = int)
-    cm[0,0:3] = [255,120,0]
-    cm[1,0:3] = [230,230,230]
-    cm[2,0:3] = [129,129,129]
-    cm[3,0:3] = [104,163,255]
-    cm[4,0:3] = [255,239,179]
-    cm[5,0:3] = [255,166,133]
-    cm[6,0:3] = [255,240,0]
-    cm[7,0:3] = [255,239,179]
-    cm[8,0:3] = [255,138,57]
-    cm[9,0:3] = [0,65,142]
-    cm[10,0:3] = [188,255,0]
-    cm[11,0:3] = [0,76,255]
-    cm[12,0:3] = [148,255,0]
-    cm[13,0:3] = [24,0,255]
-    cm[14,0:3] = [108,255,0]
-    cm[15,0:3] = [84,0,255]
-    cm[16,0:3] = [68,255,0]
-    cm[17,0:3] = [104,0,255]
-    cm[18,0:3] = [0,255,52]
-    cm[19,0:3] = [184,0,255]
-    cm[:,3] = 255
+    # colormap containing the label colors
+    cm = np.zeros((255, 4), dtype=int)
+    cm[0, 0:3] = [255, 120, 0]
+    cm[1, 0:3] = [230, 230, 230]
+    cm[2, 0:3] = [129, 129, 129]
+    cm[3, 0:3] = [104, 163, 255]
+    cm[4, 0:3] = [255, 239, 179]
+    cm[5, 0:3] = [255, 166, 133]
+    cm[6, 0:3] = [255, 240, 0]
+    cm[7, 0:3] = [255, 239, 179]
+    cm[8, 0:3] = [255, 138, 57]
+    cm[9, 0:3] = [0, 65, 142]
+    cm[10, 0:3] = [188, 255, 0]
+    cm[11, 0:3] = [0, 76, 255]
+    cm[12, 0:3] = [148, 255, 0]
+    cm[13, 0:3] = [24, 0, 255]
+    cm[14, 0:3] = [108, 255, 0]
+    cm[15, 0:3] = [84, 0, 255]
+    cm[16, 0:3] = [68, 255, 0]
+    cm[17, 0:3] = [104, 0, 255]
+    cm[18, 0:3] = [0, 255, 52]
+    cm[19, 0:3] = [184, 0, 255]
+    cm[:, 3] = 255
     return cm
 
 
 def _gray_red_lightblue_blue_cm():
-   # simple colormap to visualize coils
-    cm = np.zeros((255,4),dtype = int)
-    cm[0:64,0:3] = 132 # first quarter is gray
-    cm[64:128,0] = 255 # second quarter is red
-    cm[128:192,2] = 255 # third quarter is lightblue
-    cm[128:192,0:2] = 127
-    cm[192:,2] = 255 # forth quarter is blue
-    cm[0:128,3] = 60 # the coil is transparent
-    cm[128:,3] = 114 # the logo is a bit less transparent
+    # simple colormap to visualize coils
+    cm = np.zeros((255, 4), dtype=int)
+    cm[0:64, 0:3] = 132  # first quarter is gray
+    cm[64:128, 0] = 255  # second quarter is red
+    cm[128:192, 2] = 255  # third quarter is lightblue
+    cm[128:192, 0:2] = 127
+    cm[192:, 2] = 255  # forth quarter is blue
+    cm[0:128, 3] = 60  # the coil is transparent
+    cm[128:, 3] = 114  # the logo is a bit less transparent
     return cm

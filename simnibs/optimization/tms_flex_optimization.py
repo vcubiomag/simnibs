@@ -46,7 +46,7 @@ class TmsFlexOptimization:
     ------------------------
     settings_dict: (optional) dict
         Dictionary containing parameter as key value pairs
-        
+
     date: str | None
         Date when the optimization struct was initiated
     time_str: str | None
@@ -75,7 +75,7 @@ class TmsFlexOptimization:
     method: str | None
         The method of optimization {"distance", "emag"}
     roi: RegionOfInterest | None
-        The region of interest in which the e field is simulated, method = "emag" 
+        The region of interest in which the e field is simulated, method = "emag"
     disable_SPR_for_volume_roi: bool
         Weather to use SPR interpolation for volume rois, default True
     distance: float
@@ -101,7 +101,7 @@ class TmsFlexOptimization:
         Settings for the scipy direct global optimization
     l_bfgs_b_args: dict
         Settings for the scipy L-BFGS-B local optimization
-        
+
     """
 
     date: str | None
@@ -192,7 +192,7 @@ class TmsFlexOptimization:
 
         self._prepared = False
         self._log_handlers = []
-        
+
         self.solver_options = "pardiso"
 
         if settings_dict:
@@ -326,7 +326,7 @@ class TmsFlexOptimization:
                 self.global_rotation_ranges = [[-20, 20], [-20, 20], [-5, 5]]
         else:
             raise ValueError("method should be 'distance' or 'emag'")
-        
+
         self._global_translation_ranges = np.array(self.global_translation_ranges)
         self._global_rotation_ranges = np.array(self.global_rotation_ranges)
 
@@ -381,10 +381,12 @@ class TmsFlexOptimization:
         self._log_handlers += [fh]
 
         if summary:
-            fn_summary = os.path.join(self.path_optimization, 'summary.txt')
-            fh_s = logging.FileHandler(fn_summary, mode='w')
-            fh_s.setFormatter(logging.Formatter('%(message)s'))
-            fh_s.setLevel(26) # 25 is used by normal FEM for summary; using 26 here to not induced those summaries
+            fn_summary = os.path.join(self.path_optimization, "summary.txt")
+            fh_s = logging.FileHandler(fn_summary, mode="w")
+            fh_s.setFormatter(logging.Formatter("%(message)s"))
+            fh_s.setLevel(
+                26
+            )  # 25 is used by normal FEM for summary; using 26 here to not induced those summaries
             logger.addHandler(fh_s)
             self._log_handlers += [fh_s]
 
@@ -419,18 +421,20 @@ class TmsFlexOptimization:
         if not cpus is None:
             logger.info(f"Attempting to limit number of threads to {cpus}")
             from numba import set_num_threads
+
             set_num_threads(int(cpus))
             from numba import get_num_threads
+
             logger.info(f"Numba reports {get_num_threads()} threads available")
 
         self._prepare()
 
         if self.pos is None:
             raise AttributeError("pos is None")
-        
+
         if self.fnamecoil is None:
             raise AttributeError("fnamecoil is None")
-        
+
         if self._mesh is None:
             raise AttributeError("mesh is not loaded")
 
@@ -442,38 +446,45 @@ class TmsFlexOptimization:
         logger.info(f"Running optimization ({self.method})")
         # Run simulations
         if self.method == "distance":
-            initial_cost, optimized_cost, opt_matsimnibs, direct, penalties = optimize_distance(
-                self._coil,
-                self._mesh,
-                self.pos.matsimnibs,
-                self.distance,
-                self._global_translation_ranges,
-                self._global_rotation_ranges,
-                self.dither_skip,
-                self.run_global_optimization,
-                self.run_local_optimization,
-                self.direct_args,
-                self.l_bfgs_b_args,
-            )
-        elif self.method == "emag":
-            initial_cost, optimized_cost, opt_matsimnibs, optimized_e_mag, direct, penalties = (
-                optimize_e_mag(
+            initial_cost, optimized_cost, opt_matsimnibs, direct, penalties = (
+                optimize_distance(
                     self._coil,
                     self._mesh,
-                    self._roi,
                     self.pos.matsimnibs,
                     self.distance,
                     self._global_translation_ranges,
                     self._global_rotation_ranges,
                     self.dither_skip,
-                    self.fem_evaluation_cutoff,
                     self.run_global_optimization,
                     self.run_local_optimization,
                     self.direct_args,
                     self.l_bfgs_b_args,
-                    self.solver_options,
-                    cpus=cpus
                 )
+            )
+        elif self.method == "emag":
+            (
+                initial_cost,
+                optimized_cost,
+                opt_matsimnibs,
+                optimized_e_mag,
+                direct,
+                penalties,
+            ) = optimize_e_mag(
+                self._coil,
+                self._mesh,
+                self._roi,
+                self.pos.matsimnibs,
+                self.distance,
+                self._global_translation_ranges,
+                self._global_rotation_ranges,
+                self.dither_skip,
+                self.fem_evaluation_cutoff,
+                self.run_global_optimization,
+                self.run_local_optimization,
+                self.direct_args,
+                self.l_bfgs_b_args,
+                self.solver_options,
+                cpus=cpus,
             )
         else:
             raise ValueError("method should be 'distance' or 'emag'")
@@ -494,7 +505,8 @@ class TmsFlexOptimization:
         mesh_name = os.path.splitext(os.path.basename(self._mesh.fn))[0]
         coil_name = os.path.splitext(os.path.basename(self.fnamecoil))[0]
         fn_optimized_coil = os.path.join(
-            self.path_optimization, f"{mesh_name}_{coil_name}_{self.method}-optimization.tcd"
+            self.path_optimization,
+            f"{mesh_name}_{coil_name}_{self.method}-optimization.tcd",
         )
         self._coil.freeze_deformations().write(fn_optimized_coil)
 
@@ -529,10 +541,10 @@ class TmsFlexOptimization:
             rois = []
             roi_names = []
             base_head_mesh = None
-            if self.method == 'emag':
+            if self.method == "emag":
                 rois.append(self.roi)
-                roi_names.append('roi')
-            elif self.method == 'distance':
+                roi_names.append("roi")
+            elif self.method == "distance":
                 base_head_mesh = self._mesh
 
             roi_result_vis = RoiResultVisualization(
@@ -542,7 +554,7 @@ class TmsFlexOptimization:
                 f"{mesh_name}_{coil_name}_{self.method}-optimization",
                 roi_names,
                 [""],
-                base_head_mesh
+                base_head_mesh,
             )
             roi_result_vis.create_visualization()
             vis_msh_file_names = roi_result_vis.write_visualization()
@@ -555,7 +567,7 @@ class TmsFlexOptimization:
                     self.pos.matsimnibs,
                     visibility=0,
                     infix="-initial",
-                    axis_vectors=True
+                    axis_vectors=True,
                 )
 
             if roi_result_vis.has_surface_mesh():
@@ -566,30 +578,43 @@ class TmsFlexOptimization:
                     self.pos.matsimnibs,
                     visibility=0,
                     infix="-initial",
-                    axis_vectors=True
+                    axis_vectors=True,
                 )
             roi_result_vis.write_gmsh_options()
 
-        e_field_log = f"Optimized mean E-field magnitude in ROI: {np.mean(optimized_e_mag)}{os.linesep}" if self.method == "emag" else f""
-        logger.log(26,
-            (f"{os.linesep}===============RESULT SUMMARY==============={os.linesep}"
-            f"Optimized coil path: {fn_optimized_coil}{os.linesep}"
-            f"Initial cost: {initial_cost}{os.linesep}"
-            f"Optimized cost: {optimized_cost}{os.linesep}"
-            f"{e_field_log}"
-            f"Optimized matsimnibs:{os.linesep}{opt_matsimnibs}")
+        e_field_log = (
+            f"Optimized mean E-field magnitude in ROI: {np.mean(optimized_e_mag)}{os.linesep}"
+            if self.method == "emag"
+            else f""
+        )
+        logger.log(
+            26,
+            (
+                f"{os.linesep}===============RESULT SUMMARY==============={os.linesep}"
+                f"Optimized coil path: {fn_optimized_coil}{os.linesep}"
+                f"Initial cost: {initial_cost}{os.linesep}"
+                f"Optimized cost: {optimized_cost}{os.linesep}"
+                f"{e_field_log}"
+                f"Optimized matsimnibs:{os.linesep}{opt_matsimnibs}"
+            ),
         )
 
         if penalties["intersection_penalty"] > 3:
-            logger.log(26, "Warning: Coil head intersection detected in final result. Try to rerun the optimization with relaxed constrains or a different starting position")
+            logger.log(
+                26,
+                "Warning: Coil head intersection detected in final result. Try to rerun the optimization with relaxed constrains or a different starting position",
+            )
         if penalties["self_intersection_penalty"] > 3:
-            logger.log(26, "Warning: Coil self intersection detected in final result. Try to rerun the optimization with relaxed constrains or a different starting position")
+            logger.log(
+                26,
+                "Warning: Coil self intersection detected in final result. Try to rerun the optimization with relaxed constrains or a different starting position",
+            )
 
         self._finish_logger()
 
         if self.run_simulation and self.open_in_gmsh:
-                for vis_msh_file_name in vis_msh_file_names:
-                    mesh_io.open_in_gmsh(vis_msh_file_name, True)
+            for vis_msh_file_name in vis_msh_file_names:
+                mesh_io.open_in_gmsh(vis_msh_file_name, True)
 
     def to_dict(self) -> dict:
         """Makes a dictionary storing all settings as key value pairs
@@ -825,7 +850,10 @@ def _get_fast_intersection_penalty(
             )
             voxel_volume1 = element_voxel_volumes[intersection_pair[1]]
             intersections = scipy.ndimage.map_coordinates(
-                voxel_volume1.astype(np.float32), indexes_in_vox2, order=order, prefilter=False
+                voxel_volume1.astype(np.float32),
+                indexes_in_vox2,
+                order=order,
+                prefilter=False,
             )
             self_intersection_quibic_mm += np.sum(intersections * dither_factors)
 
@@ -1047,7 +1075,6 @@ def optimize_distance(
         )
         penalties["intersection_penalty"] = intersection_penalty
         penalties["self_intersection_penalty"] = self_intersection_penalty
-
 
         f = distance_penalty + (intersection_penalty + self_intersection_penalty)
 
@@ -1317,8 +1344,8 @@ def optimize_e_mag(
     local_optimization: bool = True,
     direct_args: dict | None = None,
     l_bfgs_b_args: dict | None = None,
-    solver_options = "pardiso",
-    cpus = 1,
+    solver_options="pardiso",
+    cpus=1,
     debug: bool = False,
 ) -> tuple[float, float, npt.NDArray[np.float_], npt.NDArray[np.float_], list, dict]:
     """Optimizes the deformations of the coil elements as well as the global transformation to maximize the mean e-field magnitude in the ROI while preventing intersections of the
@@ -1444,7 +1471,14 @@ def optimize_e_mag(
         )
 
     fem = OnlineFEM(
-        head_mesh, "TMS", roi, coil=coil_sampled, dataType=[0], useElements=False, solver_options=solver_options, cpus=cpus
+        head_mesh,
+        "TMS",
+        roi,
+        coil=coil_sampled,
+        dataType=[0],
+        useElements=False,
+        solver_options=solver_options,
+        cpus=cpus,
     )
 
     initial_deformation_settings = np.array(
@@ -1578,4 +1612,11 @@ def optimize_e_mag(
             fs,
         )
     else:
-        return initial_cost, optimized_cost, result_affine, optimized_e_mag, opt_results, penalties
+        return (
+            initial_cost,
+            optimized_cost,
+            result_affine,
+            optimized_e_mag,
+            opt_results,
+            penalties,
+        )

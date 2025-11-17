@@ -27,58 +27,81 @@ class MeshingError(ValueError):
 
 def _write_inr(image, voxel_dims, fn_out):
     if image.ndim != 3:
-        raise MeshingError('Nifti volume must have 3 dimensions')
+        raise MeshingError("Nifti volume must have 3 dimensions")
     if len(voxel_dims) != 3:
-        raise MeshingError('Voxel_dims must have 3 dimensions')
+        raise MeshingError("Voxel_dims must have 3 dimensions")
 
     # Figure out data type and translate it to inria data types
     if image.dtype in [np.uint8, np.uint16]:
-        inria_dtype = 'unsigned fixed'
+        inria_dtype = "unsigned fixed"
     elif image.dtype in [np.float32, np.float64]:
-        inria_dtype = 'float'
+        inria_dtype = "float"
     else:
         raise MeshingError(
-            f'Image data type: {image.dtype} not compatible. '
-            f'compatible types are: uint8, uint16, float32, float64')
+            f"Image data type: {image.dtype} not compatible. "
+            f"compatible types are: uint8, uint16, float32, float64"
+        )
 
     n_bits = 8 * image.itemsize
-    with open(fn_out, 'bw') as f:
-        header = b'#INRIMAGE-4#{\n'
-        header += 'XDIM={0}\nYDIM={1}\nZDIM={2}\nVDIM=1\n'.format(*image.shape).encode()
-        header += f'TYPE={inria_dtype}\nPIXSIZE={n_bits} bits\nCPU=decm\n'.encode()
-        header += 'VX={0}\nVY={1}\nVZ={2}\n'.format(*voxel_dims).encode()
+    with open(fn_out, "bw") as f:
+        header = b"#INRIMAGE-4#{\n"
+        header += "XDIM={0}\nYDIM={1}\nZDIM={2}\nVDIM=1\n".format(*image.shape).encode()
+        header += f"TYPE={inria_dtype}\nPIXSIZE={n_bits} bits\nCPU=decm\n".encode()
+        header += "VX={0}\nVY={1}\nVZ={2}\n".format(*voxel_dims).encode()
         # fill out remaining part of the header
-        header += (252-len(header)) * b'\n' + b'##}\n'
+        header += (252 - len(header)) * b"\n" + b"##}\n"
         f.write(header)
-        f.write(image.tobytes(order='F'))
+        f.write(image.tobytes(order="F"))
 
 
-def _mesh_image(image, voxel_dims, facet_angle,
-                facet_size, facet_distance,
-                cell_radius_edge_ratio, cell_size,
-                num_threads, do_perturb, do_exude, do_lloyd):
-
+def _mesh_image(
+    image,
+    voxel_dims,
+    facet_angle,
+    facet_size,
+    facet_distance,
+    cell_radius_edge_ratio,
+    cell_size,
+    num_threads,
+    do_perturb,
+    do_exude,
+    do_lloyd,
+):
     with tempfile.TemporaryDirectory() as tmpdir:
-        fn_image = os.path.join(tmpdir, 'image.inr')
-        fn_mesh = os.path.join(tmpdir, 'mesh.mesh')
+        fn_image = os.path.join(tmpdir, "image.inr")
+        fn_mesh = os.path.join(tmpdir, "mesh.mesh")
         _write_inr(image, voxel_dims, fn_image)
         if type(cell_size) is np.ndarray:
             ret = cgal.mesh_image_sizing_field(
-                    fn_image.encode(), fn_mesh.encode(),
-                    facet_angle, facet_size, facet_distance,
-                    cell_radius_edge_ratio, cell_size,
-                    num_threads, do_perturb, do_exude, do_lloyd,
-                 )
+                fn_image.encode(),
+                fn_mesh.encode(),
+                facet_angle,
+                facet_size,
+                facet_distance,
+                cell_radius_edge_ratio,
+                cell_size,
+                num_threads,
+                do_perturb,
+                do_exude,
+                do_lloyd,
+            )
         else:
             ret = cgal.mesh_image(
-                    fn_image.encode(), fn_mesh.encode(),
-                    facet_angle, facet_size, facet_distance,
-                    cell_radius_edge_ratio, cell_size,
-                    num_threads, do_perturb, do_exude, do_lloyd,
-                 )
+                fn_image.encode(),
+                fn_mesh.encode(),
+                facet_angle,
+                facet_size,
+                facet_distance,
+                cell_radius_edge_ratio,
+                cell_size,
+                num_threads,
+                do_perturb,
+                do_exude,
+                do_lloyd,
+            )
 
         if ret != 0:
-            raise MeshingError('There was an error while meshing the image')
+            raise MeshingError("There was an error while meshing the image")
 
         mesh = mesh_io.read_medit(fn_mesh)
     # In concurrent meshing there might be some spurious nodes
@@ -89,17 +112,17 @@ def _mesh_image(image, voxel_dims, facet_angle,
 
 
 def _decompose_affine(affine):
-    ''' Decompose affine transformation into the form A = RZS
+    """Decompose affine transformation into the form A = RZS
     Where R is a rotation matriz, Z a scaling matrix and S a shearing matrix
-    '''
+    """
     if np.isclose(np.linalg.det(affine), 0):
-        raise ValueError('Affine matrix is singular!')
+        raise ValueError("Affine matrix is singular!")
     rot, z = np.linalg.qr(affine[:3, :3])
     scaling = np.diagonal(z)
     rot *= np.sign(scaling)
     z *= np.sign(scaling)[:, None]
     scaling = np.abs(scaling)
-    shearing = np.diag(1/scaling).dot(z)
+    shearing = np.diag(1 / scaling).dot(z)
     return rot, scaling, shearing
 
 
@@ -127,17 +150,25 @@ def _resample2iso(image, affine, sampling_rate=1, order=1):
         np.linalg.inv(M),
         output_shape=target_shape,
         output=image.dtype,
-        order=order
+        order=order,
     )
     return image_resampled, new_affine
 
 
-def image2mesh(image, affine, facet_angle=30,
-               facet_size=None, facet_distance=None,
-               cell_radius_edge_ratio=3, cell_size=None,
-               num_threads=2, do_perturb=False, do_exude=False, do_lloyd=False
-    ):
-    ''' Creates a mesh from a 3D image
+def image2mesh(
+    image,
+    affine,
+    facet_angle=30,
+    facet_size=None,
+    facet_distance=None,
+    cell_radius_edge_ratio=3,
+    cell_size=None,
+    num_threads=2,
+    do_perturb=False,
+    do_exude=False,
+    do_lloyd=False,
+):
+    """Creates a mesh from a 3D image
 
     Parameters
     ------------
@@ -197,15 +228,15 @@ def image2mesh(image, affine, facet_angle=30,
     References
     -----------
     https://doc.cgal.org/latest/Mesh_3/index.html
-    '''
+    """
 
     if image.dtype not in [np.uint8, np.uint16]:
-        raise MeshingError('Image must be of type uint8 or uint16')
+        raise MeshingError("Image must be of type uint8 or uint16")
 
     rot, voxel_dims, shearing = _decompose_affine(affine)
 
-    if not np.allclose(shearing, np.eye(3), atol=1.e-5):
-        raise ValueError('Affine matrix has a shearing component')
+    if not np.allclose(shearing, np.eye(3), atol=1.0e-5):
+        raise ValueError("Affine matrix has a shearing component")
 
     if facet_size is None:
         facet_size = min(voxel_dims)
@@ -216,30 +247,40 @@ def image2mesh(image, affine, facet_angle=30,
     if cell_size is None:
         cell_size = min(voxel_dims)
 
-    if type(cell_size) is np.ndarray or\
-       type(facet_size) is np.ndarray or \
-       type(facet_distance) is np.ndarray:
-
+    if (
+        type(cell_size) is np.ndarray
+        or type(facet_size) is np.ndarray
+        or type(facet_distance) is np.ndarray
+    ):
         if type(cell_size) is np.ndarray:
             assert cell_size.shape == image.shape
         else:
-            cell_size = cell_size * np.ones_like(image, dtype=np.float32, order='F') 
+            cell_size = cell_size * np.ones_like(image, dtype=np.float32, order="F")
 
         if type(facet_size) is np.ndarray:
             assert facet_size.shape == facet_size.shape
         else:
-            facet_size = facet_size * np.ones_like(image, dtype=np.float32, order='F') 
+            facet_size = facet_size * np.ones_like(image, dtype=np.float32, order="F")
 
         if type(facet_distance) is np.ndarray:
             assert facet_distance.shape == facet_distance.shape
         else:
-            facet_distance = facet_distance * np.ones_like(image, dtype=np.float32, order='F') 
+            facet_distance = facet_distance * np.ones_like(
+                image, dtype=np.float32, order="F"
+            )
 
     mesh = _mesh_image(
-        image, voxel_dims,
-        facet_angle, facet_size, facet_distance,
-        cell_radius_edge_ratio, cell_size,
-        num_threads, do_perturb, do_exude, do_lloyd
+        image,
+        voxel_dims,
+        facet_angle,
+        facet_size,
+        facet_distance,
+        cell_radius_edge_ratio,
+        cell_size,
+        num_threads,
+        do_perturb,
+        do_exude,
+        do_lloyd,
     )
     # Rotate nodes
     mesh.nodes.node_coord = rot.dot(mesh.nodes.node_coord.T).T
@@ -251,32 +292,45 @@ def image2mesh(image, affine, facet_angle=30,
     return mesh
 
 
-def _mesh_surfaces(surfaces, subdomains, facet_angle,
-                   facet_size, facet_distance,
-                   cell_radius_edge_ratio, cell_size,
-                   optimize):
+def _mesh_surfaces(
+    surfaces,
+    subdomains,
+    facet_angle,
+    facet_size,
+    facet_distance,
+    cell_radius_edge_ratio,
+    cell_size,
+    optimize,
+):
     if len(surfaces) != len(subdomains):
-        raise MeshingError('Please define one surface per subdomain')
+        raise MeshingError("Please define one surface per subdomain")
 
     with tempfile.TemporaryDirectory() as tmpdir:
         fn_surfaces = []
         sd_formated = []
         for surf, sd in zip(surfaces, subdomains):
             if len(sd) != 2:
-                raise MeshingError('Subdomain speficifation must have exactly 2 entries')
-            fn = os.path.join(tmpdir, f'{sd[0]:03d}-{sd[1]:03d}.off')
+                raise MeshingError(
+                    "Subdomain speficifation must have exactly 2 entries"
+                )
+            fn = os.path.join(tmpdir, f"{sd[0]:03d}-{sd[1]:03d}.off")
             mesh_io.write_off(surf, fn)
             fn_surfaces.append(fn.encode())
             sd_formated.append((sd[0], sd[1]))
-        fn_mesh = os.path.join(tmpdir, 'mesh.mesh')
+        fn_mesh = os.path.join(tmpdir, "mesh.mesh")
         ret = cgal.mesh_surfaces(
-                fn_surfaces, sd_formated, fn_mesh.encode(),
-                facet_angle, facet_size, facet_distance,
-                cell_radius_edge_ratio, cell_size,
-                optimize
-               )
+            fn_surfaces,
+            sd_formated,
+            fn_mesh.encode(),
+            facet_angle,
+            facet_size,
+            facet_distance,
+            cell_radius_edge_ratio,
+            cell_size,
+            optimize,
+        )
         if ret != 0:
-            raise MeshingError('There was an error while meshing the surfaces')
+            raise MeshingError("There was an error while meshing the surfaces")
         mesh = mesh_io.read_medit(fn_mesh)
 
     # In concurrent meshing there might be some spurious nodes
@@ -286,10 +340,16 @@ def _mesh_surfaces(surfaces, subdomains, facet_angle,
     return mesh
 
 
-def remesh(mesh, facet_size, cell_size,
-           facet_angle=30, facet_distance=0.1,
-           cell_radius_edge_ratio=2, optimize=True):
-    ''' Extracts the mesh subdomains and recreate the mesh usign CGAL
+def remesh(
+    mesh,
+    facet_size,
+    cell_size,
+    facet_angle=30,
+    facet_distance=0.1,
+    cell_radius_edge_ratio=2,
+    optimize=True,
+):
+    """Extracts the mesh subdomains and recreate the mesh usign CGAL
 
     Parameters
     ------------
@@ -315,7 +375,7 @@ def remesh(mesh, facet_size, cell_size,
     ------------
     msh: simnibs.Msh
         Reconstructed mesh
-    '''
+    """
     # Reconstruct surfaces from tetrahedra
     mesh = mesh.crop_mesh(elm_type=4)
     mesh.reconstruct_surfaces()
@@ -332,9 +392,9 @@ def remesh(mesh, facet_size, cell_size,
     adj_labels_fixed = np.zeros_like(adj_labels)
     adj_labels_fixed[:, 0] = tr_labels
     for i in range(2):
-        adj_labels_fixed[
-            adj_labels[:, i] != tr_labels, 1
-        ] = adj_labels[adj_labels[:, i] != tr_labels, i]
+        adj_labels_fixed[adj_labels[:, i] != tr_labels, 1] = adj_labels[
+            adj_labels[:, i] != tr_labels, i
+        ]
     adj_labels = adj_labels_fixed
     # Go throu all the
     tags = np.unique(tr_labels)
@@ -342,10 +402,8 @@ def remesh(mesh, facet_size, cell_size,
     surfaces = []
     subdomains = []
     for i, t1 in enumerate(tags):
-        for j, t2 in enumerate(tags[i+1:]):
-            tr_interface = \
-                (adj_labels[:, 0] == t1) *\
-                (adj_labels[:, 1] == t2)
+        for j, t2 in enumerate(tags[i + 1 :]):
+            tr_interface = (adj_labels[:, 0] == t1) * (adj_labels[:, 1] == t2)
             if np.any(tr_interface):
                 surfaces.append(
                     mesh.crop_mesh(elements=mesh.elm.triangles[tr_interface])
@@ -353,437 +411,457 @@ def remesh(mesh, facet_size, cell_size,
                 subdomains.append((t1, t2))
 
     mesh = _mesh_surfaces(
-        surfaces, subdomains, facet_angle,
-        facet_size, facet_distance,
-        cell_radius_edge_ratio, cell_size,
-        optimize
+        surfaces,
+        subdomains,
+        facet_angle,
+        facet_size,
+        facet_distance,
+        cell_radius_edge_ratio,
+        cell_size,
+        optimize,
     )
     return mesh
 
 
 def _sizing_field_from_thickness(label, thickness, elem_sizes):
-    ''' Calculates a sizing field from thickness,
-        with the option to define label-wise sizing rules'''
+    """Calculates a sizing field from thickness,
+    with the option to define label-wise sizing rules"""
     # standard mapping
-    slope = elem_sizes['standard']['slope']
-    ranges = elem_sizes['standard']['range']
+    slope = elem_sizes["standard"]["slope"]
+    ranges = elem_sizes["standard"]["range"]
     if ranges[0] > ranges[1]:
-        raise ValueError('Ranges value should be in format (min, max)')
-    field = np.array(slope*thickness, dtype=np.float32, order='F')
+        raise ValueError("Ranges value should be in format (min, max)")
+    field = np.array(slope * thickness, dtype=np.float32, order="F")
     field[field < ranges[0]] = ranges[0]
     field[field > ranges[1]] = ranges[1]
-    
+
     # label-specific mappings
-    if len(elem_sizes)>1:
+    if len(elem_sizes) > 1:
         tissues = list(elem_sizes)
         for i in range(len(tissues)):
-            if tissues[i] == 'standard':
+            if tissues[i] == "standard":
                 continue
-            slope = elem_sizes[tissues[i]]['slope']
-            ranges = elem_sizes[tissues[i]]['range']
+            slope = elem_sizes[tissues[i]]["slope"]
+            ranges = elem_sizes[tissues[i]]["range"]
             if ranges[0] > ranges[1]:
-                raise ValueError('Ranges value should be in format (min, max)')
-            idx = label==int(tissues[i])
-            field[idx] = slope*thickness[idx]
-            idx2 = idx*(field < ranges[0])
+                raise ValueError("Ranges value should be in format (min, max)")
+            idx = label == int(tissues[i])
+            field[idx] = slope * thickness[idx]
+            idx2 = idx * (field < ranges[0])
             field[idx2] = ranges[0]
-            idx2 = idx*(field > ranges[1])
+            idx2 = idx * (field > ranges[1])
             field[idx2] = ranges[1]
     return field
 
 
-def _get_connectivity_matrix(faces, nr_nodes = None):
-    ''' get connectivity matrix of surface nodes from triangles
-    
-        Parameters
-        ----------
-        faces: 
-            n_facesx3 ndarray of triangle nodes
-        nr_nodes: 
-            total number of nodes (set to np.max(faces)+1 if left empty)
-        
-        Returns
-        -------
-        boolean csc sparse matrix (nr_nodes x nr_nodes)
-    '''
+def _get_connectivity_matrix(faces, nr_nodes=None):
+    """get connectivity matrix of surface nodes from triangles
+
+    Parameters
+    ----------
+    faces:
+        n_facesx3 ndarray of triangle nodes
+    nr_nodes:
+        total number of nodes (set to np.max(faces)+1 if left empty)
+
+    Returns
+    -------
+    boolean csc sparse matrix (nr_nodes x nr_nodes)
+    """
     if nr_nodes == None:
-        nr_nodes = np.max(faces)+1
+        nr_nodes = np.max(faces) + 1
     nr_faces = faces.shape[0]
-    
-    i = np.tile( np.arange(nr_faces).reshape(-1,1), (1,3) )
+
+    i = np.tile(np.arange(nr_faces).reshape(-1, 1), (1, 3))
     i = i.reshape(-1)
     j = faces.reshape(-1)
-    ones = np.ones( i.shape[0], dtype=bool)
-    
-    C = scipy.sparse.csr_matrix( (ones, (i,j)), shape=(nr_faces, nr_nodes), dtype=bool )
-    C=C.T*C
-    
-    nonzero, = C.diagonal().nonzero()
+    ones = np.ones(i.shape[0], dtype=bool)
+
+    C = scipy.sparse.csr_matrix((ones, (i, j)), shape=(nr_faces, nr_nodes), dtype=bool)
+    C = C.T * C
+
+    (nonzero,) = C.diagonal().nonzero()
     C[nonzero, nonzero] = 0
     C.eliminate_zeros()
     return C
 
 
 def _get_surfaces(faces, tet_faces, adj_tets, tag, nr_nodes):
-    ''' reconstructs surfaces between tets of different labels
-    
-        Parameters
-        ----------
-        faces: 
-            n_facesx3 ndarray of triangle nodes
-        tet_faces:
-            n_tetsx4 ndarray of tet faces (indices into the faces array)
-        adj_tets: 
-            n_tetx4 ndarray of tet neighbors (-1 in case of "air")
-        tag: 
-            n_tetx1 ndarray of tet labels
-        nr_nodes: 
-            total number of nodes 
-        
-        Returns
-        -------
-        idx_surface_tri: 
-            ndarray of surface triangles (indices into the faces array)
-        face_node_diff: 
-            nr_nodesx1 ndarray indicating difference between number of surface 
-            faces connected to a node and number of neigbhor surface nodes
-        nneighb:
-            nr_nodesx1 ndarray indicating number of neigbhor surface nodes
-        conn_nodes: 
-            connectivity matrix of surface nodes (boolean csc sparse matrix, 
-                                                  nr_nodes x nr_nodes)
-    '''
+    """reconstructs surfaces between tets of different labels
+
+    Parameters
+    ----------
+    faces:
+        n_facesx3 ndarray of triangle nodes
+    tet_faces:
+        n_tetsx4 ndarray of tet faces (indices into the faces array)
+    adj_tets:
+        n_tetx4 ndarray of tet neighbors (-1 in case of "air")
+    tag:
+        n_tetx1 ndarray of tet labels
+    nr_nodes:
+        total number of nodes
+
+    Returns
+    -------
+    idx_surface_tri:
+        ndarray of surface triangles (indices into the faces array)
+    face_node_diff:
+        nr_nodesx1 ndarray indicating difference between number of surface
+        faces connected to a node and number of neigbhor surface nodes
+    nneighb:
+        nr_nodesx1 ndarray indicating number of neigbhor surface nodes
+    conn_nodes:
+        connectivity matrix of surface nodes (boolean csc sparse matrix,
+                                              nr_nodes x nr_nodes)
+    """
     adj_labels = tag[adj_tets]
     adj_labels[adj_tets == -1] = -1
-    adj_diff = adj_labels - tag.reshape((len(tag),1)) != 0
-    adj_diff[tag == -1] = False # no triangles for "air" tetrahedra
-    
+    adj_diff = adj_labels - tag.reshape((len(tag), 1)) != 0
+    adj_diff[tag == -1] = False  # no triangles for "air" tetrahedra
+
     # index of surface faces
     idx_surface_tri = np.unique(tet_faces[adj_diff])
     # node connectivity matrix
     conn_nodes = _get_connectivity_matrix(faces[idx_surface_tri], nr_nodes)
     # number of neighbor nodes
-    nneighb=np.asarray( conn_nodes.sum(axis=1) ).reshape(-1)
+    nneighb = np.asarray(conn_nodes.sum(axis=1)).reshape(-1)
     # number of surface faces connected to each node
-    nfaces=np.bincount(faces[idx_surface_tri].reshape(-1),minlength=nr_nodes)
+    nfaces = np.bincount(faces[idx_surface_tri].reshape(-1), minlength=nr_nodes)
     # face_node_diff > 0 indicates a more complex surface topology (T-junction, ...)
-    face_node_diff = nfaces-nneighb
+    face_node_diff = nfaces - nneighb
 
     return idx_surface_tri, face_node_diff, nneighb, conn_nodes
-    
-    
-def _get_elm_and_new_tag(tag, adj_tets, nr_diff, return_diffmat = False):
-    ''' get index of all tets with nr_diff (2, 3 or 4) neigboring tets 
-        with different labels and returns also the labels of these neighbor tets
-                
-        Parameters
-        ----------
-        tag: 
-            n_tetx1 ndarray of tet labels
-        adj_tets: 
-            n_tetx4 ndarray of tet neighbors (-1 in case of "air")
-        nr_diff: 
-            required number of neighbors with different labels (2, 3 or 4)
-        return_diffmat (optional; Default: False):
-            whether to return a boolean matrix indicating neighbors with different labels
-        
-        Returns
-        -------
-        idx_elm:
-            ndarray of selected tets
-        new_tag:
-            new tag based on the neighbor labels
-        adj_diff (optional):
-            n_tetx4 boolean ndarray indicating neighbor tets with different labels
-              
-        Notes
-        -------
-        * nr_diff == 4: the most frequent neighbor label is selected
-        * nr_diff == 3: only tets are returned where at least 2 neighbors 
-                        have the same label; the most frequent neighbor label is
-                        returned
-        * nr_diff == 2: only tets are returned where the two neighbors 
-                        have the same label
-    '''
+
+
+def _get_elm_and_new_tag(tag, adj_tets, nr_diff, return_diffmat=False):
+    """get index of all tets with nr_diff (2, 3 or 4) neigboring tets
+    with different labels and returns also the labels of these neighbor tets
+
+    Parameters
+    ----------
+    tag:
+        n_tetx1 ndarray of tet labels
+    adj_tets:
+        n_tetx4 ndarray of tet neighbors (-1 in case of "air")
+    nr_diff:
+        required number of neighbors with different labels (2, 3 or 4)
+    return_diffmat (optional; Default: False):
+        whether to return a boolean matrix indicating neighbors with different labels
+
+    Returns
+    -------
+    idx_elm:
+        ndarray of selected tets
+    new_tag:
+        new tag based on the neighbor labels
+    adj_diff (optional):
+        n_tetx4 boolean ndarray indicating neighbor tets with different labels
+
+    Notes
+    -------
+    * nr_diff == 4: the most frequent neighbor label is selected
+    * nr_diff == 3: only tets are returned where at least 2 neighbors
+                    have the same label; the most frequent neighbor label is
+                    returned
+    * nr_diff == 2: only tets are returned where the two neighbors
+                    have the same label
+    """
     adj_labels = tag[adj_tets]
     adj_labels[adj_tets == -1] = -1
-    adj_diff = adj_labels - tag.reshape((len(tag),1)) != 0
-    
+    adj_diff = adj_labels - tag.reshape((len(tag), 1)) != 0
+
     idx_elm = np.where(np.sum(adj_diff, axis=1) == nr_diff)[0]
     adj_labels = adj_labels[idx_elm]
-    adj_labels = adj_labels[adj_diff[idx_elm]].reshape((-1,nr_diff))
-    
+    adj_labels = adj_labels[adj_diff[idx_elm]].reshape((-1, nr_diff))
+
     if nr_diff == 4:
         new_tag = scipy.stats.mode(adj_labels, axis=1, keepdims=True)[0].flatten()
     elif nr_diff == 3:
         new_tag, n_occ = scipy.stats.mode(adj_labels, axis=1, keepdims=True)
         # ensure that at least 2 neighbors have the same label
-        idx_relabel = (n_occ > 1).flatten() 
+        idx_relabel = (n_occ > 1).flatten()
         idx_elm = idx_elm[idx_relabel]
         new_tag = new_tag[idx_relabel].flatten()
     elif nr_diff == 2:
         # ensure that the two neighbors have the same label
         idx_relabel = np.diff(adj_labels).flatten() == 0
         idx_elm = idx_elm[idx_relabel]
-        new_tag = adj_labels[idx_relabel,0]
+        new_tag = adj_labels[idx_relabel, 0]
     else:
-        raise ValueError('nr_diff has to be 2,3 or 4')
-                
+        raise ValueError("nr_diff has to be 2,3 or 4")
+
     if return_diffmat:
         return idx_elm, new_tag, adj_diff
     return idx_elm, new_tag
 
 
-def _get_test_nodes(faces, tet_faces, adj_tets, idx_surface_tri, face_node_diff, 
-                    nneighb, node_coord, tag, node_number_list, fast_track=False):
-    ''' returns indices of the to-be-tested surface nodes that might potentially
-        be a spike
+def _get_test_nodes(
+    faces,
+    tet_faces,
+    adj_tets,
+    idx_surface_tri,
+    face_node_diff,
+    nneighb,
+    node_coord,
+    tag,
+    node_number_list,
+    fast_track=False,
+):
+    """returns indices of the to-be-tested surface nodes that might potentially
+    be a spike
 
-        Parameters
-        ----------
-        faces: 
-            n_facesx3 ndarray of triangle nodes
-        tet_faces:
-            n_tetsx4 ndarray of tet faces (indices into the faces array)
-        adj_tets: 
-            n_tetx4 ndarray of tet neighbors (-1 in case of "air")
-        idx_surface_tri: 
-            ndarray of surface triangles (indices into the faces array)
-        face_node_diff: 
-            nr_nodesx1 ndarray indicating difference between number of surface 
-            faces connected to a node and number of neigbhor surface nodes
-        nneighb:
-            nr_nodesx1 ndarray indicating number of neigbhor surface nodes   
-        node_coord: 
-            n_nodesx3 ndarray of node positions
-        tag: 
-            n_tetx1 ndarray of tet labels
-        node_number_list:
-                n_tetx4 ndarray of node indices
-        fast_track: bool (standard: False)
-                when set to True, only nodes connected to three different 
-                regions are detected as putative spike nodes. This leads
-                to far less nodes that need to be tested, making the next
-                steps faster. However, spikes, e.g. in GM sulci will then
-                not be detected.
-        
-        Returns
-        -------
-        idx_test_nodes :
-            ndarray of selected candidate nodes
-            
-        Notes
-        -------
-        * uses heuristics to lower the number of candidate nodes
-          while not loosing too many real spike nodes
-        * required as _get_spikes_from_conn_matrix is rather slow
-    '''
+    Parameters
+    ----------
+    faces:
+        n_facesx3 ndarray of triangle nodes
+    tet_faces:
+        n_tetsx4 ndarray of tet faces (indices into the faces array)
+    adj_tets:
+        n_tetx4 ndarray of tet neighbors (-1 in case of "air")
+    idx_surface_tri:
+        ndarray of surface triangles (indices into the faces array)
+    face_node_diff:
+        nr_nodesx1 ndarray indicating difference between number of surface
+        faces connected to a node and number of neigbhor surface nodes
+    nneighb:
+        nr_nodesx1 ndarray indicating number of neigbhor surface nodes
+    node_coord:
+        n_nodesx3 ndarray of node positions
+    tag:
+        n_tetx1 ndarray of tet labels
+    node_number_list:
+            n_tetx4 ndarray of node indices
+    fast_track: bool (standard: False)
+            when set to True, only nodes connected to three different
+            regions are detected as putative spike nodes. This leads
+            to far less nodes that need to be tested, making the next
+            steps faster. However, spikes, e.g. in GM sulci will then
+            not be detected.
+
+    Returns
+    -------
+    idx_test_nodes :
+        ndarray of selected candidate nodes
+
+    Notes
+    -------
+    * uses heuristics to lower the number of candidate nodes
+      while not loosing too many real spike nodes
+    * required as _get_spikes_from_conn_matrix is rather slow
+    """
     idx_test_nodes = np.zeros(len(nneighb), dtype=bool)
-    
+
     if not fast_track:
         # get nodes belonging to tets with 3 different neighbors
-        idx_elm, _, adj_diff = _get_elm_and_new_tag(tag, adj_tets, 3, return_diffmat = True)
+        idx_elm, _, adj_diff = _get_elm_and_new_tag(
+            tag, adj_tets, 3, return_diffmat=True
+        )
         # get the node that is shared by the three tet faces facing the different neighbor tets
         faces_elm = tet_faces[idx_elm]
-        faces_elm = faces_elm[adj_diff[idx_elm]].reshape((-1,3))
-        idx_node = scipy.stats.mode(faces[faces_elm].reshape((-1,9)), axis=1, keepdims=True)[0]
+        faces_elm = faces_elm[adj_diff[idx_elm]].reshape((-1, 3))
+        idx_node = scipy.stats.mode(
+            faces[faces_elm].reshape((-1, 9)), axis=1, keepdims=True
+        )[0]
         if len(idx_node) > 0:
             idx_test_nodes[idx_node] = True
-        
+
         # get nodes belonging to tets with 2 different neighbors
         idx_elm = _get_elm_and_new_tag(tag, adj_tets, 2)[0]
         # get the 2 nodes that are shared by the two tet faces facing the different neighbor tets
         faces_elm = tet_faces[idx_elm]
-        faces_elm = faces_elm[adj_diff[idx_elm]].reshape((-1,2))
-        idx_node = np.sort(faces[faces_elm].reshape((-1,6)))
-        idx_node = idx_node[:,:5][np.diff(idx_node) == 0]
+        faces_elm = faces_elm[adj_diff[idx_elm]].reshape((-1, 2))
+        idx_node = np.sort(faces[faces_elm].reshape((-1, 6)))
+        idx_node = idx_node[:, :5][np.diff(idx_node) == 0]
         if len(idx_node) > 0:
             idx_test_nodes[idx_node] = True
-        
+
         # the above steps are quite liberal and add too many nodes
         # therefore, exclude nodes with too low surface curvature
         # even though a few true spikes can get lost
         m_surf = mesh_io.Msh()
         m_surf.nodes.node_coord = node_coord
-        m_surf.elm.add_triangles(faces[idx_surface_tri,:]+1, 
-                                  np.ones(len(idx_surface_tri),dtype=int))
+        m_surf.elm.add_triangles(
+            faces[idx_surface_tri, :] + 1, np.ones(len(idx_surface_tri), dtype=int)
+        )
         nd = m_surf.gaussian_curvature()
         nd.value = np.abs(nd.value)
         idx_test_nodes *= nd.value > 0.1
-    
+
     # add nodes that belong to tets of three different regions
-    C = scipy.sparse.lil_matrix((len(nneighb), np.max(tag)+2), dtype=bool)
+    C = scipy.sparse.lil_matrix((len(nneighb), np.max(tag) + 2), dtype=bool)
     for i in range(4):
-        C[node_number_list[:,i]-1, tag] = True
-    C[:,-1] = False # do not count tags of air tets
-    n_node_tags = np.asarray( C.sum(axis=1) ).reshape(-1)
-    idx_test_nodes += n_node_tags == 3       
-    
+        C[node_number_list[:, i] - 1, tag] = True
+    C[:, -1] = False  # do not count tags of air tets
+    n_node_tags = np.asarray(C.sum(axis=1)).reshape(-1)
+    idx_test_nodes += n_node_tags == 3
+
     # a spike node needs at least 6 neighbor nodes
     idx_test_nodes *= nneighb > 5
     # exclude more complex surface geometries (e.g. T-junctions)
-    idx_test_nodes *= face_node_diff == 0 
+    idx_test_nodes *= face_node_diff == 0
     # exclude nodes connected to outer faces
     idx = tet_faces[adj_tets == -1]
-    idx = np.unique(faces[idx])    
+    idx = np.unique(faces[idx])
     idx_test_nodes[idx] = False
 
     return idx_test_nodes
 
 
 def _get_spikes_from_conn_matrix(conn_nodes, idx_test_nodes, nneighb):
-    ''' test which nodes in idx_test_nodes are spike nodes
-            
-        Parameters
-        ----------
-        conn_nodes: boolean csc sparse matrix (nr_nodes x nr_nodes)
-            node connectivity matrix
-        idx_test_nodes: ndarray
-            indices of candidate nodes taht should be tested
-        nneighb: nr_nodesx1 ndarray
-            number of neighbor surface nodes
-        
-        Returns
-        -------
-        ndarray of spike node indices
-        
-        Notes
-        ------
-        * nodes belonging to more complex surface configurations 
-         (i.e. face_node_diff > 0) must not be candidate nodes
-    '''
-    # restrict connectivty matrix to nodes on surfaces 
+    """test which nodes in idx_test_nodes are spike nodes
+
+    Parameters
+    ----------
+    conn_nodes: boolean csc sparse matrix (nr_nodes x nr_nodes)
+        node connectivity matrix
+    idx_test_nodes: ndarray
+        indices of candidate nodes taht should be tested
+    nneighb: nr_nodesx1 ndarray
+        number of neighbor surface nodes
+
+    Returns
+    -------
+    ndarray of spike node indices
+
+    Notes
+    ------
+    * nodes belonging to more complex surface configurations
+     (i.e. face_node_diff > 0) must not be candidate nodes
+    """
+    # restrict connectivty matrix to nodes on surfaces
     # and being test nodes or neighbors of test nodes
     # to gain some speed up
-    
+
     def _get_spikes(conn_nodes, idx_test_nodes, nneighb):
-        idx_surface_nodes = nneighb != 0 
+        idx_surface_nodes = nneighb != 0
         idx_surface_nodes *= conn_nodes.dot(idx_test_nodes)
         idx_surface_nodes += idx_test_nodes
-        conn_nodes = conn_nodes[:,idx_surface_nodes][idx_surface_nodes]
-        
-        map_nodes_new_old=np.where(idx_surface_nodes)[0]
-        map_nodes_old_new=-1*np.ones(len(nneighb), dtype=int)
+        conn_nodes = conn_nodes[:, idx_surface_nodes][idx_surface_nodes]
+
+        map_nodes_new_old = np.where(idx_surface_nodes)[0]
+        map_nodes_old_new = -1 * np.ones(len(nneighb), dtype=int)
         map_nodes_old_new[idx_surface_nodes] = np.arange(np.sum(idx_surface_nodes))
-        
+
         idx_test_nodes = map_nodes_old_new[idx_test_nodes]
-        idx_spike_nodes = np.zeros_like(idx_test_nodes,dtype=bool)
-        
-        # loop over all test nodes and test whether their neighbors 
+        idx_spike_nodes = np.zeros_like(idx_test_nodes, dtype=bool)
+
+        # loop over all test nodes and test whether their neighbors
         # are all connected to each other
-        for (node, k) in zip(idx_test_nodes, range(len(idx_test_nodes))):
-            idx = conn_nodes[:,node].nonzero()[0]
-            c=conn_nodes[:,idx][idx]
-            
-            # try to resolve topologies where some nodes have 
+        for node, k in zip(idx_test_nodes, range(len(idx_test_nodes))):
+            idx = conn_nodes[:, node].nonzero()[0]
+            c = conn_nodes[:, idx][idx]
+
+            # try to resolve topologies where some nodes have
             # more than 2 neighbors
-            nnz=c.getnnz(axis=0)
+            nnz = c.getnnz(axis=0)
             while np.any(nnz > 2):
-                idx_2 = nnz==2
-                # 1) select nodes with more than 2 neighbors and which have 
+                idx_2 = nnz == 2
+                # 1) select nodes with more than 2 neighbors and which have
                 # at least two neighboring nodes with excatly 2 neighbors
-                idx_two2neighb = np.where( ( c.astype(int).dot(idx_2)>1 ) * ~idx_2 )[0]
+                idx_two2neighb = np.where((c.astype(int).dot(idx_2) > 1) * ~idx_2)[0]
                 idx_not2 = np.where(~idx_2)[0]
-                # 2) remove the connection(s) between these nodes and 
+                # 2) remove the connection(s) between these nodes and
                 # other nodes with more than two neighboars
-                if len(idx_two2neighb)>0:
+                if len(idx_two2neighb) > 0:
                     ix, iy = np.meshgrid(idx_two2neighb, idx_not2)
                     ix = ix.ravel()
                     iy = iy.ravel()
-                    
-                    idx_set = np.ravel(c[ix,iy])
-                    c[ix[idx_set],iy[idx_set]]=False
-                    
-                    idx_set = np.ravel(c[iy,ix])
-                    c[iy[idx_set],ix[idx_set]]=False
-                    
+
+                    idx_set = np.ravel(c[ix, iy])
+                    c[ix[idx_set], iy[idx_set]] = False
+
+                    idx_set = np.ravel(c[iy, ix])
+                    c[iy[idx_set], ix[idx_set]] = False
+
                     c.eliminate_zeros()
                 else:
                     break
-                nnz=c.getnnz(axis=0)            
-            
+                nnz = c.getnnz(axis=0)
+
             # test whether all nodes are connected to the first node
-            a=c.getcol(0)
+            a = c.getcol(0)
             nnodes = a.shape[0]
-            for i in range(int(nnodes/2)-1):
+            for i in range(int(nnodes / 2) - 1):
                 a += c.dot(a)
             idx_spike_nodes[k] = nnodes != a.nnz
-        
+
         return map_nodes_new_old[idx_test_nodes[idx_spike_nodes]]
 
     # iterate over smaller smaller chunks
     # to speeds up slicing of sparse matrix
     idx_test_nodes = np.where(idx_test_nodes)[0]
     start_idx = np.arange(0, len(idx_test_nodes), 2500)
-    stop_idx  = np.append(start_idx[1:]-1, len(idx_test_nodes)-1)
-    idx_spike_nodes = np.array([],dtype=int)
-    idx_hlp = np.zeros(len(nneighb),dtype = bool)
-    
+    stop_idx = np.append(start_idx[1:] - 1, len(idx_test_nodes) - 1)
+    idx_spike_nodes = np.array([], dtype=int)
+    idx_hlp = np.zeros(len(nneighb), dtype=bool)
+
     for i, j in zip(start_idx, stop_idx):
         idx_hlp[:] = False
-        idx_hlp[idx_test_nodes[i:j+1]] = True
-        idx_spike_nodes = np.append(idx_spike_nodes, 
-                                    _get_spikes(conn_nodes, idx_hlp, nneighb))
-    
+        idx_hlp[idx_test_nodes[i : j + 1]] = True
+        idx_spike_nodes = np.append(
+            idx_spike_nodes, _get_spikes(conn_nodes, idx_hlp, nneighb)
+        )
+
     return idx_spike_nodes
-    
+
 
 def _get_new_tag_for_spikes(idx_spike_nodes, adj_tets, elm, tag, node_nr):
-    ''' resolve spike by relabeling some of the tetrahedra connected
-        to a spike node.
-        
-        The tetrahedra connected to a spike node are sorted into 
-        groups of connected tetrahedra (connected by sharing faces 
-        and having the same label). The smallest group is then relabelled
-        to the label of the immediate neighbor group (i.e. sharing faces with
-        the spike group)
-    
-        Parameters
-        ----------
-        idx_spike_nodes : ndarray
-            indices of the spike nodes
-        adj_tets: 
-            n_tetx4 ndarray of tet neighbors (-1 in case of "air")
-        elm:
-            n_tetx4 ndarray of node indices
-        tag: 
-            n_tetx1 ndarray of tet labels
-        nr_nodes: 
-            total number of nodes 
-    
-        Returns
-        -------
-        tag:
-            updated n_tetx1 ndarray of tet labels
-        spike_data: list of tuples of the form
-            (idx_spikenode (1-based), idx_spike_tets, tag_old, tag_new)
-            
-        Notes
-        ------
-        * elm must contain only tetrahedra
-    '''
+    """resolve spike by relabeling some of the tetrahedra connected
+    to a spike node.
+
+    The tetrahedra connected to a spike node are sorted into
+    groups of connected tetrahedra (connected by sharing faces
+    and having the same label). The smallest group is then relabelled
+    to the label of the immediate neighbor group (i.e. sharing faces with
+    the spike group)
+
+    Parameters
+    ----------
+    idx_spike_nodes : ndarray
+        indices of the spike nodes
+    adj_tets:
+        n_tetx4 ndarray of tet neighbors (-1 in case of "air")
+    elm:
+        n_tetx4 ndarray of node indices
+    tag:
+        n_tetx1 ndarray of tet labels
+    nr_nodes:
+        total number of nodes
+
+    Returns
+    -------
+    tag:
+        updated n_tetx1 ndarray of tet labels
+    spike_data: list of tuples of the form
+        (idx_spikenode (1-based), idx_spike_tets, tag_old, tag_new)
+
+    Notes
+    ------
+    * elm must contain only tetrahedra
+    """
     # restrict to tets neighboring spike nodes
     # for speed up
-    idx = np.zeros(node_nr,dtype=bool)
+    idx = np.zeros(node_nr, dtype=bool)
     idx[idx_spike_nodes] = True
-    elm = np.copy(elm)-1
-    
-    map_new_old = np.where(np.any(idx[elm],axis=1))[0]
-    map_old_new=-1*np.ones(len(elm), dtype=int)
+    elm = np.copy(elm) - 1
+
+    map_new_old = np.where(np.any(idx[elm], axis=1))[0]
+    map_old_new = -1 * np.ones(len(elm), dtype=int)
     map_old_new[map_new_old] = np.arange(len(map_new_old))
-    
+
     elm = elm[map_new_old]
     tag_spk = tag[map_new_old]
     adj_tets_spk = map_old_new[adj_tets[map_new_old]]
-    
-    tag_buff = -1*np.ones_like(tag_spk)
-    idx_spike_tets = np.empty(0,dtype=int)
+
+    tag_buff = -1 * np.ones_like(tag_spk)
+    idx_spike_tets = np.empty(0, dtype=int)
     spike_data = []
     for idx_node in idx_spike_nodes:
-        idx_all_tets = np.where(np.any(elm == idx_node,axis=1))[0]
+        idx_all_tets = np.where(np.any(elm == idx_node, axis=1))[0]
         idx_tets = np.copy(idx_all_tets)
-            
-        len_idx_spike_tets = 1000000 # initialze with some large number
+
+        len_idx_spike_tets = 1000000  # initialze with some large number
         while len(idx_tets) > 0:
             idx_group = [idx_tets[0]]
             tag_group = tag_spk[idx_group[0]]
@@ -791,24 +869,32 @@ def _get_new_tag_for_spikes(idx_spike_nodes, adj_tets, elm, tag, node_nr):
             while len(idx_group) > len_idx_group:
                 len_idx_group = len(idx_group)
                 idx_group = np.append(idx_group, adj_tets_spk[idx_group].flatten())
-                idx_group = idx_group[ (idx_group != -1)*(tag_spk[idx_group] == tag_group) ]
-                idx_group = np.intersect1d(idx_group,idx_tets)
+                idx_group = idx_group[
+                    (idx_group != -1) * (tag_spk[idx_group] == tag_group)
+                ]
+                idx_group = np.intersect1d(idx_group, idx_tets)
             if len_idx_group < len_idx_spike_tets:
                 idx_spike_tets = idx_group
                 len_idx_spike_tets = len_idx_group
-            idx_tets = np.setdiff1d(idx_tets,idx_group)
-        
+            idx_tets = np.setdiff1d(idx_tets, idx_group)
+
         idx_neigh = np.intersect1d(adj_tets_spk[idx_spike_tets], idx_all_tets)
         idx_neigh = np.setdiff1d(idx_neigh, idx_spike_tets)
         tag_neigh = tag_spk[idx_neigh]
         if np.any(np.diff(tag_neigh)):
-            logger.warning('ambiguous new tag for node ' + str(idx_node))
+            logger.warning("ambiguous new tag for node " + str(idx_node))
         tag_buff[idx_spike_tets] = tag_neigh[0]
-        
-        spike_data.append((idx_node+1, map_new_old[idx_spike_tets], 
-                           tag_spk[idx_spike_tets[0]], tag_neigh[0]))
 
-    new_tag = -1*np.ones_like(tag)
+        spike_data.append(
+            (
+                idx_node + 1,
+                map_new_old[idx_spike_tets],
+                tag_spk[idx_spike_tets[0]],
+                tag_neigh[0],
+            )
+        )
+
+    new_tag = -1 * np.ones_like(tag)
     new_tag[map_new_old] = tag_buff
     tag = np.copy(tag)
     tag[new_tag != -1] = new_tag[new_tag != -1]
@@ -818,10 +904,10 @@ def _get_new_tag_for_spikes(idx_spike_nodes, adj_tets, elm, tag, node_nr):
 def _get_candidates_for_splitting(sp_dat, node_number_list, idx_surf_nodes):
     """
     Determines all spikes that might be suited for splitting. The basic idea is
-    that a spike can be split if there is a second node to which all tets of the 
+    that a spike can be split if there is a second node to which all tets of the
     spike are also connected. Then, the spike can be split by adding a new node
     in the middle of the line between the orignal spike node and the second node.
-    
+
     Parameters
     ----------
     sp_dat : list of tuples of the form
@@ -843,26 +929,32 @@ def _get_candidates_for_splitting(sp_dat, node_number_list, idx_surf_nodes):
 
     """
     splittest = []
-    sp2_spike_tets = np.empty((0,2),dtype='int32')
-    sp2_unique_nodes = np.empty((0,2),dtype='int32')
-    
+    sp2_spike_tets = np.empty((0, 2), dtype="int32")
+    sp2_unique_nodes = np.empty((0, 2), dtype="int32")
+
     for sp in sp_dat:
         idx_sp_node = sp[0]
         idx_sp_tets = sp[1]
         old_tag = sp[2]
         new_tag = sp[3]
-        
-        if len(idx_sp_tets)<2:
-            logger.info(' _get_candidates_for_splitting: spike with one tetrahedron should not occur at this stage')
-            
-        elif len(idx_sp_tets)==2:
+
+        if len(idx_sp_tets) < 2:
+            logger.info(
+                " _get_candidates_for_splitting: spike with one tetrahedron should not occur at this stage"
+            )
+
+        elif len(idx_sp_tets) == 2:
             un, cn = np.unique(node_number_list[idx_sp_tets], return_counts=True)
             idx = np.where(cn == 1)[0]
             if len(idx) == 2:
-                sp2_unique_nodes = np.append(sp2_unique_nodes, un[idx].reshape((1,2)), axis=0)
-                sp2_spike_tets = np.append(sp2_spike_tets, idx_sp_tets.reshape((1,2)), axis=0)
+                sp2_unique_nodes = np.append(
+                    sp2_unique_nodes, un[idx].reshape((1, 2)), axis=0
+                )
+                sp2_spike_tets = np.append(
+                    sp2_spike_tets, idx_sp_tets.reshape((1, 2)), axis=0
+                )
             else:
-                logger.info(' _get_candidates_for_splitting: weird spike with two tets')
+                logger.info(" _get_candidates_for_splitting: weird spike with two tets")
         else:
             # try to find a 2nd node to which all tets of the spike are also connected
             un, cn = np.unique(node_number_list[idx_sp_tets], return_counts=True)
@@ -870,16 +962,18 @@ def _get_candidates_for_splitting(sp_dat, node_number_list, idx_surf_nodes):
             if len(idx) == 0:
                 # if not all tets of the spike are connected to a 2nd node,
                 # try to pick one non-surface node as 2nd node
-                idx2 = np.where(~idx_surf_nodes[un-1])[0]
+                idx2 = np.where(~idx_surf_nodes[un - 1])[0]
                 if len(idx2) == 1:
                     splittest.append((idx_sp_node, un[idx2[0]], old_tag, new_tag))
-                    # Note: all tets of the spike that are not connected to the 
+                    # Note: all tets of the spike that are not connected to the
                     # 2nd node will not be tested and automatically get the standard new tag
             elif len(idx) == 1:
                 splittest.append((idx_sp_node, un[idx[0]], old_tag, new_tag))
             else:
-                logger.info(' _get_candidates_for_splitting: weird spike with two fully connected 2nd nodes')
-            
+                logger.info(
+                    " _get_candidates_for_splitting: weird spike with two fully connected 2nd nodes"
+                )
+
     return splittest, sp2_spike_tets, sp2_unique_nodes
 
 
@@ -887,7 +981,7 @@ def _select_splits_from_candidates(splittest, node_number_list, node_coord, tag_
     """
     Determines the spikes that will be split from the candidates.
     The spikes have to fulfill two criteria:
-        * All tets connected to both the spike node and the 2nd node have to 
+        * All tets connected to both the spike node and the 2nd node have to
           have the same tag.
         * When projected on the line between the spike node and the 2nd node,
           all other nodes of these tets have to fall approx. in the middle of
@@ -901,7 +995,7 @@ def _select_splits_from_candidates(splittest, node_number_list, node_coord, tag_
         n_tetx4 ndarray of node indices
     node_coord :
         n_nodesx3 ndarray of node positions.
-    tag_org : 
+    tag_org :
         n_tetx1 ndarray of tet labels BEFORE any spike removal
 
     Returns
@@ -914,35 +1008,42 @@ def _select_splits_from_candidates(splittest, node_number_list, node_coord, tag_
     for sp in splittest:
         idx_n1 = sp[0]
         idx_n2 = sp[1]
-        idx_orgtets = np.where( np.any(node_number_list == idx_n1,axis=1) * 
-                                np.any(node_number_list == idx_n2,axis=1) )[0]
+        idx_orgtets = np.where(
+            np.any(node_number_list == idx_n1, axis=1)
+            * np.any(node_number_list == idx_n2, axis=1)
+        )[0]
         if len(idx_orgtets) == 0:
-            raise ValueError("The two nodes are not connected! This happens sporadically. Running the meshing again (charm subID --mesh) should solve the problem.")
-            
+            raise ValueError(
+                "The two nodes are not connected! This happens sporadically. Running the meshing again (charm subID --mesh) should solve the problem."
+            )
+
         if np.max(tag_org[idx_orgtets]) != np.min(tag_org[idx_orgtets]):
             # this can happen when the 2nd node is part of the "ring" of surface nodes connected to the first node
             continue
-            
+
         un = np.unique(node_number_list[idx_orgtets])
         idx_others = un[(un != idx_n1) * (un != idx_n2)]
-        
-        v1 = node_coord[idx_n1-1,:] - node_coord[idx_n2-1,:]
-        v2 = node_coord[idx_n1-1,:] - node_coord[idx_others-1,:]
+
+        v1 = node_coord[idx_n1 - 1, :] - node_coord[idx_n2 - 1, :]
+        v2 = node_coord[idx_n1 - 1, :] - node_coord[idx_others - 1, :]
         norm_v1 = np.linalg.norm(v1)
-        norm_v2 = np.linalg.norm(v2,axis=1)
-        cosalpha = np.sum(v1*v2, axis=1)/(norm_v1*norm_v2)
-        
-        if np.all(np.abs(cosalpha-0.5) < 0.3): # 0.3 is a magic number determined during initial testing
+        norm_v2 = np.linalg.norm(v2, axis=1)
+        cosalpha = np.sum(v1 * v2, axis=1) / (norm_v1 * norm_v2)
+
+        if np.all(
+            np.abs(cosalpha - 0.5) < 0.3
+        ):  # 0.3 is a magic number determined during initial testing
             splitlist.append(sp)
-        
+
     return splitlist
 
 
-def _combine_small_spikes(sp2_unique_nodes, sp2_spike_tets, adj_tets,
-                          node_number_list, tag_org, nr_nodes):
+def _combine_small_spikes(
+    sp2_unique_nodes, sp2_spike_tets, adj_tets, node_number_list, tag_org, nr_nodes
+):
     """
     At thin interfaces, two spikes with each 2 tets can be directly next to each other.
-    The function combines them to a common spike with 4 tets and returns them as list 
+    The function combines them to a common spike with 4 tets and returns them as list
     of spikes for splitting.
 
     Parameters
@@ -958,7 +1059,7 @@ def _combine_small_spikes(sp2_unique_nodes, sp2_spike_tets, adj_tets,
     tag_org : TYPE
         DESCRIPTION.
     nr_nodes :
-        total number of nodes 
+        total number of nodes
 
     Returns
     -------
@@ -967,20 +1068,25 @@ def _combine_small_spikes(sp2_unique_nodes, sp2_spike_tets, adj_tets,
 
     """
     sp2_unique_nodes = np.sort(np.copy(sp2_unique_nodes), axis=1)
-    un, cn = np.unique(sp2_unique_nodes, axis=0, return_counts = True)
-    un = un[cn>1]
-    
+    un, cn = np.unique(sp2_unique_nodes, axis=0, return_counts=True)
+    un = un[cn > 1]
+
     splitlist = []
     for i in un:
-        idx_spikes = np.where(np.all(i == sp2_unique_nodes,axis=1))[0]
-        un2, cn2 = np.unique(node_number_list[sp2_spike_tets[idx_spikes]], return_counts=True)
+        idx_spikes = np.where(np.all(i == sp2_unique_nodes, axis=1))[0]
+        un2, cn2 = np.unique(
+            node_number_list[sp2_spike_tets[idx_spikes]], return_counts=True
+        )
         idx_sp_nodes = un2[cn2 == 4]
-        
-        if len(idx_sp_nodes) == 2:        
+
+        if len(idx_sp_nodes) == 2:
             # get the correct tags and append to splitlist
-            _, sp_dat_hlp = _get_new_tag_for_spikes(idx_sp_nodes-1, adj_tets, node_number_list,
-                                                    tag_org, nr_nodes)
-            splitlist.append((idx_sp_nodes[0], idx_sp_nodes[1], sp_dat_hlp[1][3], sp_dat_hlp[0][3]))
+            _, sp_dat_hlp = _get_new_tag_for_spikes(
+                idx_sp_nodes - 1, adj_tets, node_number_list, tag_org, nr_nodes
+            )
+            splitlist.append(
+                (idx_sp_nodes[0], idx_sp_nodes[1], sp_dat_hlp[1][3], sp_dat_hlp[0][3])
+            )
 
     return splitlist
 
@@ -1006,175 +1112,186 @@ def _split_spikes(m, splitlist):
     # remove doublets
     splitlist = np.array(splitlist)
     if len(splitlist) > 0:
-        splitlist[:,:2] = np.sort(splitlist[:,:2], axis=1)
-        idx = np.unique(splitlist[:,:2],return_index=True, axis=0)[1]
+        splitlist[:, :2] = np.sort(splitlist[:, :2], axis=1)
+        idx = np.unique(splitlist[:, :2], return_index=True, axis=0)[1]
         splitlist = splitlist[idx]
-    
+
     # split
-    idx_splittets = np.empty((0),dtype='int32')
+    idx_splittets = np.empty((0), dtype="int32")
     for sp in splitlist:
         idx_n1 = sp[0]
         idx_n2 = sp[1]
         old_tag = sp[2]
         new_tag = sp[3]
-                
-        idx_tets1, idx_tets2 = m.split_tets_along_line(idx_n1,idx_n2,return_tetindices = True)
-        m.elm.tag1[idx_tets1-1] = new_tag
-        m.elm.tag1[idx_tets2-1] = old_tag
-        
-        idx_splittets=np.append(idx_splittets,idx_tets1)
-        idx_splittets=np.append(idx_splittets,idx_tets2)
 
-    m.elm.tag2[:] =  m.elm.tag1
+        idx_tets1, idx_tets2 = m.split_tets_along_line(
+            idx_n1, idx_n2, return_tetindices=True
+        )
+        m.elm.tag1[idx_tets1 - 1] = new_tag
+        m.elm.tag1[idx_tets2 - 1] = old_tag
+
+        idx_splittets = np.append(idx_splittets, idx_tets1)
+        idx_splittets = np.append(idx_splittets, idx_tets2)
+
+    m.elm.tag2[:] = m.elm.tag1
     return idx_splittets
 
 
 def update_tag_from_label_img(m, adj_tets, vol, affine, label_GM=None, label_CSF=None):
-    ''' relables tags when:
-            * tetrahedron more likely belongs to another label, based on the label image
-            * tetrahdron has more than one face to a neighbor with different label
+    """relables tags when:
+        * tetrahedron more likely belongs to another label, based on the label image
+        * tetrahdron has more than one face to a neighbor with different label
 
-        Parameters
-        ----------
-        m: 
-            mesh of meshio.Msh() type
-        adj_tets: 
-            n_tetx4 ndarray of tet neighbors (-1 in case of "air")
-        vol : 3d ndarray
-            label image
-        affine : 4x4 ndarray
-            affine transformation from voxel indices to world mm coordinates
-        label_GM : int, optional
-            label used for GM tets. The default is None.
-        label_CSF : int, optional
-            label used for CSF tets. The default is None.
-            
-        Returns
-        -------
-        m:
-            mesh with updated m.elm.tag1 and m.elm.tag2
-        
-        Notes
-        ------
-        * The mesh must contain only tetrahedra
-        * done repeatedly until no tets are relabeled anymore (max 20 times)
-        * when labels for GM and CSF are given, CSF is not relabled to GM (avoids 
-          a few GM spikes)
-        * updates tag1 and tag2 of m.elm
-    '''
-    
+    Parameters
+    ----------
+    m:
+        mesh of meshio.Msh() type
+    adj_tets:
+        n_tetx4 ndarray of tet neighbors (-1 in case of "air")
+    vol : 3d ndarray
+        label image
+    affine : 4x4 ndarray
+        affine transformation from voxel indices to world mm coordinates
+    label_GM : int, optional
+        label used for GM tets. The default is None.
+    label_CSF : int, optional
+        label used for CSF tets. The default is None.
+
+    Returns
+    -------
+    m:
+        mesh with updated m.elm.tag1 and m.elm.tag2
+
+    Notes
+    ------
+    * The mesh must contain only tetrahedra
+    * done repeatedly until no tets are relabeled anymore (max 20 times)
+    * when labels for GM and CSF are given, CSF is not relabled to GM (avoids
+      a few GM spikes)
+    * updates tag1 and tag2 of m.elm
+    """
+
     # get most likely tag for each tet from label image
     best_tag = np.zeros_like(m.elm.tag1)
-    best_tag_p = np.zeros_like(m.elm.tag1, dtype = np.float32)
+    best_tag_p = np.zeros_like(m.elm.tag1, dtype=np.float32)
     for i in np.unique(m.elm.tag1):
-         ed = mesh_io.ElementData.from_data_grid(m, (vol[:]==i).astype(np.float32), 
-                                                 affine, '', order=1)        
-         idx = ed.value > best_tag_p
-         best_tag[idx] = i
-         best_tag_p[idx] = ed.value[idx]
-    
+        ed = mesh_io.ElementData.from_data_grid(
+            m, (vol[:] == i).astype(np.float32), affine, "", order=1
+        )
+        idx = ed.value > best_tag_p
+        best_tag[idx] = i
+        best_tag_p[idx] = ed.value[idx]
+
     # relabel tets having more than one neighbor with different label
     def get_nr_diff_tag(tag, adj_tets):
         adj_labels = tag[adj_tets]
         adj_labels[adj_tets == -1] = -1
-        adj_diff = adj_labels - m.elm.tag1.reshape((len(tag),1)) != 0
+        adj_diff = adj_labels - m.elm.tag1.reshape((len(tag), 1)) != 0
         return np.sum(adj_diff, axis=1)
-    
+
     m.elm.tag2 = np.copy(m.elm.tag1)
     for i in range(20):
         nr_diff_pre = get_nr_diff_tag(m.elm.tag1, adj_tets)
-        idx_relabel = (nr_diff_pre > 1)*(best_tag != m.elm.tag1)
+        idx_relabel = (nr_diff_pre > 1) * (best_tag != m.elm.tag1)
         if label_GM is not None:
-            idx_relabel[(m.elm.tag1 == label_CSF)*(best_tag == label_GM)] = False
+            idx_relabel[(m.elm.tag1 == label_CSF) * (best_tag == label_GM)] = False
         m.elm.tag1[idx_relabel] = best_tag[idx_relabel]
-        
+
         # undo relabeling for tets that got more "spiky"
         nr_diff_post = get_nr_diff_tag(m.elm.tag1, adj_tets)
         diff_pre_post = nr_diff_pre - nr_diff_post
-        idx_undo = idx_relabel*(diff_pre_post<0)
+        idx_undo = idx_relabel * (diff_pre_post < 0)
         m.elm.tag1[idx_undo] = m.elm.tag2[idx_undo]
-        if (np.sum(idx_relabel) == np.sum(idx_undo)):
+        if np.sum(idx_relabel) == np.sum(idx_undo):
             break
-            
-    idx_relabel = m.elm.tag1 == 0 # set back tets relabled to 0 to their original label
+
+    idx_relabel = m.elm.tag1 == 0  # set back tets relabled to 0 to their original label
     m.elm.tag1[idx_relabel] = m.elm.tag2[idx_relabel]
-    logger.info('   Relabled ' + str(np.sum(m.elm.tag1 != m.elm.tag2)) + ' tets')
+    logger.info("   Relabled " + str(np.sum(m.elm.tag1 != m.elm.tag2)) + " tets")
     m.elm.tag2[:] = m.elm.tag1
     return m
 
 
-def update_tag_from_tet_neighbors(m, faces, tet_faces, adj_tets, nr_iter = 12):
-    ''' relables tetrahedra when they are surrounded by
-            * 4 neighbors all having a different label
-            * at least 3 neighbors with a different label, whereby 2 of these
-              3 neighbors need to share the same label (e.g. a tet with label 2
-              surrounded by 2, 3, 4, 4 is relabeled to 4)
-            * at least 2 neighbors with a different label, whereby these 2
-              neighbors need to have the same label and a simple surface
-              analysis indicates a surface defect
-        
-        this is done iteratively (standard: 12 times), whereby (most) tetrahedra 
-        that get repeatedly relabled are blocked from further relabeling; 
-        full convergence is not guaranteed
-            
-        Parameters
-        ----------
-        m: 
-            mesh of meshio.Msh() type
-        faces: 
-            n_facesx3 ndarray of triangle nodes
-        tet_faces:
-            n_tetsx4 ndarray of tet faces (indices into the faces array)
-        adj_tets: 
-            n_tetx4 ndarray of tet neighbors (-1 in case of "air")
-        nr_iter: int, optional
-            number of iteratins. The default is 10.
-            
-        Returns
-        -------
-        m:
-            mesh with updated m.elm.tag1 and m.elm.tag2
-        
-        Notes
-        ------
-        * The mesh must contain only tetrahedra
-        * updates tag1 and tag2 of m.elm        
-    '''
-    tag = np.copy(m.elm.tag1) 
+def update_tag_from_tet_neighbors(m, faces, tet_faces, adj_tets, nr_iter=12):
+    """relables tetrahedra when they are surrounded by
+        * 4 neighbors all having a different label
+        * at least 3 neighbors with a different label, whereby 2 of these
+          3 neighbors need to share the same label (e.g. a tet with label 2
+          surrounded by 2, 3, 4, 4 is relabeled to 4)
+        * at least 2 neighbors with a different label, whereby these 2
+          neighbors need to have the same label and a simple surface
+          analysis indicates a surface defect
+
+    this is done iteratively (standard: 12 times), whereby (most) tetrahedra
+    that get repeatedly relabled are blocked from further relabeling;
+    full convergence is not guaranteed
+
+    Parameters
+    ----------
+    m:
+        mesh of meshio.Msh() type
+    faces:
+        n_facesx3 ndarray of triangle nodes
+    tet_faces:
+        n_tetsx4 ndarray of tet faces (indices into the faces array)
+    adj_tets:
+        n_tetx4 ndarray of tet neighbors (-1 in case of "air")
+    nr_iter: int, optional
+        number of iteratins. The default is 10.
+
+    Returns
+    -------
+    m:
+        mesh with updated m.elm.tag1 and m.elm.tag2
+
+    Notes
+    ------
+    * The mesh must contain only tetrahedra
+    * updates tag1 and tag2 of m.elm
+    """
+    tag = np.copy(m.elm.tag1)
     tag_buffer = np.copy(m.elm.tag1)
-    relabeling_allowed = np.ones_like(m.elm.tag1, dtype = bool)
-    just_relabelled = np.zeros_like(m.elm.tag1, dtype = bool)
+    relabeling_allowed = np.ones_like(m.elm.tag1, dtype=bool)
+    just_relabelled = np.zeros_like(m.elm.tag1, dtype=bool)
     for i in range(nr_iter):
         just_relabelled[:] = False
-        
+
         # relabel tets with 4 and 3 different neighbors
-        for k in (4,3):
+        for k in (4, 3):
             idx_elm, new_tag = _get_elm_and_new_tag(tag, adj_tets, k)
             tag[idx_elm] = new_tag
             just_relabelled[idx_elm] = True
-            
+
         # relabel tets with 2 different neighbors
-        idx_elm, new_tag, adj_diff = _get_elm_and_new_tag(tag, adj_tets, 2, return_diffmat = True)
+        idx_elm, new_tag, adj_diff = _get_elm_and_new_tag(
+            tag, adj_tets, 2, return_diffmat=True
+        )
         # exclude tets at outer surface and ensure that tets can still be relabeled
         idx = new_tag > -1
-        idx *= np.isin( idx_elm, np.where(relabeling_allowed)[0] )
+        idx *= np.isin(idx_elm, np.where(relabeling_allowed)[0])
         idx_elm = idx_elm[idx]
         new_tag = new_tag[idx]
-        # get the 2 nodes that are shared by the two tet faces facing the 
-        # different neighbor tets 
+        # get the 2 nodes that are shared by the two tet faces facing the
+        # different neighbor tets
         faces_elm = tet_faces[idx_elm]
-        faces_elm = faces_elm[adj_diff[idx_elm]].reshape((-1,2))
-        facenodes_elm = np.sort(faces[faces_elm].reshape((-1,6)))
-        facenodes_elm = facenodes_elm[:,:5][np.diff(facenodes_elm) == 0].reshape((-1,2))
+        faces_elm = faces_elm[adj_diff[idx_elm]].reshape((-1, 2))
+        facenodes_elm = np.sort(faces[faces_elm].reshape((-1, 6)))
+        facenodes_elm = facenodes_elm[:, :5][np.diff(facenodes_elm) == 0].reshape(
+            (-1, 2)
+        )
         # test whether these nodes are part of a surface defect
-        # (note: get_elm_and_new_tag ensure only tets with diff neighbors that 
+        # (note: get_elm_and_new_tag ensure only tets with diff neighbors that
         #  have the same label --> face_node_diff reveals defect, not T-junction)
-        idx_surface_tri, face_node_diff = _get_surfaces(faces, tet_faces, adj_tets, tag, m.nodes.nr)[:2]
-        idx = np.max(face_node_diff[facenodes_elm],axis=1)>0 # face_node_diff > 0 indicates a surface defect
+        idx_surface_tri, face_node_diff = _get_surfaces(
+            faces, tet_faces, adj_tets, tag, m.nodes.nr
+        )[:2]
+        idx = (
+            np.max(face_node_diff[facenodes_elm], axis=1) > 0
+        )  # face_node_diff > 0 indicates a surface defect
         idx_elm = idx_elm[idx]
         new_tag = new_tag[idx]
         tag[idx_elm] = new_tag
-    
+
         if i > 2:
             # stop flip-flopping between the orginal and a second label
             idx = (tag == m.elm.tag1) * (tag != tag_buffer)
@@ -1182,104 +1299,137 @@ def update_tag_from_tet_neighbors(m, faces, tet_faces, adj_tets, nr_iter = 12):
             # prevent that relabeling tets with two faces converts them to back to tets with 3 or 4 faces
             idx = (tag == tag_buffer) * just_relabelled
             relabeling_allowed[idx] = False
-        logger.info('     It. ' + str(i) + ': relabled ' + str(np.sum(tag_buffer != tag)) + ' tets')
+        logger.info(
+            "     It. "
+            + str(i)
+            + ": relabled "
+            + str(np.sum(tag_buffer != tag))
+            + " tets"
+        )
         tag_buffer[:] = tag
-    
-    logger.info('   Relabeled ' + str(np.sum(m.elm.tag1 != tag)) + ' tets')    
+
+    logger.info("   Relabeled " + str(np.sum(m.elm.tag1 != tag)) + " tets")
     m.elm.tag1 = tag
     m.elm.tag2[:] = m.elm.tag1
-    return m     
-
-
-def update_tag_from_surface(m, faces, tet_faces, adj_tets, do_splits = False,
-                            fast_track = False):
-    ''' relables tetrahedra when they are part of a localized spike
-        as detected by analysis of the surface topology
-    
-        Parameters
-        ----------
-        m: 
-            mesh of meshio.Msh() type
-        faces: 
-            n_facesx3 ndarray of triangle nodes
-        tet_faces:
-            n_tetsx4 ndarray of tet faces (indices into the faces array)
-        adj_tets: 
-            n_tetx4 ndarray of tet neighbors (-1 in case of "air")
-        do_splits: bool 
-            whether to split spikes that reach deep into two regions
-            (standard: False)
-        fast_track: bool
-            whether to test only nodes connected to three different regions. 
-            This leads to far less nodes that need to be tested. However, 
-            spikes, e.g. in GM sulci will then not be removed.
-            (standard: False)
-            
-        Returns
-        -------
-        m:
-            mesh with updated m.elm.tag1 and m.elm.tag2
-        
-        Notes
-        ------
-        * The mesh must contain only tetrahedra
-        * updates tag1 and tag2 of m.elm
-        * for do_splits=True: variables faces, tet_faces, adj_tets will
-          be outdated after the call, as the function adds new tetrahedra
-    '''
-    DEBUG=False
-    # reconstruct surface, get node-connectivity matrix
-    idx_surface_tri, face_node_diff, nneighb, conn_nodes = _get_surfaces(faces, tet_faces, adj_tets, 
-                                                                         m.elm.tag1, m.nodes.nr)
-    
-    # get to-be-tested surface nodes (uses heuristics to lower the number of candidate nodes)
-    idx_test_nodes = _get_test_nodes(faces, tet_faces, adj_tets, idx_surface_tri, face_node_diff,
-                                     nneighb, m.nodes[:], m.elm.tag1, m.elm.node_number_list,
-                                     fast_track = fast_track)
-    
-    # detect spikes by analysis of surface topology around each test node
-    logger.info('     Testing '+ str(np.sum(idx_test_nodes)) + ' nodes (matrix: '
-            + str(conn_nodes.shape) + ', ' + str(conn_nodes.nnz) + ' entries)')
-    idx_spike_nodes = _get_spikes_from_conn_matrix(conn_nodes, idx_test_nodes, nneighb)
-    
-    # set new tag for spike nodes
-    tag_buff = m.elm.tag1
-    m.elm.tag1, sp_dat = _get_new_tag_for_spikes(idx_spike_nodes, adj_tets, m.elm[:],
-                                                 m.elm.tag1, m.nodes.nr)
-    logger.info('   Relabled ' + str(np.sum(m.elm.tag1 != m.elm.tag2)) + ' tets')
-    m.elm.tag2[:] = m.elm.tag1
-    
-    if do_splits:
-        # split spikes that reach deep into two regions        
-        #   step 1: determine candidate spikes that might be suited for splitting
-        idx_surf_nodes = conn_nodes.getnnz(axis=0)>0
-        splittest, sp2_tets, sp2_uniquenodes = _get_candidates_for_splitting(sp_dat, m.elm.node_number_list, 
-                                                                             idx_surf_nodes)
-        #   step 2: determine the spikes that will be split from the candidates
-        splitlist = _select_splits_from_candidates(splittest, m.elm.node_number_list, 
-                                                   m.nodes.node_coord, tag_buff)
-
-        #   step 3: at thin interfaces, two spikes with each 2 tets can be directly next
-        #   to each other --> combine to a common spike with 4 tets that will be split
-        splitlist += _combine_small_spikes(sp2_uniquenodes, sp2_tets, adj_tets, 
-                                           m.elm.node_number_list, tag_buff, m.nodes.nr)
-                
-        #   step 4: split (updates the mesh in place)
-        n_tet_pre = m.elm.nr
-        idx_splittets = _split_spikes(m, splitlist)
-        logger.info('   Split ' + str(m.elm.nr - n_tet_pre) + ' tets')
-        m.elm.tag2 = m.elm.tag1.copy()
-        
-        if DEBUG:
-            ed=np.zeros_like(m.elm.tag1)
-            ed[idx_splittets-1] = 1
-            ed=mesh_io.ElementData(ed)
-            m.add_element_field(ed,'splittets')
-        
     return m
 
 
-def _remove_spikes(m, label_img, affine, label_GM = 2, label_CSF = 3):
+def update_tag_from_surface(
+    m, faces, tet_faces, adj_tets, do_splits=False, fast_track=False
+):
+    """relables tetrahedra when they are part of a localized spike
+    as detected by analysis of the surface topology
+
+    Parameters
+    ----------
+    m:
+        mesh of meshio.Msh() type
+    faces:
+        n_facesx3 ndarray of triangle nodes
+    tet_faces:
+        n_tetsx4 ndarray of tet faces (indices into the faces array)
+    adj_tets:
+        n_tetx4 ndarray of tet neighbors (-1 in case of "air")
+    do_splits: bool
+        whether to split spikes that reach deep into two regions
+        (standard: False)
+    fast_track: bool
+        whether to test only nodes connected to three different regions.
+        This leads to far less nodes that need to be tested. However,
+        spikes, e.g. in GM sulci will then not be removed.
+        (standard: False)
+
+    Returns
+    -------
+    m:
+        mesh with updated m.elm.tag1 and m.elm.tag2
+
+    Notes
+    ------
+    * The mesh must contain only tetrahedra
+    * updates tag1 and tag2 of m.elm
+    * for do_splits=True: variables faces, tet_faces, adj_tets will
+      be outdated after the call, as the function adds new tetrahedra
+    """
+    DEBUG = False
+    # reconstruct surface, get node-connectivity matrix
+    idx_surface_tri, face_node_diff, nneighb, conn_nodes = _get_surfaces(
+        faces, tet_faces, adj_tets, m.elm.tag1, m.nodes.nr
+    )
+
+    # get to-be-tested surface nodes (uses heuristics to lower the number of candidate nodes)
+    idx_test_nodes = _get_test_nodes(
+        faces,
+        tet_faces,
+        adj_tets,
+        idx_surface_tri,
+        face_node_diff,
+        nneighb,
+        m.nodes[:],
+        m.elm.tag1,
+        m.elm.node_number_list,
+        fast_track=fast_track,
+    )
+
+    # detect spikes by analysis of surface topology around each test node
+    logger.info(
+        "     Testing "
+        + str(np.sum(idx_test_nodes))
+        + " nodes (matrix: "
+        + str(conn_nodes.shape)
+        + ", "
+        + str(conn_nodes.nnz)
+        + " entries)"
+    )
+    idx_spike_nodes = _get_spikes_from_conn_matrix(conn_nodes, idx_test_nodes, nneighb)
+
+    # set new tag for spike nodes
+    tag_buff = m.elm.tag1
+    m.elm.tag1, sp_dat = _get_new_tag_for_spikes(
+        idx_spike_nodes, adj_tets, m.elm[:], m.elm.tag1, m.nodes.nr
+    )
+    logger.info("   Relabled " + str(np.sum(m.elm.tag1 != m.elm.tag2)) + " tets")
+    m.elm.tag2[:] = m.elm.tag1
+
+    if do_splits:
+        # split spikes that reach deep into two regions
+        #   step 1: determine candidate spikes that might be suited for splitting
+        idx_surf_nodes = conn_nodes.getnnz(axis=0) > 0
+        splittest, sp2_tets, sp2_uniquenodes = _get_candidates_for_splitting(
+            sp_dat, m.elm.node_number_list, idx_surf_nodes
+        )
+        #   step 2: determine the spikes that will be split from the candidates
+        splitlist = _select_splits_from_candidates(
+            splittest, m.elm.node_number_list, m.nodes.node_coord, tag_buff
+        )
+
+        #   step 3: at thin interfaces, two spikes with each 2 tets can be directly next
+        #   to each other --> combine to a common spike with 4 tets that will be split
+        splitlist += _combine_small_spikes(
+            sp2_uniquenodes,
+            sp2_tets,
+            adj_tets,
+            m.elm.node_number_list,
+            tag_buff,
+            m.nodes.nr,
+        )
+
+        #   step 4: split (updates the mesh in place)
+        n_tet_pre = m.elm.nr
+        idx_splittets = _split_spikes(m, splitlist)
+        logger.info("   Split " + str(m.elm.nr - n_tet_pre) + " tets")
+        m.elm.tag2 = m.elm.tag1.copy()
+
+        if DEBUG:
+            ed = np.zeros_like(m.elm.tag1)
+            ed[idx_splittets - 1] = 1
+            ed = mesh_io.ElementData(ed)
+            m.add_element_field(ed, "splittets")
+
+    return m
+
+
+def _remove_spikes(m, label_img, affine, label_GM=2, label_CSF=3):
     """
     wrapper function around the three spike removal steps
 
@@ -1302,64 +1452,72 @@ def _remove_spikes(m, label_img, affine, label_GM = 2, label_CSF = 3):
         Mesh structure
 
     """
-    logger.info('Removing Spikes')
-    logger.info(' Step 1: Update tags from label image')
+    logger.info("Removing Spikes")
+    logger.info(" Step 1: Update tags from label image")
     faces, tet_faces, adj_tets = m.elm._get_tet_faces_and_adjacent_tets()
     tag_buff = m.elm.tag1.copy()
-    m = update_tag_from_label_img(m, adj_tets, label_img, affine, 
-                                  label_GM = label_GM, label_CSF = label_CSF)
-    
-    logger.info(' Step 2: Update tags from tet neighbors')
+    m = update_tag_from_label_img(
+        m, adj_tets, label_img, affine, label_GM=label_GM, label_CSF=label_CSF
+    )
+
+    logger.info(" Step 2: Update tags from tet neighbors")
     m = update_tag_from_tet_neighbors(m, faces, tet_faces, adj_tets)
-    
-    logger.info(' Step 3: Resolve remaining localized spikes ')
-    m = update_tag_from_surface(m, faces, tet_faces, adj_tets, do_splits = True)
-            
-    logger.info('Done Removing Spikes: Total number of relabled tets: ' +
-                str(np.sum(m.elm.tag1[:len(tag_buff)] != tag_buff)) +
-                '; Number of split tets: ' + str(len(m.elm.tag1) - len(tag_buff)))
-    
+
+    logger.info(" Step 3: Resolve remaining localized spikes ")
+    m = update_tag_from_surface(m, faces, tet_faces, adj_tets, do_splits=True)
+
+    logger.info(
+        "Done Removing Spikes: Total number of relabled tets: "
+        + str(np.sum(m.elm.tag1[: len(tag_buff)] != tag_buff))
+        + "; Number of split tets: "
+        + str(len(m.elm.tag1) - len(tag_buff))
+    )
+
     # remove "air" tetrahedra with label -1 and corresponding nodes
     idx_keep = np.where(m.elm.tag1 != -1)[0] + 1
-    m = m.crop_mesh(elements = idx_keep)
-    
+    m = m.crop_mesh(elements=idx_keep)
+
     return m
 
 
 def _fix_labels(m, label_img):
-    ''' Assign the right labels to the mesh as CGAL modifies them '''
+    """Assign the right labels to the mesh as CGAL modifies them"""
     indices_seg, label_counts = np.unique(label_img, return_counts=True)
     indices_seg = indices_seg[1:]
     label_counts = label_counts[1:]
     indices_cgal = np.unique(m.elm.tag1)
-    n_dropped = len(indices_seg)-len(indices_cgal)
-    if n_dropped:    
+    n_dropped = len(indices_seg) - len(indices_cgal)
+    if n_dropped:
         idx_keep = np.argsort(label_counts)[::-1]
         idx_keep = idx_keep[:-n_dropped]
         indices_seg = np.sort(indices_seg[idx_keep])
-        logger.warning('{} small region(s) dropped during meshing. Check label numbers in mesh!'.format(n_dropped))
+        logger.warning(
+            "{} small region(s) dropped during meshing. Check label numbers in mesh!".format(
+                n_dropped
+            )
+        )
     new_tags = np.copy(m.elm.tag1)
     for i, t in enumerate(indices_seg):
-        new_tags[m.elm.tag1 == i+1] = t
+        new_tags[m.elm.tag1 == i + 1] = t
     m.elm.tag1 = new_tags
     m.elm.tag2 = new_tags.copy()
     return m
 
 
-def _relabel_microtets(m, el_max = 0.0001):
-    """ CGAL can create spurious groups of microscopic tetrahedra
+def _relabel_microtets(m, el_max=0.0001):
+    """CGAL can create spurious groups of microscopic tetrahedra
     at region boundaries. In order to get mmg to fix them, they are
-    relabled to the most common tag in each group. By that, the 
+    relabled to the most common tag in each group. By that, the
     boundary is moved away and mmg will resolve them even
     when -nosurf is set.
-    
+
     Parameters
     ----------
     m : simnibs.Msh
         Mesh structure.
     el_max : float, optional
         maximal edge length. Tetrahedra will be relabeled
-        when all edges are shorter than el_max. 
+        when all edges are shorter than el_max.
         The default is 0.0001.
 
     Returns
@@ -1369,27 +1527,30 @@ def _relabel_microtets(m, el_max = 0.0001):
 
     """
     M = m.nodes[m.elm[:]]
-    E = np.array([
-        M[:, 0] - M[:, 1],
-        M[:, 0] - M[:, 2],
-        M[:, 0] - M[:, 3],
-        M[:, 1] - M[:, 2],
-        M[:, 1] - M[:, 3],
-        M[:, 2] - M[:, 3]])
+    E = np.array(
+        [
+            M[:, 0] - M[:, 1],
+            M[:, 0] - M[:, 2],
+            M[:, 0] - M[:, 3],
+            M[:, 1] - M[:, 2],
+            M[:, 1] - M[:, 3],
+            M[:, 2] - M[:, 3],
+        ]
+    )
     E = np.swapaxes(E, 0, 1)
     # max Edge length
     Smax = np.max(np.linalg.norm(E, axis=2), axis=1)
 
-    idx = np.argwhere(Smax<el_max).flatten()
+    idx = np.argwhere(Smax < el_max).flatten()
 
     if len(idx) == 0:
         return m
 
-    idx_c = m.elm.connected_components(idx+1)
+    idx_c = m.elm.connected_components(idx + 1)
 
     for i in idx_c:
         logger.debug(f"Relabeling group of {len(i)} micro-tets")
-        m.elm.tag1[i-1] = np.argmax(np.bincount(m.elm.tag1[i-1]))
+        m.elm.tag1[i - 1] = np.argmax(np.bincount(m.elm.tag1[i - 1]))
     m.elm.tag2[:] = m.elm.tag1
     return m
 
@@ -1417,7 +1578,7 @@ def _run_mmg(m, repeats=2, mmg_noinsert=True, sizing_field=None, affine=None):
     m : simnibs.Msh
         Mesh structure.
     """
-    logger.info('Improving Mesh Quality')
+    logger.info("Improving Mesh Quality")
     with tempfile.NamedTemporaryFile(suffix=".msh", delete=False) as tmpfile:
         tmp_in = tmpfile.name
     with tempfile.NamedTemporaryFile(suffix=".msh", delete=False) as tmpfile:
@@ -1425,17 +1586,58 @@ def _run_mmg(m, repeats=2, mmg_noinsert=True, sizing_field=None, affine=None):
 
     # set MMG command
     if mmg_noinsert:
-        cmd = [file_finder.path2bin("mmg3d_O3"), "-v", "6", "-nosurf", "-nofem", "-hgrad", "-1", "-rmc", "-noinsert",
-               "-in", tmp_in, "-out", tmp_out]
+        cmd = [
+            file_finder.path2bin("mmg3d_O3"),
+            "-v",
+            "6",
+            "-nosurf",
+            "-nofem",
+            "-hgrad",
+            "-1",
+            "-rmc",
+            "-noinsert",
+            "-in",
+            tmp_in,
+            "-out",
+            tmp_out,
+        ]
     else:
         if sizing_field is not None:
             # hsiz is now coming from the sizing field
-            cmd = [file_finder.path2bin("mmg3d_O3"), "-v", "6", "-nosurf", "-nofem", "-hgrad", "-1", "-rmc",
-                   "-in", tmp_in, "-out", tmp_out]
+            cmd = [
+                file_finder.path2bin("mmg3d_O3"),
+                "-v",
+                "6",
+                "-nosurf",
+                "-nofem",
+                "-hgrad",
+                "-1",
+                "-rmc",
+                "-in",
+                tmp_in,
+                "-out",
+                tmp_out,
+            ]
         else:
-            cmd = [file_finder.path2bin("mmg3d_O3"), "-v", "6", "-nosurf", "-nofem", "-hgrad", "-1", "-rmc",
-                   "-hsiz", "100.0", "-hmin", "1.3", "-in", tmp_in, "-out", tmp_out]
-        
+            cmd = [
+                file_finder.path2bin("mmg3d_O3"),
+                "-v",
+                "6",
+                "-nosurf",
+                "-nofem",
+                "-hgrad",
+                "-1",
+                "-rmc",
+                "-hsiz",
+                "100.0",
+                "-hmin",
+                "1.3",
+                "-in",
+                tmp_in,
+                "-out",
+                tmp_out,
+            ]
+
     # run MMG to improve mesh
     for i in range(repeats):
         # add user defined sizing field from sizing image to mesh in a NodeData field called "sizing_field:metric" for mmg
@@ -1453,7 +1655,7 @@ def _run_mmg(m, repeats=2, mmg_noinsert=True, sizing_field=None, affine=None):
         m = mesh_io.read_msh(tmp_out, skip_data=True)
         m = m.crop_mesh(elm_type=[2, 4])
 
-        logger.info(f'Tetraedras after remeshing run {i + 1}: {len(m.elm.tetrahedra)}')
+        logger.info(f"Tetraedras after remeshing run {i + 1}: {len(m.elm.tetrahedra)}")
 
     # remove tmp-files
     if os.path.exists(tmp_in):
@@ -1461,25 +1663,37 @@ def _run_mmg(m, repeats=2, mmg_noinsert=True, sizing_field=None, affine=None):
     if os.path.exists(tmp_out):
         os.remove(tmp_out)
     return m
-    
 
-def create_mesh(label_img, affine,
-                elem_sizes={"standard": {"range": [1, 5], "slope": 1.0}},
-                smooth_size_field=2,
-                skin_facet_size=2.0, 
-                facet_distances={"standard": {"range": [0.1, 3], "slope": 0.5}},
-                optimize=False, remove_spikes=True, skin_tag=1005,
-                hierarchy=None, apply_cream=True,  smooth_steps=5, skin_care=20,
-                sizing_field=None, mmg_noinsert=False, debug=False, debug_path="", num_threads=2):
+
+def create_mesh(
+    label_img,
+    affine,
+    elem_sizes={"standard": {"range": [1, 5], "slope": 1.0}},
+    smooth_size_field=2,
+    skin_facet_size=2.0,
+    facet_distances={"standard": {"range": [0.1, 3], "slope": 0.5}},
+    optimize=False,
+    remove_spikes=True,
+    skin_tag=1005,
+    hierarchy=None,
+    apply_cream=True,
+    smooth_steps=5,
+    skin_care=20,
+    sizing_field=None,
+    mmg_noinsert=False,
+    debug=False,
+    debug_path="",
+    num_threads=2,
+):
     """Create a mesh from a labeled image.
 
-    The maximum element sizes (CGAL facet_size and cell_size) are controlled 
+    The maximum element sizes (CGAL facet_size and cell_size) are controlled
     by elem_sizes:
         size = slope * thickness
         size[size < range[0] = range[0]
         size[size > range[1] = range[1]
-    where "thickness" is the local tissue thickness, 
-    "range" is the size range (label-specific if label is added to elem_sizes, 
+    where "thickness" is the local tissue thickness,
+    "range" is the size range (label-specific if label is added to elem_sizes,
                                 otherwise the "standard" range is used)
     The distance (CGAL facet_distance) parameter is calcualted in a similar way.
     This allows for the meshing to adjust sizes according to local needs.
@@ -1496,12 +1710,12 @@ def create_mesh(label_img, affine,
             {"standard": {"range": [1, 5], "slope": 1.0},
                     "2": {"range": [1, 2], "slope": 0.7}}
         "range" determines the minimum and maximum values for element sizes.
-        "slope" determines relationship between thickness and element sizes.      
+        "slope" determines relationship between thickness and element sizes.
         Note: Label indices are used as keys, and need to be provided as string
         Default: {"standard": {"range": [1, 5], "slope": 1.0}}
     smooth_size_field: int (optional)
         Defines the size of a triangular kernel to smooth the size field. A bit
-        of smoothing helps to remove the effect of a few outliers in the 
+        of smoothing helps to remove the effect of a few outliers in the
         thickness estimates on the size field. Set to 0 to disable.
         The kernel size is 2*smooth_size_field+1 in voxels. Default:  2
     skin_facet_size: float (optional)
@@ -1510,8 +1724,8 @@ def create_mesh(label_img, affine,
         the other surfaces. Default:  2.0
     facet_distances: dictionary (optional)
         Relationship between thickness and facet_distance. For small
-        facet_distance values, the meshing will follow the label boundaries 
-        in the original image more strictly. This also means more elements. 
+        facet_distance values, the meshing will follow the label boundaries
+        in the original image more strictly. This also means more elements.
         Label-specific relationships can be added if needed.
         "range": Minimum and maximum values for facet_distance
         "slope": Steepness of relationship between thickness and facet_distance.
@@ -1522,13 +1736,13 @@ def create_mesh(label_img, affine,
     remove_spikes: bool (optional)
         Whether to remove spikes to create smoother meshes. Default: True
     skin_tag: float (optional)
-        1) Restrict effects of skin_facet_size to the outer boundary of the 
+        1) Restrict effects of skin_facet_size to the outer boundary of the
            region with label skin_tag-1000 (i.e. 5 for 1005)
         2) Add outer surface to mesh using given tag. Set to None to disable.
         NOTE: This surface will replace any other surface with the same tag.
         Default: 1005
     hierarchy: list of ints or None (optional)
-        List of surface tags that determines the order in which triangles 
+        List of surface tags that determines the order in which triangles
         are kept for twin pairs (for remove_twins=True). Default for hierarchy=None:
         (1, 2, 9, 3, 4, 8, 7, 6, 10, 5)
         i.e. WM (1) has highest priority, GM (2) comes next, etc;
@@ -1540,7 +1754,7 @@ def create_mesh(label_img, affine,
         Number of addtional smoothing steps applied to the skin. Default: 20
     sizing_field: 3D np.ndarray in float format (optional)
         Sizing field to control the element sizes. Its shape has to be the same
-        as label_img.shape. Zeros will be replaced by values from the 
+        as label_img.shape. Zeros will be replaced by values from the
         standard sizing field. Default: None
     mmg_noinsert : bool, optional, default: False
         Set this flag to constrain the mesh improvement algorithm of MMG to not insert additional points.
@@ -1558,15 +1772,15 @@ def create_mesh(label_img, affine,
         Mesh structure
     """
     if hierarchy is None:
-        hierarchy = (1, 2, 9, 3, 4, 8, 7, 6, 11, 10, 12, 5)        
-    if not 'standard' in elem_sizes:
-        raise ValueError('elem_sizes needs a \"standard\" entry')
-    if not 'standard' in facet_distances:
-        raise ValueError('facet_distances needs a \"standard\" entry')
-    
+        hierarchy = (1, 2, 9, 3, 4, 8, 7, 6, 11, 10, 12, 5)
+    if not "standard" in elem_sizes:
+        raise ValueError('elem_sizes needs a "standard" entry')
+    if not "standard" in facet_distances:
+        raise ValueError('facet_distances needs a "standard" entry')
+
     if label_img.dtype not in [np.uint8, np.uint16]:
-        raise MeshingError('Image must be of type uint8 or uint16')
-    
+        raise MeshingError("Image must be of type uint8 or uint16")
+
     label_img = label_img.astype(np.uint16)
 
     if apply_cream:
@@ -1576,80 +1790,79 @@ def create_mesh(label_img, affine,
         label_img, affine = transformations.pad_vol(label_img, affine, 30)
 
     # Calculate thickness
-    logger.info('Calculating tissue thickness')
+    logger.info("Calculating tissue thickness")
     start = time.time()
     thickness = _calc_thickness(label_img)
-    thickness[thickness < .5] = 100 # set background thickness to some large value
-    voxel_size = get_vox_size(affine) 
+    thickness[thickness < 0.5] = 100  # set background thickness to some large value
+    voxel_size = get_vox_size(affine)
     if not np.allclose(np.diff(voxel_size), 0):
-        logger.warning('Anisotropic image, meshing may contain extra artifacts')
-    thickness *= np.average(voxel_size) # Scale thickness with voxel size
-    
+        logger.warning("Anisotropic image, meshing may contain extra artifacts")
+    thickness *= np.average(voxel_size)  # Scale thickness with voxel size
+
     # Define size fields and distance field
-    logger.info('Calculating sizing fields')
-    size_field = _sizing_field_from_thickness(
-        label_img, thickness, elem_sizes
-    )
-    distance_field = _sizing_field_from_thickness(
-        label_img, thickness, facet_distances
-    )
+    logger.info("Calculating sizing fields")
+    size_field = _sizing_field_from_thickness(label_img, thickness, elem_sizes)
+    distance_field = _sizing_field_from_thickness(label_img, thickness, facet_distances)
     del thickness
 
     if apply_cream:
-        logger.info('Applying cream mask')
+        logger.info("Applying cream mask")
         apply_cream_layer(label_img, size_field, distance_field, 20)
 
     # Smooth size field a bit to reduce effect of a few outliers in the thickness
-    # map on the mesh; the outliers show up as localized small thickness values at 
+    # map on the mesh; the outliers show up as localized small thickness values at
     # some of the tissue boundaries
     if smooth_size_field:
-        size_field = size_field**(1/3) # compress high values to preserve edges a bit better
-        kernel = smooth_size_field+1-np.abs(np.arange(-smooth_size_field, 
-                                                      smooth_size_field+1, 1))
-        kernel = kernel/np.sum(kernel)
+        size_field = size_field ** (
+            1 / 3
+        )  # compress high values to preserve edges a bit better
+        kernel = (
+            smooth_size_field
+            + 1
+            - np.abs(np.arange(-smooth_size_field, smooth_size_field + 1, 1))
+        )
+        kernel = kernel / np.sum(kernel)
         for i in range(3):
-            size_field = scipy.ndimage.convolve1d(size_field, kernel, axis=i, 
-                                            mode='constant', cval=0.0, origin=0)
+            size_field = scipy.ndimage.convolve1d(
+                size_field, kernel, axis=i, mode="constant", cval=0.0, origin=0
+            )
         size_field = size_field**3
-    
+
     # Control triangle size of outer surface to ensure eletrode meshing works OK
-    if skin_facet_size is not None:      
-        boundary = ((label_img > 0) & (label_img != ElementTags.CREAM)).astype('int8')
-        boundary = boundary-erosion(boundary, 1)
+    if skin_facet_size is not None:
+        boundary = ((label_img > 0) & (label_img != ElementTags.CREAM)).astype("int8")
+        boundary = boundary - erosion(boundary, 1)
         if skin_tag is not None:
             # keep boundary only at regions with label skin_tag-1000
             # to save some tetrahedra
-            skin_tet_tag = skin_tag-1000
-            boundary *= (label_img == skin_tet_tag)
-            boundary = dilate(boundary,1)
-            boundary *= (label_img == skin_tet_tag)
+            skin_tet_tag = skin_tag - 1000
+            boundary *= label_img == skin_tet_tag
+            boundary = dilate(boundary, 1)
+            boundary *= label_img == skin_tet_tag
         else:
-            boundary = dilate(boundary,1)
+            boundary = dilate(boundary, 1)
         size_field = size_field.flatten()
         size_field[boundary.flatten()] = skin_facet_size
         size_field = size_field.reshape(label_img.shape)
         size_field[label_img == ElementTags.CREAM] = skin_facet_size
         del boundary
 
-    logger.info(
-        'Time to prepare meshing: ' +
-        format_time(time.time()-start)
-    )
-    
-    # Replace values in size_field at positions where sizing_field > 0 
+    logger.info("Time to prepare meshing: " + format_time(time.time() - start))
+
+    # Replace values in size_field at positions where sizing_field > 0
     if sizing_field is not None:
         assert sizing_field.shape == label_img.shape
-        size_field[sizing_field>0] = sizing_field[sizing_field>0]
+        size_field[sizing_field > 0] = sizing_field[sizing_field > 0]
 
     if debug:
         tmp_nii = nib.Nifti1Image(size_field, affine)
-        nib.save(tmp_nii, os.path.join(debug_path, 'size_field.nii.gz'))
+        nib.save(tmp_nii, os.path.join(debug_path, "size_field.nii.gz"))
         tmp_nii = nib.Nifti1Image(distance_field, affine)
-        nib.save(tmp_nii, os.path.join(debug_path, 'distance_field.nii.gz'))
+        nib.save(tmp_nii, os.path.join(debug_path, "distance_field.nii.gz"))
         tmp_nii = nib.Nifti1Image(label_img, affine)
-        nib.save(tmp_nii, os.path.join(debug_path, 'label_img.nii.gz'))
+        nib.save(tmp_nii, os.path.join(debug_path, "label_img.nii.gz"))
         del tmp_nii
-    
+
     # Run meshing
 
     start = time.time()
@@ -1668,10 +1881,7 @@ def create_mesh(label_img, affine,
     del size_field
     del distance_field
 
-    logger.info(
-        'Time to mesh: ' +
-        format_time(time.time()-start)
-    )
+    logger.info("Time to mesh: " + format_time(time.time() - start))
 
     # separate out tetrahedron (will reconstruct surfaces later)
     start = time.time()
@@ -1684,15 +1894,15 @@ def create_mesh(label_img, affine,
     m = _relabel_microtets(m)
 
     if debug:
-        mesh_io.write_msh(m, os.path.join(debug_path, 'before_despike.msh'))
+        mesh_io.write_msh(m, os.path.join(debug_path, "before_despike.msh"))
 
     # remove spikes from mesh
     if remove_spikes:
         m = _remove_spikes(m, label_img, affine, label_GM=2, label_CSF=3)
-        
+
     # Remove cream mask (optional)
     if apply_cream:
-        logger.info('Remove cream mask')
+        logger.info("Remove cream mask")
         tags_keep = np.setdiff1d(np.unique(m.elm.tag1), ElementTags.CREAM)
         m = m.crop_mesh(tags=tags_keep)
 
@@ -1701,60 +1911,58 @@ def create_mesh(label_img, affine,
     m = m.crop_mesh(elements=max(idx, key=np.size))
 
     # reconstruct surfaces
-    logger.info('Reconstructing Surfaces')
+    logger.info("Reconstructing Surfaces")
     m.fix_th_node_ordering()
     m.reconstruct_unique_surface(hierarchy=hierarchy, add_outer_as=skin_tag)
 
     if debug:
-        mesh_io.write_msh(m, os.path.join(debug_path, 'before_smooth.msh'))
+        mesh_io.write_msh(m, os.path.join(debug_path, "before_smooth.msh"))
 
     m = _run_mmg(m, 1, mmg_noinsert)
 
     # smooth surfaces
     if smooth_steps > 0:
-        logger.info('Smoothing Mesh Surfaces')
+        logger.info("Smoothing Mesh Surfaces")
         m.smooth_surfaces(smooth_steps, step_size=0.3, max_gamma=10)
 
     if skin_care > 0:
-        logger.info('Extra Skin Care')
+        logger.info("Extra Skin Care")
         m.smooth_surfaces(skin_care, step_size=0.3, tags=skin_tag, max_gamma=10)
 
     if debug:
-        mesh_io.write_msh(m, os.path.join(debug_path, 'before_mmg.msh'), mmg_fix=True)
+        mesh_io.write_msh(m, os.path.join(debug_path, "before_mmg.msh"), mmg_fix=True)
 
     # improve mesh quality using mmg
     m = _run_mmg(m, 2, mmg_noinsert, sizing_field=sizing_field, affine=affine)
 
-    logger.info(
-        'Time to post-process mesh: ' +
-        format_time(time.time()-start)
-    )
+    logger.info("Time to post-process mesh: " + format_time(time.time() - start))
     return m
 
 
 def apply_cream_layer(label_img, size_field, distance_field, cream_thickness):
-    footprint = np.array([[[0, 0, 0],
-                           [0, 1, 0],
-                           [0, 0, 0]],
-                          [[0, 1, 0],
-                           [1, 1, 1],
-                           [0, 1, 0]],
-                          [[0, 0, 0],
-                           [0, 1, 0],
-                           [0, 0, 0]]])
+    footprint = np.array(
+        [
+            [[0, 0, 0], [0, 1, 0], [0, 0, 0]],
+            [[0, 1, 0], [1, 1, 1], [0, 1, 0]],
+            [[0, 0, 0], [0, 1, 0], [0, 0, 0]],
+        ]
+    )
     for i in range(cream_thickness):
         mask = label_img > 0
         mask_dil = scipy.ndimage.binary_dilation(mask, iterations=1)
         mask_dil ^= mask
         skin_and_cream_size_field = np.where(label_img == 0, -1, size_field)
         skin_and_cream_distance_field = np.where(label_img == 0, -1, distance_field)
-        size_field[mask_dil] = scipy.ndimage.grey_dilation(skin_and_cream_size_field, footprint=footprint)[
-            mask_dil]
-        distance_field[mask_dil] = \
-        scipy.ndimage.grey_dilation(skin_and_cream_distance_field, footprint=footprint)[mask_dil]
+        size_field[mask_dil] = scipy.ndimage.grey_dilation(
+            skin_and_cream_size_field, footprint=footprint
+        )[mask_dil]
+        distance_field[mask_dil] = scipy.ndimage.grey_dilation(
+            skin_and_cream_distance_field, footprint=footprint
+        )[mask_dil]
         label_img[mask_dil] = ElementTags.CREAM
 
-# def relabel_spikes(elm, tag, with_labels, adj_labels, label_a, label_b, 
+
+# def relabel_spikes(elm, tag, with_labels, adj_labels, label_a, label_b,
 #                    target_label, labels, nodes_label, adj_th, adj_threshold=2,
 #                    log_level=logging.DEBUG, relabel_tol=1e-6, max_iter=20,
 #                    nlist=None,maxn=None):
@@ -1796,7 +2004,7 @@ def apply_cream_layer(label_img, size_field, distance_field, cream_thickness):
 #     nlist : ndarray int
 #         list of which elements each nodes is connected to
 #     maxn : ndarray int
-#         number of elements that each nodes is connected to 
+#         number of elements that each nodes is connected to
 #         (needed for lookup in nlist)
 #     '''
 #     logger.log(
@@ -1822,7 +2030,7 @@ def apply_cream_layer(label_img, size_field, distance_field, cream_thickness):
 #         # Update tags and adjlabels, with_labels and nodes_label in place
 #         _update_tags(tag, elm, adj_th, with_labels, adj_labels, B_to_relabel,
 #                      label_b, target_label, labels, nodes_label,nlist,maxn)
-        
+
 #         logger.log(log_level,
 #                    f'Relabeled {np.sum(A_to_relabel)} from {labels[label_a]} '
 #                    f'and {np.sum(B_to_relabel)} from {labels[label_b]}'
@@ -1831,19 +2039,19 @@ def apply_cream_layer(label_img, size_field, distance_field, cream_thickness):
 #         # Stop if converge has been reached
 #         if frac_A_relabeled < relabel_tol and frac_B_relabeled < relabel_tol:
 #             break
-        
+
 #     # A_to_relabel, frac_A_relabeled = _find_spikes(tag, label_a, label_b,
 #     #           with_labels, adj_labels, target_label, labels, adj_threshold)
 #     # B_to_relabel, frac_B_relabeled = _find_spikes(tag, label_b, label_a,
 #     #           with_labels, adj_labels, target_label, labels, adj_threshold)
 #     # print(f'converged after {i+1} iterations, {np.sum(A_to_relabel)+np.sum(B_to_relabel)} left to relabel')
-        
-    
+
+
 # @numba.njit(parallel=True, fastmath=True)
 # def _find_spikes(tag, label, label2, with_labels, adj_labels, target_label, labels, adj_threshold=2):
 #     '''
 #     Find spikes
-    
+
 #     Parameters
 #     ----------
 #     tag : ndarray int
@@ -1862,12 +2070,12 @@ def apply_cream_layer(label_img, size_field, distance_field, cream_thickness):
 #             list of labels.
 #     adj_threshold : list, optional
 #         Threshold of number of adjacent faces for being considered a spike. The default is 2.
-    
+
 #     Returns
 #     -------
 #     ndarray bool
 #         Indicates if spikes were found
-    
+
 #     '''
 #     # Initialize output
 #     found_spikes = np.zeros(tag.shape[0], dtype='bool')
@@ -1902,7 +2110,7 @@ def apply_cream_layer(label_img, size_field, distance_field, cream_thickness):
 
 
 # @numba.njit
-# def _update_tags(tag, elm, adj_th, with_labels, adj_labels, to_relabel, label, 
+# def _update_tags(tag, elm, adj_th, with_labels, adj_labels, to_relabel, label,
 #                  target_label, labels, nodes_label,nlist,maxn):
 #     '''
 #     Update attributes needed for identifying spikes in place
@@ -1915,7 +2123,7 @@ def apply_cream_layer(label_img, size_field, distance_field, cream_thickness):
 #     adj_th : ndarray int
 #         value of m.elm.find_adjacent_tetrahedra()
 #     with_labels : ndarray bool
-    
+
 #     adj_labels : ndarray  int
 #         labels for adjacent elements
 #     to_relabel : ndarray bool
@@ -1931,12 +2139,12 @@ def apply_cream_layer(label_img, size_field, distance_field, cream_thickness):
 #     nlist : ndarray int
 #             list of which elements each nodes is connected to
 #     maxn : ndarray int
-#         number of elements that each nodes is connected to 
+#         number of elements that each nodes is connected to
 #         (needed for lookup in nlist)
 #     Returns
 #     -------
 #     None.
-    
+
 #     '''
 #     # Loop over elements
 #     for i in range(tag.shape[0]):
@@ -2012,7 +2220,7 @@ def apply_cream_layer(label_img, size_field, distance_field, cream_thickness):
 #         for j in range(elm.shape[1]):
 #             # element index (starting from 0 here)
 #             n = elm[i,j]-1
-#             # set the n'th element that the node is connected to 
+#             # set the n'th element that the node is connected to
 #             # ncount[n] counts how many has already been set
 #             nlist[maxn[n] + ncount[n]] = i
 #             #increment the elements that the node is connected to
@@ -2049,11 +2257,11 @@ def apply_cream_layer(label_img, size_field, distance_field, cream_thickness):
 #     max_iter: int
 #         Maximum number of relabeling iterations
 #     '''
-    
+
 #     if np.any(msh.elm.elm_type != 4):
 #         logger.log(log_level,
 #                    'Error: Attempting to despike mesh containing not only'
-#                    'tetrahedra. Please consider cropping the mesh first.' 
+#                    'tetrahedra. Please consider cropping the mesh first.'
 #                    )
 #         raise ValueError()
 #         return
@@ -2085,16 +2293,16 @@ def apply_cream_layer(label_img, size_field, distance_field, cream_thickness):
 #                 if t1 == t3 or t2 == t3:
 #                     continue
 #                 #only if at least one elements have this label combination
-#                 if not np.any((nodes_label[i] > 0) * 
+#                 if not np.any((nodes_label[i] > 0) *
 #                               (nodes_label[j + i + 1] > 0) * nodes_label[k]):
 #                     continue
 #                 #call relabel function
 #                 relabel_spikes(elm = elm, tag = tag, with_labels = with_labels,
-#                                adj_labels = adj_labels, label_a = i, 
+#                                adj_labels = adj_labels, label_a = i,
 #                                label_b = j + i + 1, target_label = k,
 #                                relabel_tol = relabel_tol, labels = tags,
 #                                adj_threshold = adj_threshold, adj_th = adj_th,
-#                                max_iter = max_iter, log_level = log_level, 
+#                                max_iter = max_iter, log_level = log_level,
 #                                nodes_label = nodes_label,nlist=nlist,maxn=maxn)
 #     #set tag1/tag2 in msh structure
 #     msh.elm.tag1 = tag
@@ -2104,19 +2312,19 @@ def apply_cream_layer(label_img, size_field, distance_field, cream_thickness):
 # def create_mesh(label_img, affine,
 #                 elem_sizes={"standard": {"range": [1, 5], "slope": 1.0}},
 #                 smooth_size_field = 2,
-#                 skin_facet_size=2.0, 
+#                 skin_facet_size=2.0,
 #                 facet_distances={"standard": {"range": [0.1, 3], "slope": 0.5}},
 #                 optimize=True, remove_spikes=True, skin_tag=1005,
 #                 remove_twins=True, hierarchy=None, smooth_steps=5, sizing_field=None):
 #     """Create a mesh from a labeled image.
 
-#     The maximum element sizes (CGAL facet_size and cell_size) are controlled 
+#     The maximum element sizes (CGAL facet_size and cell_size) are controlled
 #     by elem_sizes:
 #         size = slope * thickness
 #         size[size < range[0] = range[0]
 #         size[size > range[1] = range[1]
-#     where "thickness" is the local tissue thickness, 
-#     "range" is the size range (label-specific if label is added to elem_sizes, 
+#     where "thickness" is the local tissue thickness,
+#     "range" is the size range (label-specific if label is added to elem_sizes,
 #                                 otherwise the "standard" range is used)
 #     The distance (CGAL facet_distance) parameter is calcualted in a similar way.
 #     This allows for the meshing to adjust sizes according to local needs.
@@ -2133,12 +2341,12 @@ def apply_cream_layer(label_img, size_field, distance_field, cream_thickness):
 #             {"standard": {"range": [1, 5], "slope": 1.0},
 #                     "2": {"range": [1, 2], "slope": 0.7}}
 #         "range" determines the minimum and maximum values for element sizes.
-#         "slope" determines relationship between thickness and element sizes.      
+#         "slope" determines relationship between thickness and element sizes.
 #         Note: Label indices are used as keys, and need to be provided as string
 #         Default: {"standard": {"range": [1, 5], "slope": 1.0}}
 #     smooth_size_field: int (optional)
 #         Defines the size of a triangular kernel to smooth the size field. A bit
-#         of smoothing helps to remove the effect of a few outliers in the 
+#         of smoothing helps to remove the effect of a few outliers in the
 #         thickness estimates on the size field. Set to 0 to disable.
 #         The kernel size is 2*smooth_size_field+1 in voxels. Default:  2
 #     skin_facet_size: float (optional)
@@ -2147,8 +2355,8 @@ def apply_cream_layer(label_img, size_field, distance_field, cream_thickness):
 #         the other surfaces. Default:  2.0
 #     facet_distances: dictionary (optional)
 #         Relationship between thickness and facet_distance. For small
-#         facet_distance values, the meshing will follow the label boundaries 
-#         in the original image more strictly. This also means more elements. 
+#         facet_distance values, the meshing will follow the label boundaries
+#         in the original image more strictly. This also means more elements.
 #         Label-specific relationships can be added if needed.
 #         "range": Minimum and maximum values for facet_distance
 #         "slope": Steepness of relationship between thickness and facet_distance.
@@ -2158,7 +2366,7 @@ def apply_cream_layer(label_img, size_field, distance_field, cream_thickness):
 #     remove_spikes: bool (optional)
 #         Whether to remove spikes to create smoother meshes. Default: True
 #     skin_tag: float (optional)
-#         1) Restrict effects of skin_facet_size to the outer boundary of the 
+#         1) Restrict effects of skin_facet_size to the outer boundary of the
 #            region with label skin_tag-1000 (i.e. 5 for 1005)
 #         2) Add outer surface to mesh using given tag. Set to None to disable.
 #         NOTE: This surface will replace any other surface with the same tag.
@@ -2167,15 +2375,15 @@ def apply_cream_layer(label_img, size_field, distance_field, cream_thickness):
 #         Remove triangle twins created during surface reconstruction.
 #         Default: True
 #     hierarchy: list of ints or None (optional)
-#         List of surface tags that determines the order in which triangles 
+#         List of surface tags that determines the order in which triangles
 #         are kept for twin pairs (for remove_twins=True). Default for hierarchy=None:
 #         (1005, 1001, 1002, 1009, 1003, 1004, 1008, 1007, 1006, 1010)
-#         i.e. Skin (1005) has highest priority, WM (1001) comes next, etc; 
+#         i.e. Skin (1005) has highest priority, WM (1001) comes next, etc;
 #     smooth_steps: int (optional)
 #         Number of smoothing steps to apply to the final mesh surfaces. Default: 5
 #     sizing_field: 3D np.ndarray in float format (optional)
 #         Sizing field to control the element sizes. Its shape has to be the same
-#         as label_img.shape. Zeros will be replaced by values from the 
+#         as label_img.shape. Zeros will be replaced by values from the
 #         standard sizing field. Default: None
 
 #     Returns
@@ -2195,11 +2403,11 @@ def apply_cream_layer(label_img, size_field, distance_field, cream_thickness):
 #     start = time.time()
 #     thickness = _calc_thickness(label_img)
 #     thickness[thickness < .5] = 100 # set background thickness to some large value
-#     voxel_size = get_vox_size(affine) 
+#     voxel_size = get_vox_size(affine)
 #     if not np.allclose(np.diff(voxel_size), 0):
 #         logger.warning('Anisotropic image, meshing may contain extra artifacts')
 #     thickness *= np.average(voxel_size) # Scale thickness with voxel size
-    
+
 #     # Define size fields and distance field
 #     logger.info('Calculating sizing fields')
 #     size_field = _sizing_field_from_thickness(
@@ -2209,22 +2417,22 @@ def apply_cream_layer(label_img, size_field, distance_field, cream_thickness):
 #         label_img, thickness, facet_distances
 #     )
 #     del thickness
-    
+
 #     # Smooth size field a bit to reduce effect of a few outliers in the thickness
-#     # map on the mesh; the outliers show up as localized small thickness values at 
+#     # map on the mesh; the outliers show up as localized small thickness values at
 #     # some of the tissue boundaries
 #     if smooth_size_field:
 #         size_field = size_field**(1/3) # compress high values to preserve edges a bit better
-#         kernel = smooth_size_field+1-np.abs(np.arange(-smooth_size_field, 
+#         kernel = smooth_size_field+1-np.abs(np.arange(-smooth_size_field,
 #                                                       smooth_size_field+1, 1))
 #         kernel = kernel/np.sum(kernel)
 #         for i in range(3):
-#             size_field = scipy.ndimage.convolve1d(size_field, kernel, axis=i, 
+#             size_field = scipy.ndimage.convolve1d(size_field, kernel, axis=i,
 #                                             mode='constant', cval=0.0, origin=0)
 #         size_field = size_field**3
-    
+
 #     # Control triangle size of outer surface to ensure eletrode meshing works OK
-#     if skin_facet_size is not None:      
+#     if skin_facet_size is not None:
 #         boundary = (label_img > 0).astype('int8')
 #         boundary = boundary-erosion(boundary,1)
 #         if skin_tag is not None:
@@ -2244,12 +2452,12 @@ def apply_cream_layer(label_img, size_field, distance_field, cream_thickness):
 #         'Time to prepare meshing: ' +
 #         format_time(time.time()-start)
 #     )
-    
-#     # Replace values in size_field at positions where sizing_field > 0 
+
+#     # Replace values in size_field at positions where sizing_field > 0
 #     if sizing_field is not None:
 #         assert sizing_field.shape == label_img.shape
 #         size_field[sizing_field>0] = sizing_field[sizing_field>0]
-    
+
 #     # Run meshing
 #     logger.info('Meshing')
 #     start = time.time()
@@ -2266,7 +2474,7 @@ def apply_cream_layer(label_img, size_field, distance_field, cream_thickness):
 #         'Time to mesh: ' +
 #         format_time(time.time()-start)
 #     )
-    
+
 #     # Separate out tetrahedron (will reconstruct triangles later)
 #     start = time.time()
 #     mesh = mesh.crop_mesh(elm_type=4)
@@ -2277,7 +2485,7 @@ def apply_cream_layer(label_img, size_field, distance_field, cream_thickness):
 #         new_tags[mesh.elm.tag1 == i+1] = t
 #     mesh.elm.tag1 = new_tags
 #     mesh.elm.tag2 = new_tags.copy()
-    
+
 #     # Remove spikes from mesh
 #     if remove_spikes:
 #         logger.info('Removing Spikes')
@@ -2285,7 +2493,7 @@ def apply_cream_layer(label_img, size_field, distance_field, cream_thickness):
 #             mesh, relabel_tol=1e-5,
 #             adj_threshold=2
 #         )
-        
+
 #     # Reconctruct mesh surfaces
 #     logger.info('Reconstructing Surfaces')
 #     mesh.fix_th_node_ordering()
@@ -2294,7 +2502,7 @@ def apply_cream_layer(label_img, size_field, distance_field, cream_thickness):
 #     mesh.reconstruct_surfaces(add_outer_as=skin_tag)
 #     if remove_twins:
 #         mesh = mesh.remove_triangle_twins(hierarchy=hierarchy)
-        
+
 #     # Smooth mesh
 #     if smooth_steps > 0:
 #         logger.info('Smoothing Mesh Surfaces')

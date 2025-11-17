@@ -6,12 +6,21 @@ from sklearn.linear_model import LinearRegression
 from collections import OrderedDict
 
 
-class CurrentEstimator():
+class CurrentEstimator:
     """
     CurrentEstimator class to track TES electrode currents for faster estimation of fake Dirichlet boundary conditions
     """
-    def __init__(self, electrode_pos=None, current=None, method="gpc", channel_id=None, ele_id=None, current_sign=None,
-                 current_total=None):
+
+    def __init__(
+        self,
+        electrode_pos=None,
+        current=None,
+        method="gpc",
+        channel_id=None,
+        ele_id=None,
+        current_sign=None,
+        current_total=None,
+    ):
         """
         Constructor for CurrentEstimator class instance
 
@@ -48,7 +57,9 @@ class CurrentEstimator():
             - "linear": linear regression
             - "gpc": generalized polynomial chaos
         """
-        self.method = method   # "linear" (sklearn.linear_model.LinearRegression) "gpc" (pygpc)
+        self.method = (
+            method  # "linear" (sklearn.linear_model.LinearRegression) "gpc" (pygpc)
+        )
 
         self.gpc_grid = None
         self.gpc_coeffs = None
@@ -101,7 +112,7 @@ class CurrentEstimator():
                                      array 1                                           array 2
         current : np.ndarray of float [n_pos] or float
             Optimal current corresponding to electrode positions
-         """
+        """
 
         if type(electrode_pos) in [float, int, np.float64]:
             electrode_pos = np.array([electrode_pos])
@@ -121,7 +132,9 @@ class CurrentEstimator():
             if np.hstack(electrode_pos).tolist() in self.electrode_pos.tolist():
                 return
 
-            self.electrode_pos = np.vstack((self.electrode_pos, np.hstack(electrode_pos)))
+            self.electrode_pos = np.vstack(
+                (self.electrode_pos, np.hstack(electrode_pos))
+            )
 
         # reshape and append passed electrode currents to set of all electrode currents [n_train x n_ele]
         if self.current is None:
@@ -136,7 +149,9 @@ class CurrentEstimator():
         # determine list of approximation orders and associated number of gpc coefficients
         if self.method == "gpc":
             if self.gpc_grid is None:
-                self.gpc_grid = pygpc.RandomGrid(parameters_random=self.gpc_parameters, coords=self.electrode_pos)
+                self.gpc_grid = pygpc.RandomGrid(
+                    parameters_random=self.gpc_parameters, coords=self.electrode_pos
+                )
             else:
                 if electrode_pos.ndim == 1:
                     electrode_pos = electrode_pos[np.newaxis, :]
@@ -148,12 +163,14 @@ class CurrentEstimator():
                 dim = self.electrode_pos.shape[1]
 
                 for i_order, order in enumerate(self.gpc_order_list):
-                    self.gpc_n_coeffs_list[i_order] = pygpc.get_num_coeffs_sparse(order_dim_max=[order] * dim,
-                                                                                  order_glob_max=order,
-                                                                                  order_inter_max=2,
-                                                                                  dim=dim,
-                                                                                  order_inter_current=None,
-                                                                                  order_glob_max_norm=1)
+                    self.gpc_n_coeffs_list[i_order] = pygpc.get_num_coeffs_sparse(
+                        order_dim_max=[order] * dim,
+                        order_glob_max=order,
+                        order_inter_max=2,
+                        dim=dim,
+                        order_inter_current=None,
+                        order_glob_max_norm=1,
+                    )
 
     def estimate_current(self, electrode_pos):
         """
@@ -181,21 +198,23 @@ class CurrentEstimator():
         #                                             y_train=self.current)
         if self.method == "linear":
             if self.electrode_pos.shape[0] > 1:
-                current = get_estimate_linear_regression(x=electrode_pos,
-                                                         x_train=self.electrode_pos,
-                                                         y_train=self.current)
+                current = get_estimate_linear_regression(
+                    x=electrode_pos, x_train=self.electrode_pos, y_train=self.current
+                )
             else:
                 return None
 
         elif self.method == "gpc":
-            current = self.get_estimate_gpc(x=electrode_pos,
-                                            x_train=self.electrode_pos,
-                                            y_train=self.current)
+            current = self.get_estimate_gpc(
+                x=electrode_pos, x_train=self.electrode_pos, y_train=self.current
+            )
             if current is None:
                 return None
 
         else:
-            raise NotImplementedError(f"Specified current estimation method '{self.method}' not implemented.")
+            raise NotImplementedError(
+                f"Specified current estimation method '{self.method}' not implemented."
+            )
 
         # check for valid sign
         if not (np.sign(current) == self.current_sign).all():
@@ -205,8 +224,16 @@ class CurrentEstimator():
         for i in range(current.shape[0]):
             mask_neg = current[i, :] < 0
             mask_pos = current[i, :] > 0
-            current[i, current[i, :] < 0] = current[i, mask_neg] / np.abs(np.sum(current[i, mask_neg])) * self.current_total
-            current[i, current[i, :] > 0] = current[i, mask_pos] / np.abs(np.sum(current[i, mask_pos])) * self.current_total
+            current[i, current[i, :] < 0] = (
+                current[i, mask_neg]
+                / np.abs(np.sum(current[i, mask_neg]))
+                * self.current_total
+            )
+            current[i, current[i, :] > 0] = (
+                current[i, mask_pos]
+                / np.abs(np.sum(current[i, mask_pos]))
+                * self.current_total
+            )
 
         return current
 
@@ -223,7 +250,9 @@ class CurrentEstimator():
         """
         self.gpc_parameters = OrderedDict()
         for i in range(len(lb)):
-            self.gpc_parameters[str(i)] = pygpc.Beta(pdf_shape=[1, 1], pdf_limits=[lb[i], ub[i]])
+            self.gpc_parameters[str(i)] = pygpc.Beta(
+                pdf_shape=[1, 1], pdf_limits=[lb[i], ub[i]]
+            )
 
     def get_estimate_gpc(self, x, x_train, y_train):
         """
@@ -244,9 +273,11 @@ class CurrentEstimator():
             Estimate
         """
         # update gpc only every 20 iterations
-        if self.gpc_session is None or not(self.gpc_grid.n_grid % 20):
+        if self.gpc_session is None or not (self.gpc_grid.n_grid % 20):
             # select order based on number of samples
-            idx_order = np.where(self.gpc_grid.n_grid >= (2 * self.gpc_n_coeffs_list))[0]
+            idx_order = np.where(self.gpc_grid.n_grid >= (2 * self.gpc_n_coeffs_list))[
+                0
+            ]
 
             if len(idx_order) > 0:
                 order = self.gpc_order_list[idx_order[-1]]
@@ -268,10 +299,12 @@ class CurrentEstimator():
             options["verbose"] = False
 
             # define algorithm
-            self.gpc_algorithm = pygpc.Static_IO(parameters=self.gpc_parameters,
-                                                 options=options,
-                                                 grid=self.gpc_grid,
-                                                 results=y_train)
+            self.gpc_algorithm = pygpc.Static_IO(
+                parameters=self.gpc_parameters,
+                options=options,
+                grid=self.gpc_grid,
+                results=y_train,
+            )
 
             # initialize gPC Session
             self.gpc_session = pygpc.Session(algorithm=self.gpc_algorithm)
@@ -281,7 +314,9 @@ class CurrentEstimator():
 
         # approximate current
         x_norm = self.gpc_grid.get_normalized_coordinates(coords=x)
-        current = self.gpc_session.gpc[0].get_approximation(coeffs=self.gpc_coeffs, x=x_norm)
+        current = self.gpc_session.gpc[0].get_approximation(
+            coeffs=self.gpc_coeffs, x=x_norm
+        )
 
         return current
 
@@ -309,7 +344,7 @@ def get_parameters_gaussian_process(Xtrain, ytrain):
 
     n_y = ytrain.shape[1]
 
-    lengthscale_init = .2
+    lengthscale_init = 0.2
     kernel_variance_init = 1
     bounds = ((1e-3, 1e2), (1e-3, 1e2))
     initial_parameters = np.array([lengthscale_init, kernel_variance_init])
@@ -318,8 +353,13 @@ def get_parameters_gaussian_process(Xtrain, ytrain):
     variance = np.zeros(n_y)
 
     for i in range(n_y):
-        result = minimize(compute_neg_loglik, initial_parameters, (Xtrain, ytrain[:, i]),
-                          method='l-bfgs-b', bounds=bounds)
+        result = minimize(
+            compute_neg_loglik,
+            initial_parameters,
+            (Xtrain, ytrain[:, i]),
+            method="l-bfgs-b",
+            bounds=bounds,
+        )
         lengthscale[i] = result.x[0]
         variance[i] = result.x[1]
 
@@ -348,7 +388,9 @@ def compute_neg_loglik(parameters, Xtrain, ytrain):
         Xtrain = Xtrain[np.newaxis, :]
 
     lengthscale, variance = parameters
-    K = squared_exponential_kernel(Xtrain, Xtrain, lengthscale, variance)  # n_train x n_train
+    K = squared_exponential_kernel(
+        Xtrain, Xtrain, lengthscale, variance
+    )  # n_train x n_train
 
     try:
         L = np.linalg.cholesky(K)
@@ -356,9 +398,13 @@ def compute_neg_loglik(parameters, Xtrain, ytrain):
         return 0
 
     alpha = np.linalg.solve(L.T, np.linalg.solve(L, ytrain))
-    log_likelihood = - 0.5 * ytrain.T @ alpha - np.log(np.diag(L)).sum() - len(ytrain) / 2 * np.log(2 * np.pi)
+    log_likelihood = (
+        -0.5 * ytrain.T @ alpha
+        - np.log(np.diag(L)).sum()
+        - len(ytrain) / 2 * np.log(2 * np.pi)
+    )
 
-    return - log_likelihood.squeeze()
+    return -log_likelihood.squeeze()
 
 
 def squared_exponential_kernel(x, y, lengthscale, variance):
@@ -381,12 +427,9 @@ def squared_exponential_kernel(x, y, lengthscale, variance):
     k : np.ndarray of float [M x X]
         Kernel function values (covariance function or covariance matrix)
     """
-    sqdist = cdist(x, y, 'sqeuclidean')
-    k = variance * np.exp(-0.5 * sqdist * (1/lengthscale**2))
+    sqdist = cdist(x, y, "sqeuclidean")
+    k = variance * np.exp(-0.5 * sqdist * (1 / lengthscale**2))
     return k
-
-
-
 
 
 def get_estimate_linear_regression(x, x_train, y_train):
@@ -447,16 +490,21 @@ def get_estimate_gaussian_process(x, x_train, y_train, lengthscale=None, varianc
 
     # update lengthscale and variance estimates
     if (lengthscale is None) or (variance is None):
-        lengthscale, variance = get_parameters_gaussian_process(Xtrain=x_train,
-                                                                ytrain=y_train)
+        lengthscale, variance = get_parameters_gaussian_process(
+            Xtrain=x_train, ytrain=y_train
+        )
 
     # estimate y
     y = np.zeros(n_y)
 
     for i in range(n_y):
         # kernels
-        K = squared_exponential_kernel(x=x_train, y=x_train, lengthscale=lengthscale[i], variance=variance[i])  # n_train x n_train
-        Ks = squared_exponential_kernel(x=x_train, y=x, lengthscale=lengthscale[i], variance=variance[i])  # n_train x n_test
+        K = squared_exponential_kernel(
+            x=x_train, y=x_train, lengthscale=lengthscale[i], variance=variance[i]
+        )  # n_train x n_train
+        Ks = squared_exponential_kernel(
+            x=x_train, y=x, lengthscale=lengthscale[i], variance=variance[i]
+        )  # n_train x n_test
         # Kss = squared_exponential_kernel(x=x, y=x, lengthscale=lengthscale, variance=variance)  # n_test x n_test
 
         try:

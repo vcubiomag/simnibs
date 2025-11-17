@@ -9,7 +9,6 @@ from simnibs.eeg.forward import compute_tdcs_leadfield
 
 
 def parse_args(argv):
-
     program = dict(
         description="""
             Convenience function to run a TDCS leadfield simulation which forms
@@ -45,6 +44,7 @@ def parse_args(argv):
 
     return parser.parse_args(argv[1:])
 
+
 def main():
     args = parse_args(sys.argv)
 
@@ -64,8 +64,9 @@ def main():
         montage,
         args.subsampling,
         point_electrodes,
-        init_kwargs=init_kwargs
+        init_kwargs=init_kwargs,
     )
+
 
 if __name__ == "__main__":
     main()

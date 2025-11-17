@@ -10,7 +10,7 @@ from .simnibs_logger import logger
 # def spawn_process(cmd, new_thread=False, lvl=logging.INFO, shell=False,
 #                   new_process=False, check=True):
 #     """Spawn a new process and communicate its output.
-    
+
 #     PARAMETERS
 #     ----------
 #     cmd : str
@@ -87,7 +87,7 @@ from .simnibs_logger import logger
 
 def spawn_process(cmd, lvl=logging.INFO):
     """Spawn a new process and log its output.
-    
+
     PARAMETERS
     ----------
     cmd : list
@@ -98,12 +98,12 @@ def spawn_process(cmd, lvl=logging.INFO):
     """
     logger.debug(f"Running {cmd}")
     p = Popen(cmd, stdout=PIPE, stderr=STDOUT)
-    for line in iter(p.stdout.readline, b''):        
+    for line in iter(p.stdout.readline, b""):
         # get all output
-        line = line.decode('ASCII', errors='ignore').replace('\r', '')
+        line = line.decode("ASCII", errors="ignore").replace("\r", "")
         # remove one \n since logger.log adds one itself
-        if line[-1]=="\n":
-             line = line[:-1]
+        if line[-1] == "\n":
+            line = line[:-1]
         logger.log(lvl, line)
     p.wait()
     if p.returncode != 0:

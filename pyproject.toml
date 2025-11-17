@@ -1,61 +1,60 @@
+[build-system]
+build-backend = "scikit_build_core.build"
+requires = [
+    "scikit-build-core",
+    "cython",
+
+    # numpy requirement for wheel builds for distribution on PyPI - building
+    # against 2.x yields wheels that are also compatible with numpy 1.x at
+    # runtime.
+    # Note that building against numpy 1.x works fine too - users and
+    # redistributors can do this by installing the numpy version they like and
+    # disabling build isolation.
+    "numpy>=2.0.0",
+]
+
 [project]
 name = "simnibs"
+version = "4.5.0"
 authors = [
-  {name = "SimNIBS developers", email = "support@simnibs.org" } # Optional
-]
-maintainers = [
   {name = "SimNIBS developers", email = "support@simnibs.org" }
 ]
-license = {text = "GPL3"}
+license = "GPL-3.0-only"
 description = "Simulation of Non-Invasive Brain Stimulation"
-# long_description = file: README.md
-# long_description_content_type = text/markdown
-dynamic = ["version"]
-# version=open("simnibs/_version.py").readlines()[-1].split()[-1].strip("\"'"),
-#version = v4.1
 requires-python = ">=3.11"
-
-# additional dependencies which should perhaps be added?
-# libwebp, freeglut
-# python-mumps - only works automatically via conda
-# mpfr, gmp - from conda
 dependencies =[
-    "fmm3dpy==1.0.0",
-    "h5py",
-    "jsonschema",
-    # "matplotlib",
-    "mkl ; sys_platform != 'darwin'",
-    "nibabel",
-    "numba",
-    "numpy",
-    "petsc4py",
-    "pillow",
-    "pygpc==0.4.1",
-    "PyQt5",
-    "requests",
-    "samseg",
-    "scipy",
-    "tbb ; sys_platform != 'darwin'",
-  ]
+    "numpy>=1.26.4",
+    #"fmm3dpy",
+    #"h5py",
+    #"jsonschema",
+    #"matplotlib",
+    #"mkl ; sys_platform != 'darwin'",
+    #"nibabel",
+    #"numba",
+    #"petsc4py",
+    #"pillow",
+    #"pygpc==0.4.1",
+    #"PyQt5",
+    #"requests",
+    #"samseg",
+    #"scipy",
+    #"tbb",
+]
 
-[project.urls]  # Optional
+[project.optional-dependencies]
+test =[
+    "pytest",
+    "mock"
+]
+GUI =[ # Renamed from 'gui' to 'GUI' to match old file
+    "pyqt5",
+    "pyopengl"
+]
+
+[project.urls]
 "Homepage" = "http://simnibs.org"
 "Bug Reports" = "https://github.com/simnibs/simnibs/issues"
 "Source" = "https://github.com/simnibs/simnibs/"
-
-[build-system]
-requires = ['setuptools>=68', 'wheel', 'build', 'numpy >= 1.26, < 2', 'cython','setuptools-scm>=8']
-build-backend = 'setuptools.build_meta'
-
-[tool.setuptools]
-zip-safe = false
-include-package-data = true
-
-[tool.setuptools.packages.find]
-where = ["."]
-exclude = ["packing*", "docs*"]
-
-# [tool.setuptools_scm]
 
 [project.scripts]
     charm = "simnibs.cli.charm:main"
@@ -87,12 +86,7 @@ exclude = ["packing*", "docs*"]
     subject2mni = "simnibs.cli.subject2mni:main"
     subject_atlas = "simnibs.cli.subject_atlas:main"
 
-[project.optional-dependencies]
-test =[
-    "pytest",
-    "mock"
-]
-GUI =[
-    "pyqt5",
-    "pyopengl"
-]
+[tool.scikit-build]
+wheel.packages = ["simnibs"]
+wheel.exclude = ["**.pyx", "**.cpp", "**.c", "**.h"]
+sdist.exclude = ["simnibs/external/bin/**", "**/tests/**", "simnibs/_internal_resources/testing_files/**"]

@@ -5,6 +5,11 @@ cimport numpy as np
 from libc.math cimport isnan
 from libc.float cimport FLT_MAX
 
+cdef extern from *:
+    """
+    #undef I
+    """
+    pass
 
 cdef extern from "sanlm_float.c":
     void anlm(float* ima, int v, int f, int use_rician, const int* dims)

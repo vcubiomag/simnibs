@@ -1,75 +1,14 @@
-# SimNIBS specific
-bin/
-simnibs/matlab_tools/SIMNIBSDIR.m
-simnibs/matlab_tools/SIMNIBSPYTHON.m
-simnibs/matlab_tools/simnibs
-simnibs/matlab_tools/simnibs.cmd
-simnibs/resources/spm12/
-activate_simnibs
-uninstall_simnibs
-simnibs/mesh_tools/cython_msh.c
-simnibs/simulation/petsc_solver.c
-simnibs/mesh_tools/cgal/create_mesh_surf.cpp
-simnibs/mesh_tools/cgal/create_mesh_vol.cpp
-simnibs/mesh_tools/cgal/cgal_misc.cpp
-simnibs/mesh_tools/cgal/polygon_mesh_processing.cpp
-simnibs/segmentation/_cat_c_utils.c
-simnibs/segmentation/_marching_cubes_lewiner_cy.c
-simnibs/segmentation/_thickness.c
-Contents/
-simnibs/ccd-files/LICENSE
-simnibs/ccd-files/README.md
-# notice the first / (no recursivity)
-/build
-
-simnibs/_version.py
-
-# Object files
-*.o
-
-# Libraries
-*.lib
-*.a
-*.la
-*.lo
-*.dylib
-
-# Shared objects (inc. Windows DLLs)
-*.dll
-*.so
-*.so.*
-
-# Executables
-*.exe
-*.out
-*.app
-*.i*86
-*.x86_64
-*.hex
-
-# Ubuntu backup files
-*~
-
-# IDE stuff
-.idea/
-.Rhistory
-.vscode
-
-# Mac stuff
-.DS_store
-
 # Byte-compiled / optimized / DLL files
 __pycache__/
-*.py[cod]
+*.py[codz]
 *$py.class
-build/lib.*/
 
 # C extensions
 *.so
 
 # Distribution / packaging
 .Python
-env/
+build/
 develop-eggs/
 dist/
 downloads/
@@ -80,78 +19,35 @@ lib64/
 parts/
 sdist/
 var/
+wheels/
+share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+MANIFEST
 
-# Installer logs
-pip-log.txt
-pip-delete-this-directory.txt
+*.manifest
+*.spec
 
-# Unit test / coverage reports
-htmlcov/
-.tox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*,cover
-.hypothesis/
+# SIMNIBS Specific
+simnibs/matlab_tools/SIMNIBSDIR.m
+simnibs/matlab_tools/SIMNIBSPYTHON.m
+simnibs/matlab_tools/simnibs
+simnibs/matlab_tools/simnibs.cmd
 
-# Spyder project settings
-.spyderproject
+simnibs/mesh_tools/cython_msh.c
+simnibs/segmentation/_cat_c_utils.c
+simnibs/segmentation/_marching_cubes_lewiner_cy.c
+simnibs/segmentation/_thickness.c
+simnibs/mesh_tools/cgal/create_mesh_surf.cpp
+simnibs/mesh_tools/cgal/create_mesh_vol.cpp
+simnibs/mesh_tools/cgal/cgal_misc.cpp
+simnibs/mesh_tools/cgal/polygon_mesh_processing.cpp
 
-# Sublime project settings
-*.sublime-project
-*.sublime-workspace
-
-# Vim
-*.vim
-*.swp
-
-# GetDP/gmsh Resuls
-*.log
+simnibs/ccd-files/LICENSE
+simnibs/ccd-files/README.md
 
 # Misc
-miniconda3/
-
-# msvc debug file
-*.pdb
-
-###LaTeX###
-*.acn
-*.acr
-*.alg
-*.aux
-*.bbl
-*.blg
-*.dvi
-*.fdb_latexmk
-*.glg
-*.glo
-*.gls
-*.idx
-*.ilg
-*.ind
-*.ist
-*.lof
-*.log
-*.lot
-*.maf
-*.mtc
-*.mtc0
-*.nav
-*.nlo
-*.out
-*.pdfsync
-*.ps
-*.snm
-*.synctex.gz
-*.toc
-*.vrb
-*.xdy
-*.tdo
-!simnibs/external/bin/osx/fmm3dpy-1.0.0-cp39-cp39-macosx_10_9_x86_64.whl
-CGAL-5.4/*
-tbb/*
+.DS_Store
+.vscode/
+.idea/

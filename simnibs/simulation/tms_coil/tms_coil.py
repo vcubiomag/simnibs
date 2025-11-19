@@ -187,7 +187,7 @@ class TmsCoil(TcdElement):
     def get_da_dt(
         self,
         msh: Msh,
-        coil_affine: npt.NDArray[np.float_],
+        coil_affine: npt.NDArray[np.float64],
         eps: float = 1e-3,
     ) -> NodeData:
         """Calculate the dA/dt field applied by the coil at each node of the mesh.
@@ -197,7 +197,7 @@ class TmsCoil(TcdElement):
         ----------
         msh : Msh
             The mesh at which nodes the dA/dt field should be calculated
-        coil_affine : npt.NDArray[np.float_]
+        coil_affine : npt.NDArray[np.float64]
             The affine transformation that is applied to the coil
         eps : float, optional
             The requested precision, by default 1e-3
@@ -217,18 +217,18 @@ class TmsCoil(TcdElement):
 
     def get_da_dt_at_coordinates(
         self,
-        coordinates: npt.NDArray[np.float_],
-        coil_affine: npt.NDArray[np.float_],
+        coordinates: npt.NDArray[np.float64],
+        coil_affine: npt.NDArray[np.float64],
         eps: float = 1e-3,
-    ) -> npt.NDArray[np.float_]:
+    ) -> npt.NDArray[np.float64]:
         """Calculate the dA/dt field applied by the coil at each node of the mesh.
         The dI/dt value used for the simulation is set by the stimulators.
 
         Parameters
         ----------
-        coordinates : npt.NDArray[np.float_] (N x 3)
+        coordinates : npt.NDArray[np.float64] (N x 3)
             The coordinates at which the dA/dt field should be calculated
-        coil_affine : npt.NDArray[np.float_]
+        coil_affine : npt.NDArray[np.float64]
             The affine transformation that is applied to the coil
         eps : float, optional
             The requested precision, by default 1e-3
@@ -246,24 +246,24 @@ class TmsCoil(TcdElement):
 
     def get_a_field(
         self,
-        points: npt.NDArray[np.float_],
-        coil_affine: npt.NDArray[np.float_],
+        points: npt.NDArray[np.float64],
+        coil_affine: npt.NDArray[np.float64],
         eps: float = 1e-3,
-    ) -> npt.NDArray[np.float_]:
+    ) -> npt.NDArray[np.float64]:
         """Calculates the A field applied by the coil at each point.
 
         Parameters
         ----------
-        points : npt.NDArray[np.float_] (N x 3)
+        points : npt.NDArray[np.float64] (N x 3)
             The points at which the A field should be calculated in mm
-        coil_affine : npt.NDArray[np.float_] (4 x 4)
+        coil_affine : npt.NDArray[np.float64] (4 x 4)
             The affine transformation that is applied to the coil
         eps : float, optional
             The requested precision, by default 1e-3
 
         Returns
         -------
-        npt.NDArray[np.float_] (N x 3)
+        npt.NDArray[np.float64] (N x 3)
             The A field at every point in Tesla*meter
         """
         a_field = np.zeros_like(points)
@@ -274,24 +274,24 @@ class TmsCoil(TcdElement):
 
     def get_b_field(
         self,
-        points: npt.NDArray[np.float_],
-        coil_affine: npt.NDArray[np.float_],
+        points: npt.NDArray[np.float64],
+        coil_affine: npt.NDArray[np.float64],
         eps: float = 1e-3,
-    ) -> npt.NDArray[np.float_]:
+    ) -> npt.NDArray[np.float64]:
         """Calculates the B field applied by the coil at each point.
 
         Parameters
         ----------
-        points : npt.NDArray[np.float_] (N x 3)
+        points : npt.NDArray[np.float64] (N x 3)
             The points at which the B field should be calculated in mm
-        coil_affine : npt.NDArray[np.float_] (4 x 4)
+        coil_affine : npt.NDArray[np.float64] (4 x 4)
             The affine transformation that is applied to the coil
         eps : float, optional
             The requested precision, by default 1e-3
 
         Returns
         -------
-        npt.NDArray[np.float_] (N x 3)
+        npt.NDArray[np.float64] (N x 3)
             The A field at every point in Tesla
         """
         b_field = np.zeros_like(points, dtype=np.float64)
@@ -302,7 +302,7 @@ class TmsCoil(TcdElement):
 
     def get_mesh(
         self,
-        coil_affine: Optional[npt.NDArray[np.float_]] = None,
+        coil_affine: Optional[npt.NDArray[np.float64]] = None,
         apply_deformation: bool = True,
         include_casing: bool = True,
         include_optimization_points: bool = True,
@@ -312,7 +312,7 @@ class TmsCoil(TcdElement):
 
         Parameters
         ----------
-        coil_affine : Optional[npt.NDArray[np.float_]], optional
+        coil_affine : Optional[npt.NDArray[np.float64]], optional
             The affine transformation that is applied to the coil, by default None
         apply_deformation : bool, optional
             Whether or not to apply the current coil element deformations, by default True
@@ -510,7 +510,7 @@ class TmsCoil(TcdElement):
         visualization: Visualization,
         goe_fn: str,
         msh_skin: Msh,
-        coil_matrix: npt.NDArray[np.float_],
+        coil_matrix: npt.NDArray[np.float64],
         visibility=1,
         infix="",
         axis_vectors=True,
@@ -633,21 +633,21 @@ class TmsCoil(TcdElement):
 
     def get_casing_coordinates(
         self,
-        affine: Optional[npt.NDArray[np.float_]] = None,
+        affine: Optional[npt.NDArray[np.float64]] = None,
         apply_deformation: bool = True,
-    ) -> tuple[npt.NDArray[np.float_], npt.NDArray[np.float_]]:
+    ) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
         """Returns all casing points and min distance points of this coil and the coil elements.
 
         Parameters
         ----------
-        affine : Optional[npt.NDArray[np.float_]], optional
+        affine : Optional[npt.NDArray[np.float64]], optional
             The affine transformation that is applied to the coil, by default None
         apply_deformation : bool, optional
             Whether or not to apply the current coil element deformations, by default True
 
         Returns
         -------
-        tuple[npt.NDArray[np.float_], npt.NDArray[np.float_]
+        tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]
             A tuple containing the casing points and min distance points
         """
         if affine is None:
@@ -1231,8 +1231,8 @@ class TmsCoil(TcdElement):
     def write_nifti(
         self,
         fn: str,
-        limits: Optional[npt.NDArray[np.float_]] = None,
-        resolution: Optional[npt.NDArray[np.float_]] = None,
+        limits: Optional[npt.NDArray[np.float64]] = None,
+        resolution: Optional[npt.NDArray[np.float64]] = None,
         b_field: bool = False,
     ):
         """Writes the A field of the coil in the NIfTI file format.
@@ -1242,9 +1242,9 @@ class TmsCoil(TcdElement):
         ----------
         fn : str
            The path and file name to store the NIfTI coil file as
-        limits : Optional[npt.NDArray[np.float_]], optional
+        limits : Optional[npt.NDArray[np.float64]], optional
             Overrides the limits set in the coil object, by default None
-        resolution : Optional[npt.NDArray[np.float_]], optional
+        resolution : Optional[npt.NDArray[np.float64]], optional
             Overrides the resolution set in the coil object, by default None
 
         Raises
@@ -1295,21 +1295,21 @@ class TmsCoil(TcdElement):
 
     def get_sample_positions(
         self,
-        limits: Optional[npt.NDArray[np.float_]] = None,
-        resolution: Optional[npt.NDArray[np.float_]] = None,
-    ) -> tuple[npt.NDArray[np.float_], list[int], npt.NDArray[np.float_]]:
+        limits: Optional[npt.NDArray[np.float64]] = None,
+        resolution: Optional[npt.NDArray[np.float64]] = None,
+    ) -> tuple[npt.NDArray[np.float64], list[int], npt.NDArray[np.float64]]:
         """Returns the sampled positions and the dimensions calculated using the limits and resolution of this TMS coil or the parameter if supplied
 
         Parameters
         ----------
-        limits : Optional[npt.NDArray[np.float_]], optional
+        limits : Optional[npt.NDArray[np.float64]], optional
             Overrides the limits set in the coil object, by default None
-        resolution : Optional[npt.NDArray[np.float_], npt.NDArray[np.float_]], optional
+        resolution : Optional[npt.NDArray[np.float64], npt.NDArray[np.float64]], optional
             Overrides the resolution set in the coil object, by default None
 
         Returns
         -------
-        tuple[npt.NDArray[np.float_], list[int]]
+        tuple[npt.NDArray[np.float64], list[int]]
             The sampled positions and the dimensions calculated using the limits and resolution of this TMS coil or the parameter if supplied
             Also returns the limits which are updated if the limits are not dividable by the resolution.
 
@@ -1347,8 +1347,8 @@ class TmsCoil(TcdElement):
 
     def as_sampled(
         self,
-        limits: Optional[npt.NDArray[np.float_]] = None,
-        resolution: Optional[npt.NDArray[np.float_]] = None,
+        limits: Optional[npt.NDArray[np.float64]] = None,
+        resolution: Optional[npt.NDArray[np.float64]] = None,
         resample_sampled_elements: bool = False,
     ) -> "TmsCoil":
         """Turns every coil element into SampledGridPointElements.
@@ -1356,9 +1356,9 @@ class TmsCoil(TcdElement):
 
         Parameters
         ----------
-        limits : Optional[npt.NDArray[np.float_]], optional
+        limits : Optional[npt.NDArray[np.float64]], optional
             Overrides the limits set in the coil object, by default None
-        resolution : Optional[npt.NDArray[np.float_]], optional
+        resolution : Optional[npt.NDArray[np.float64]], optional
             Overrides the resolution set in the coil object, by default None
         resample_sampled_elements : bool, optional
              Whether or not to resample existing SampledGridPointElements, by default False
@@ -1433,17 +1433,17 @@ class TmsCoil(TcdElement):
 
     def as_sampled_squashed(
         self,
-        limits: Optional[npt.NDArray[np.float_]] = None,
-        resolution: Optional[npt.NDArray[np.float_]] = None,
+        limits: Optional[npt.NDArray[np.float64]] = None,
+        resolution: Optional[npt.NDArray[np.float64]] = None,
     ) -> "TmsCoil":
         """Turns the coil elements grouped by the stimulators into sampled elements and returns the resulting TMS coil.
         Deformations are applied before the sampling.
 
         Parameters
         ----------
-        limits : Optional[npt.NDArray[np.float_]], optional
+        limits : Optional[npt.NDArray[np.float64]], optional
             Overrides the limits set in the coil object, by default None
-        resolution : Optional[npt.NDArray[np.float_]], optional
+        resolution : Optional[npt.NDArray[np.float64]], optional
             Overrides the resolution set in the coil object, by default None
 
         Returns

@@ -63,7 +63,7 @@ class TmsCoilModel(TcdElement):
 
     def get_mesh(
         self,
-        affine_matrix: npt.NDArray[np.float_],
+        affine_matrix: npt.NDArray[np.float64],
         include_casing: bool = True,
         include_optimization_points: bool = True,
         model_index: int = 0,
@@ -72,7 +72,7 @@ class TmsCoilModel(TcdElement):
 
         Parameters
         ----------
-        affine_matrix : npt.NDArray[np.float_]
+        affine_matrix : npt.NDArray[np.float64]
             The affine transformation that is applied to the coil model
         include_casing : bool, optional
             Whether or not to include the casing mesh, by default True
@@ -121,18 +121,18 @@ class TmsCoilModel(TcdElement):
         return mesh
 
     def get_points(
-        self, affine_matrix: Optional[npt.NDArray[np.float_]] = None
+        self, affine_matrix: Optional[npt.NDArray[np.float64]] = None
     ) -> npt.NDArray[np.float64]:
         """Returns the coil model points, optionally transformed by an affine transformation
 
         Parameters
         ----------
-        affine_matrix : Optional[npt.NDArray[np.float_]], optional
+        affine_matrix : Optional[npt.NDArray[np.float64]], optional
             The affine transformation that is applied to the coil model, by default None
 
         Returns
         -------
-        npt.NDArray[np.float_]
+        npt.NDArray[np.float64]
             The coil model points
         """
         if affine_matrix is None:
@@ -145,18 +145,18 @@ class TmsCoilModel(TcdElement):
         )
 
     def get_min_distance_points(
-        self, affine_matrix: Optional[npt.NDArray[np.float_]] = None
+        self, affine_matrix: Optional[npt.NDArray[np.float64]] = None
     ) -> npt.NDArray[np.float64]:
         """Returns the coil model min distance points, optionally transformed by an affine transformation
 
         Parameters
         ----------
-        affine_matrix : Optional[npt.NDArray[np.float_]], optional
+        affine_matrix : Optional[npt.NDArray[np.float64]], optional
             The affine transformation that is applied to the coil model, by default None
 
         Returns
         -------
-        npt.NDArray[np.float_]
+        npt.NDArray[np.float64]
             The coil model min distance points
         """
         if affine_matrix is None:
@@ -194,7 +194,7 @@ class TmsCoilModel(TcdElement):
         return merged_coil_model
 
     def apply_deformations(
-        self, affine_matrix: npt.NDArray[np.float_]
+        self, affine_matrix: npt.NDArray[np.float64]
     ) -> "TmsCoilModel":
         deformed_min_distance_points = self.get_min_distance_points(affine_matrix)
         return TmsCoilModel(

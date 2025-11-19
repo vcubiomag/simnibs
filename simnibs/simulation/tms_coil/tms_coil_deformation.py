@@ -92,29 +92,29 @@ class TmsCoilDeformation(ABC, TcdElement):
         self.deformation_range = deformation_range
 
     @abstractmethod
-    def apply(self, points: npt.NDArray[np.float_]) -> npt.NDArray[np.float_]:
+    def apply(self, points: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
         """Applies the deformation to every point
 
         Parameters
         ----------
-        points : npt.NDArray[np.float_] (Nx3)
+        points : npt.NDArray[np.float64] (Nx3)
             The points that should be deformed
 
 
         Returns
         -------
-        npt.NDArray[np.float_] (Nx3)
+        npt.NDArray[np.float64] (Nx3)
             The deformed points
         """
         pass
 
     @abstractmethod
-    def as_matrix(self) -> npt.NDArray[np.float_]:
+    def as_matrix(self) -> npt.NDArray[np.float64]:
         """An affine matrix representation of the deformation
 
         Returns
         -------
-        npt.NDArray[np.float_] (4x4)
+        npt.NDArray[np.float64] (4x4)
             The affine matrix representing the deformation
         """
         pass
@@ -182,22 +182,22 @@ class TmsCoilTranslation(TmsCoilDeformation):
                 f"Expected 'axis' to be between 0 and 2 but was {self.axis}"
             )
 
-    def apply(self, points: npt.NDArray[np.float_]):
+    def apply(self, points: npt.NDArray[np.float64]):
         return points + self.get_translation()
 
-    def get_translation(self) -> npt.NDArray[np.float_]:
+    def get_translation(self) -> npt.NDArray[np.float64]:
         """Returns the translation vector for this coil translation
 
         Returns
         -------
-        npt.NDArray[np.float_] (3)
+        npt.NDArray[np.float64] (3)
             The translation vector for this coil translation
         """
         translation = np.zeros(3)
         translation[self.axis] = self.deformation_range.current
         return translation
 
-    def as_matrix(self) -> npt.NDArray[np.float_]:
+    def as_matrix(self) -> npt.NDArray[np.float64]:
         affine_matrix = np.eye(4)
         affine_matrix[:3, 3] = self.get_translation()
         return affine_matrix
@@ -263,12 +263,12 @@ class TmsCoilRotation(TmsCoilDeformation):
                 f"Expected 'point_2' to be in the format [x, y, z] but shape was {self.point_2.shape}"
             )
 
-    def get_rotation(self) -> npt.NDArray[np.float_]:
+    def get_rotation(self) -> npt.NDArray[np.float64]:
         """Returns the affine matrix of the rotation around the axis defined by the two points
 
         Returns
         -------
-        npt.NDArray[np.float_] (4x4)
+        npt.NDArray[np.float64] (4x4)
             The affine matrix representing the rotation around the axis defined by the two points
         """
         v = (self.point_2 - self.point_1) / np.linalg.norm(self.point_2 - self.point_1)
@@ -283,12 +283,12 @@ class TmsCoilRotation(TmsCoilDeformation):
         Q = T @ R @ iT
         return Q
 
-    def apply(self, points: npt.NDArray[np.float_]):
+    def apply(self, points: npt.NDArray[np.float64]):
         rotation_matrix = self.get_rotation()
         points = points @ rotation_matrix[:3, :3].T + rotation_matrix[None, :3, 3]
         return points
 
-    def as_matrix(self) -> npt.NDArray[np.float_]:
+    def as_matrix(self) -> npt.NDArray[np.float64]:
         return self.get_rotation()
 
     def to_tcd(

@@ -302,7 +302,7 @@ class RegionOfInterest:
         self._prepared = False
         return self
 
-    def get_nodes(self, node_type: str | None = None) -> npt.NDArray[np.float_]:
+    def get_nodes(self, node_type: str | None = None) -> npt.NDArray[np.float64]:
         """Returns the nodes which are part of the Region of Interest.
         Element center coordinates in the case of node_type="elm_center", node coordinates in the case of node_type="node"
 
@@ -313,7 +313,7 @@ class RegionOfInterest:
 
         Returns
         -------
-        npt.NDArray[np.float_]
+        npt.NDArray[np.float64]
             The node coordinates which are part of the Region of Interest
 
         Raises

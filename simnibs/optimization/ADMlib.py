@@ -4,7 +4,6 @@ import logging
 import numpy as np
 import fmm3dpy as fmm
 import time
-import numpy.linalg as la
 
 logger = logging.getLogger("simnibs")
 # *********************************************************************

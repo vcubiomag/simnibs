@@ -24,7 +24,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 import os
 import sys
 import argparse
-import nibabel
 import numpy as np
 from samseg import gems
 from simnibs import __version__

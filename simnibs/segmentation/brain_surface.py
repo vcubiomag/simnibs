@@ -36,7 +36,6 @@ from ..utils import file_finder
 from ..utils.simnibs_logger import logger
 from ..utils.spawn_process import spawn_process
 from ..utils.transformations import resample_vol, crop_vol, normalize
-from ..utils import mesh_element_properties
 
 
 # --------------- expansion from central to pial surface ------------------

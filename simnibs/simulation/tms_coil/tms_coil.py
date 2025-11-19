@@ -10,7 +10,6 @@ import nibabel as nib
 import numpy as np
 import numpy.typing as npt
 
-from simnibs import __version__
 from simnibs.mesh_tools import mesh_io
 from simnibs.mesh_tools.gmsh_view import Visualization, _gray_red_lightblue_blue_cm
 from simnibs.mesh_tools.mesh_io import Elements, Msh, NodeData, Nodes

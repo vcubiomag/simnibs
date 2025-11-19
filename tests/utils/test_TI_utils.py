@@ -4,7 +4,6 @@ import pytest
 import h5py
 
 from simnibs.utils import TI_utils as TI
-from simnibs.mesh_tools import mesh_io
 
 
 @pytest.fixture()

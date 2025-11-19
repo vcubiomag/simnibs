@@ -36,7 +36,7 @@ import logging
 
 from simnibs import __version__
 from simnibs import SIMNIBSDIR
-from simnibs.utils import cond_utils, file_finder
+from simnibs.utils import cond_utils
 from simnibs.mesh_tools.mesh_io import write_msh
 from simnibs.mesh_tools.meshing import create_mesh
 from simnibs.utils.transformations import resample_vol, crop_vol

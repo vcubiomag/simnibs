@@ -10,7 +10,6 @@ import numpy as np
 import nibabel
 
 from simnibs.simulation import sim_struct
-from simnibs.mesh_tools import mesh_io
 
 
 @pytest.fixture(scope="module")

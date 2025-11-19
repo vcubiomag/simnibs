@@ -8,12 +8,10 @@ import multiprocessing
 import time
 import copy
 import warnings
-import atexit
 import h5py
 import logging
 import numpy as np
 import scipy.sparse as sparse
-from simnibs.mesh_tools import gmsh_view
 from simnibs.simulation.tms_coil.tms_coil import TmsCoil
 
 from simnibs.utils.mesh_element_properties import ElementTags

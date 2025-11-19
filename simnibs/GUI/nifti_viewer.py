@@ -393,7 +393,6 @@ class NiftiViewer(object):
 
 
 def check_segmentation(fn_subject):
-    from scipy import ndimage
     import matplotlib.pylab as pl
     from matplotlib.colors import ListedColormap
 

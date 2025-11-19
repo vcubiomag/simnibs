@@ -11,7 +11,7 @@ from scipy import sparse
 from simnibs import __version__
 from simnibs.simulation.tms_coil.tms_coil import TmsCoil
 from simnibs.mesh_tools import mesh_io
-from simnibs.mesh_tools.mesh_io import Msh, read_msh
+from simnibs.mesh_tools.mesh_io import Msh
 from simnibs.utils import simnibs_logger
 from simnibs.utils.simnibs_logger import logger
 from simnibs.utils.file_finder import Templates, SubjectFiles

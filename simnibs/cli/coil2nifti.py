@@ -23,10 +23,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 from itertools import chain
 import os
 import glob
-import re
 import numpy as np
-import fmm3dpy
-import nibabel as nib
 import time
 
 from simnibs.simulation.tms_coil.tms_coil import TmsCoil

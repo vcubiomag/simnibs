@@ -4,7 +4,6 @@ import warnings
 
 import numpy as np
 import numpy.typing as npt
-import scipy.special as sp
 
 
 def potential_3layers_surface_electrodes(

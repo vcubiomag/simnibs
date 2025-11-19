@@ -8,7 +8,6 @@ from .ProbabilisticAtlas import ProbabilisticAtlas
 
 from .utilities import requireNumpyArray
 from .figures import initVisualizer
-import scipy.ndimage
 
 
 class initializationOptions:

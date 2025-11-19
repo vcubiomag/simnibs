@@ -1,6 +1,3 @@
-import os
-import pytest
-import simnibs
 import numpy as np
 
 from simnibs.simulation.onlinefem import FemTargetPointCloud

@@ -2,7 +2,6 @@ import pytest
 from pathlib import Path
 import copy
 import numpy as np
-import os
 import requests
 import shutil
 import zipfile

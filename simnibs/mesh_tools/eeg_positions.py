@@ -23,7 +23,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import math
 import numpy
 
-from simnibs import __version__
 import csv  # csv is in the standard library
 
 

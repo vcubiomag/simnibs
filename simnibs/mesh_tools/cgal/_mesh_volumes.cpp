@@ -64,7 +64,7 @@ int _mesh_image(
   #endif
 
   // Mesh domain
-  Mesh_domain_img domain = Mesh_domain_img::create_labeled_image_mesh_domain(image, 1e-10);
+  Mesh_domain_img domain = Mesh_domain_img::create_labeled_image_mesh_domain(image, params::relative_error_bound(1e-10));
 
   // Mesh criteria
   Facet_criteria_img facet_criteria(facet_angle, facet_size, facet_distance);
@@ -156,7 +156,7 @@ int _mesh_image_sizing_field(
   #endif
 
   // Mesh domain
-  Mesh_domain_img domain = Mesh_domain_img::create_labeled_image_mesh_domain(image, 1e-10);
+  Mesh_domain_img domain = Mesh_domain_img::create_labeled_image_mesh_domain(image, params::relative_error_bound(1e-10));
 
   // Mesh criteria
   Sizing_field sizing_field_cell = {

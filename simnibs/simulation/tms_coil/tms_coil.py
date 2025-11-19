@@ -590,7 +590,7 @@ class TmsCoil(TcdElement):
                 coil_matrix,
                 goe_fn,
                 values=[3, 2, 1, 2.5],
-                name=f"coil_axis_vectors",
+                name="coil_axis_vectors",
                 mode="ba",
             )
 

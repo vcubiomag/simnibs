@@ -5,6 +5,7 @@ import numpy as np
 import simnibs.utils.cond_utils
 from simnibs.mesh_tools import mesh_io
 
+
 @pytest.fixture
 def tensor():
     v1 = np.random.rand(3)
@@ -209,7 +210,6 @@ class TestTensorVisualization:
             fields[2].value / factor[:, None], eig_val[min_eig] * eig_vec[:, min_eig]
         )
         assert np.allclose(fields[3].value / factor, np.prod(eig_val) ** (1.0 / 3.0))
-
 
 
 class TestCond:

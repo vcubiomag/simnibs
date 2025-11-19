@@ -9,16 +9,14 @@ import numpy as np
 import pytest
 from scipy.spatial import KDTree
 
-from simnibs.mesh_tools.mesh_io import Elements, Msh, Nodes
+from simnibs.mesh_tools.mesh_io import Msh
 from simnibs.simulation.tms_coil.tms_coil import TmsCoil
-from simnibs.simulation.tms_coil.tms_coil_deformation import TmsCoilRotation
 from simnibs.simulation.tms_coil.tms_coil_element import (
     DipoleElements,
     LineSegmentElements,
     PositionalTmsCoilElements,
     SampledGridPointElements,
 )
-from simnibs.simulation.tms_coil.tms_coil_model import TmsCoilModel
 from simnibs.simulation.tms_coil.tms_stimulator import TmsStimulator
 
 

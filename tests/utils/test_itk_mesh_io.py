@@ -6,7 +6,7 @@ from simnibs.utils import itk_mesh_io
 
 @pytest.fixture
 def atlas_itk_msh_fn(test_data_dir):
-    return test_data_dir / 'cube_atlas' / "atlas.txt.gz"
+    return test_data_dir / "cube_atlas" / "atlas.txt.gz"
 
 
 class TestITKReader:

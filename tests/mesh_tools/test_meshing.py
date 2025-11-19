@@ -30,7 +30,7 @@ def surface(test_data_dir):
 
 @pytest.fixture
 def spikyblob(test_data_dir):
-    fn = test_data_dir /  "spikyblob.msh"
+    fn = test_data_dir / "spikyblob.msh"
     return mesh_io.read_msh(fn)
 
 
@@ -367,6 +367,7 @@ def test_mesh_surfaces(surface):
     vol_1, vol_2 = volumes(mesh)
     assert np.isclose(vol_2, 4**3 - 2**3, rtol=1e-1)
     assert np.isclose(vol_1, 2**3, rtol=1e-1)
+
 
 @pytest.mark.slow
 def test_remesh(sphere3_msh):

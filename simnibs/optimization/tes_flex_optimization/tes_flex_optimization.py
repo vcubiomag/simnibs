@@ -1252,7 +1252,7 @@ class TesFlexOptimization:
         if not self._prepared:
             self._prepare()
 
-        if not cpus is None:
+        if cpus is not None:
             from numba import set_num_threads
 
             set_num_threads(int(cpus))

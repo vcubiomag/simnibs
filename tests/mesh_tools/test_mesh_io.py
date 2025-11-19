@@ -10,6 +10,7 @@ from scipy.spatial import ConvexHull
 from simnibs.mesh_tools import mesh_io
 from simnibs.utils import itk_mesh_io
 
+
 @pytest.fixture(scope="module")
 def sphere3_baricenters(sphere3_msh):
     baricenters = np.zeros((sphere3_msh.elm.nr, 3), dtype=float)
@@ -30,9 +31,10 @@ def sphere3_baricenters(sphere3_msh):
     )
     return baricenters
 
+
 @pytest.fixture
 def atlas_itk_msh(test_data_dir):
-    fn = test_data_dir / 'cube_atlas' / "atlas.txt.gz"
+    fn = test_data_dir / "cube_atlas" / "atlas.txt.gz"
     return itk_mesh_io.itk_to_msh(fn)
 
 

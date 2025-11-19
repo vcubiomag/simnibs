@@ -3,8 +3,6 @@ import numpy as np
 from simnibs.simulation.onlinefem import FemTargetPointCloud
 
 
-
-
 class TestRegionOfInterest:
     def test_RegionOfInterestInitializer_custom_center(self, sphere3_msh):
         nodes = np.array(
@@ -23,5 +21,7 @@ class TestRegionOfInterest:
     def test_RegionOfInterestInitializer_custom_domains(self, sphere3_msh):
         roi = FemTargetPointCloud(
             sphere3_msh,
-            sphere3_msh.elements_baricenters()[(sphere3_msh.elm.tag1 == 3) | (sphere3_msh.elm.tag1 == 4)],
+            sphere3_msh.elements_baricenters()[
+                (sphere3_msh.elm.tag1 == 3) | (sphere3_msh.elm.tag1 == 4)
+            ],
         )

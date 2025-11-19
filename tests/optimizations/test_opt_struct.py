@@ -35,6 +35,7 @@ def sphere_w_elec_msh(test_data_dir):
     fn = test_data_dir / "sphere_w_electrodes.msh"
     return Msh(fn=fn)
 
+
 @pytest.fixture
 def sphere_elec(sphere_w_elec_msh):
     return sphere_w_elec_msh.crop_mesh([1005, 1100, 1101])

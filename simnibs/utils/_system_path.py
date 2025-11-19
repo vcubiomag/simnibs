@@ -39,7 +39,8 @@ __all__ = [
 ]
 
 import sys
-import os, ctypes
+import os
+import ctypes
 from os import path
 from ctypes import wintypes
 

@@ -22,4 +22,3 @@ from .simulation import fem, biot_savart
 from .utils.region_of_interest import *
 from .simulation.run_simnibs import run_simnibs
 from .optimization import opt_struct
-

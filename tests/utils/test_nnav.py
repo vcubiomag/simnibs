@@ -15,23 +15,63 @@ from simnibs.utils.nnav import localite, softaxic, brainsight, ant
 
 @pytest.fixture()
 def tm_fn(test_data_dir):
-    return test_data_dir / "nnav_testdata" / "localite" / "Session_20120925103137328" / "TMSTrigger" / "TriggerMarkers_Coil1_20210409170817799.xml"
+    return (
+        test_data_dir
+        / "nnav_testdata"
+        / "localite"
+        / "Session_20120925103137328"
+        / "TMSTrigger"
+        / "TriggerMarkers_Coil1_20210409170817799.xml"
+    )
+
 
 @pytest.fixture()
 def tm_no_pos_fn(test_data_dir):
-    return test_data_dir / "nnav_testdata" / "localite" / "Session_20120925103137328" / "TMSTrigger" / "no_pos_data_TriggerMarkers_Coil0_20200220155529299.xml"
+    return (
+        test_data_dir
+        / "nnav_testdata"
+        / "localite"
+        / "Session_20120925103137328"
+        / "TMSTrigger"
+        / "no_pos_data_TriggerMarkers_Coil0_20200220155529299.xml"
+    )
+
 
 @pytest.fixture()
 def im_lps_fn1(test_data_dir):
-    return test_data_dir / "nnav_testdata" / "localite" / "Session_20120925103137328" / "InstrumentMarkers" / "LPS_InstrumentMarker20120925123537421.xml"
+    return (
+        test_data_dir
+        / "nnav_testdata"
+        / "localite"
+        / "Session_20120925103137328"
+        / "InstrumentMarkers"
+        / "LPS_InstrumentMarker20120925123537421.xml"
+    )
+
 
 @pytest.fixture()
 def im_ras_fn1(test_data_dir):
-    return test_data_dir / "nnav_testdata" / "localite" / "Session_20120925103137328" / "InstrumentMarkers" / "RAS_InstrumentMarker20170316160859032.xml"
+    return (
+        test_data_dir
+        / "nnav_testdata"
+        / "localite"
+        / "Session_20120925103137328"
+        / "InstrumentMarkers"
+        / "RAS_InstrumentMarker20170316160859032.xml"
+    )
+
 
 @pytest.fixture()
 def im_ras_fn2(test_data_dir):
-    return test_data_dir / "nnav_testdata" / "localite" / "Session_20120925103137328" / "InstrumentMarkers" / "RAS_InstrumentMarker20170403154022328.xml"
+    return (
+        test_data_dir
+        / "nnav_testdata"
+        / "localite"
+        / "Session_20120925103137328"
+        / "InstrumentMarkers"
+        / "RAS_InstrumentMarker20170403154022328.xml"
+    )
+
 
 @pytest.fixture
 def arr_tm_0():
@@ -44,6 +84,7 @@ def arr_tm_0():
         ]
     )
 
+
 @pytest.fixture
 def arr_im_0():
     return np.array(
@@ -54,6 +95,7 @@ def arr_im_0():
             [+0.00000000e00, +0.00000000e00, -0.00000000e00, +1.00000000e00],
         ]
     )
+
 
 @pytest.fixture
 def arr_im_lps_0():
@@ -66,9 +108,11 @@ def arr_im_lps_0():
         ]
     )
 
+
 @pytest.fixture()
 def softaxicTestFile(test_data_dir):
     return test_data_dir / "nnav_testdata" / "softaxic" / "neuronav_coil_test.stmpx"
+
 
 @pytest.fixture
 def pos0():
@@ -85,43 +129,86 @@ def pos0():
 
 @pytest.fixture()
 def dcm_brainsight_fn(test_data_dir):
-    return test_data_dir / "nnav_testdata" / "brainsight" / "dcmimage_brainsightcoord.txt"
+    return (
+        test_data_dir / "nnav_testdata" / "brainsight" / "dcmimage_brainsightcoord.txt"
+    )
+
 
 @pytest.fixture()
 def dcm_world_fn(test_data_dir):
     return test_data_dir / "nnav_testdata" / "brainsight" / "dcmimage_worldcoord.txt"
 
+
 @pytest.fixture()
 def dcm_niftialigned_fn(test_data_dir):
-    return test_data_dir / "nnav_testdata" / "brainsight" / "dcmimage_niftialignedcoord.txt"
+    return (
+        test_data_dir
+        / "nnav_testdata"
+        / "brainsight"
+        / "dcmimage_niftialignedcoord.txt"
+    )
+
 
 @pytest.fixture()
 def nii_brainsight_fn(test_data_dir):
-    return test_data_dir / "nnav_testdata" / "brainsight" / "niiImage_brainsightcoord.txt"
+    return (
+        test_data_dir / "nnav_testdata" / "brainsight" / "niiImage_brainsightcoord.txt"
+    )
+
 
 @pytest.fixture()
 def nii_niftiscanner_fn(test_data_dir):
     return test_data_dir / "nnav_testdata" / "brainsight" / "niiImage_nifticoord.txt"
 
+
 @pytest.fixture()
 def nii_niftialigned_fn(test_data_dir):
-    return test_data_dir / "nnav_testdata" / "brainsight" / "niiImage_niftialignedcoord.txt"
+    return (
+        test_data_dir
+        / "nnav_testdata"
+        / "brainsight"
+        / "niiImage_niftialignedcoord.txt"
+    )
+
 
 @pytest.fixture()
 def nii_niftialigned_q_fn(test_data_dir):
-    return test_data_dir / "nnav_testdata" / "brainsight" / "niiImage_niftialigned_q_coord_v14.txt"
+    return (
+        test_data_dir
+        / "nnav_testdata"
+        / "brainsight"
+        / "niiImage_niftialigned_q_coord_v14.txt"
+    )
+
 
 @pytest.fixture()
 def nii_niftialigned_empty_fn(test_data_dir):
-    return test_data_dir / "nnav_testdata" / "brainsight" / "niiImage_niftialignedcoord_empty.txt"
+    return (
+        test_data_dir
+        / "nnav_testdata"
+        / "brainsight"
+        / "niiImage_niftialignedcoord_empty.txt"
+    )
+
 
 @pytest.fixture()
 def nii_niftialigned_no_samples_fn(test_data_dir):
-    return test_data_dir / "nnav_testdata" / "brainsight" / "niiImage_niftialignedcoord_no_samples.txt"
+    return (
+        test_data_dir
+        / "nnav_testdata"
+        / "brainsight"
+        / "niiImage_niftialignedcoord_no_samples.txt"
+    )
+
 
 @pytest.fixture()
 def nii_niftialigned_no_targets_fn(test_data_dir):
-    return test_data_dir / "nnav_testdata" / "brainsight" / "niiImage_niftialignedcoord_no_targets.txt"
+    return (
+        test_data_dir
+        / "nnav_testdata"
+        / "brainsight"
+        / "niiImage_niftialignedcoord_no_targets.txt"
+    )
 
 
 @pytest.fixture()
@@ -159,10 +246,12 @@ def arr_sample3():
         ]
     )
 
+
 @pytest.fixture()
 def ant_mrk_fn(test_data_dir):
-    return test_data_dir / "nnav_testdata" / "ant" / "ioJson3DMarker_example_SimNIBS.mrk"
-
+    return (
+        test_data_dir / "nnav_testdata" / "ant" / "ioJson3DMarker_example_SimNIBS.mrk"
+    )
 
 
 class TestLocalite:
@@ -288,7 +377,9 @@ class TestBrainsight:
         np.all(np.isclose(tms_list_samples.pos[0].matsimnibs, arr_sample2))
 
     def test_read_nii_niftialigned_q(self, nii_niftialigned_q_fn, arr_sample3):
-        tmslist_targets, tms_list_samples = brainsight().read(str(nii_niftialigned_q_fn))
+        tmslist_targets, tms_list_samples = brainsight().read(
+            str(nii_niftialigned_q_fn)
+        )
         assert tmslist_targets.name == "Targets"
         assert tms_list_samples.name == "Samples"
         assert len(tmslist_targets.pos) == 2

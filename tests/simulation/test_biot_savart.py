@@ -4,7 +4,6 @@ import pytest
 from simnibs.simulation import biot_savart
 
 
-
 def _smooth_field(r, x, y, z):
     """Defines a smooth field, usefull for testing"""
     # Transform from mm to m

@@ -54,7 +54,7 @@ class Testlpmn:
         M_orders = np.arange(m + 1).reshape(-1, 1, 1)
         N_degrees = np.arange(n + 1).reshape(1, -1, 1)
         x_reshaped = x.reshape(1, 1, -1)
-        
+
         A = scipy.special.lpmv(M_orders, N_degrees, x_reshaped)
         B = analytical_solutions.lpmn(m, n, x)
 

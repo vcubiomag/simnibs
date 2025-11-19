@@ -17,9 +17,11 @@ from simnibs.mesh_tools import mesh_io
 def sphere_el_msh(test_data_dir):
     return mesh_io.read_msh(test_data_dir / "sphere_w_electrodes.msh")
 
+
 @pytest.fixture
 def cube_msh(test_data_dir):
     return mesh_io.read_msh(test_data_dir / "cube_w_electrodes.msh")
+
 
 @pytest.fixture
 def cube_lr(test_data_dir):
@@ -658,7 +660,9 @@ class TestLeadfield:
     @pytest.mark.parametrize("field", ["E", "J"])
     @pytest.mark.parametrize("n_workers", [1, 2])
     @pytest.mark.parametrize("input_type", ["tag", "nodes"])
-    def test_leadfield(self, input_type, n_workers, field, post_pro, cube_msh, rdm, mag):
+    def test_leadfield(
+        self, input_type, n_workers, field, post_pro, cube_msh, rdm, mag
+    ):
         if sys.platform in ["win32", "darwin"] and n_workers > 1:
             """ Same as above, does not work on windows or MacOS"""
             return
@@ -740,7 +744,9 @@ class TestTMSMany:
     @pytest.mark.parametrize("post_pro", [False, True])
     @pytest.mark.parametrize("n_workers", [1, 2])
     @patch.object(fem, "_get_da_dt_from_coil")
-    def test_many_simulations(self, mock_set_up, n_workers, post_pro, tms_sphere, rdm, mag):
+    def test_many_simulations(
+        self, mock_set_up, n_workers, post_pro, tms_sphere, rdm, mag
+    ):
         if sys.platform in ["win32", "darwin"] and n_workers > 1:
             """ Same as above, does not work on windows """
             return

@@ -22,8 +22,10 @@ from simnibs.simulation.tms_coil.tms_coil_element import (
 from simnibs.simulation.tms_coil.tms_coil_model import TmsCoilModel
 from simnibs.simulation.tms_coil.tms_stimulator import TmsStimulator
 
+
 def pytest_configure(config):
     config.addinivalue_line("markers", "slow: mark test as slow to run")
+
 
 def pytest_addoption(parser):
     """
@@ -33,8 +35,9 @@ def pytest_addoption(parser):
         "--skip-slow",
         action="store_true",
         default=False,
-        help="skip tests marked as slow"
+        help="skip tests marked as slow",
     )
+
 
 def pytest_collection_modifyitems(config, items):
     """
@@ -48,27 +51,32 @@ def pytest_collection_modifyitems(config, items):
         if "slow" in item.keywords:
             item.add_marker(skip_slow)
 
+
 @pytest.fixture(scope="session")
 def test_data_dir():
     """Returns the absolute path to the 'resources' directory."""
     return Path(__file__).parent / "resources"
+
 
 @pytest.fixture(scope="session")
 def examples_dir():
     """Returns the absolute path to the 'examples' directory."""
     return Path(__file__).parent / ".." / "examples"
 
+
 @pytest.fixture(scope="session")
 def _base_sphere3_msh(test_data_dir):
     return mesh_io.read_msh(test_data_dir / "sphere3.msh")
+
 
 @pytest.fixture(scope="function")
 def sphere3_msh(_base_sphere3_msh):
     return copy.deepcopy(_base_sphere3_msh)
 
+
 @pytest.fixture(scope="module")
 def example_dataset():
-    url = 'https://github.com/simnibs/example-dataset/releases/download/v4.0-lowres/ernie_lowres_V2.zip'
+    url = "https://github.com/simnibs/example-dataset/releases/download/v4.0-lowres/ernie_lowres_V2.zip"
 
     fn_folder = tempfile.mkdtemp()
 
@@ -87,7 +95,7 @@ def example_dataset():
     try:
         shutil.rmtree(fn_folder)
     except:
-        print(f'Could not remove example dataset folder: {fn_folder}')
+        print(f"Could not remove example dataset folder: {fn_folder}")
 
 
 @pytest.fixture(scope="session")
@@ -95,20 +103,24 @@ def rdm():
     """
     Utility function to calculate the Relative Difference Measure.
     """
+
     def _rdm(a, b):
         return np.linalg.norm(a / np.linalg.norm(a) - b / np.linalg.norm(b))
-    
+
     return _rdm
+
 
 @pytest.fixture(scope="session")
 def mag():
     """
     Utility function to calculate the magnitude difference in log space.
     """
+
     def _mag(a, b):
         return np.abs(np.log(np.linalg.norm(a) / np.linalg.norm(b)))
-    
+
     return _mag
+
 
 @pytest.fixture(scope="module")
 def small_functional_3_element_coil() -> TmsCoil:

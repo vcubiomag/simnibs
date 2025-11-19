@@ -4,7 +4,6 @@ import numpy as np
 from simnibs.utils import csv_reader
 
 
-
 class TestCSV:
     def test_read_csv_generic(self):
         f = tempfile.NamedTemporaryFile(delete=False)

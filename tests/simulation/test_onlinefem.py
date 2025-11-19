@@ -366,7 +366,9 @@ class TestOnlineFEM:
     @pytest.mark.parametrize("nearest", [pytest.param(False), pytest.param(True)])
     # loop over dadt in elements or nodes
     @pytest.mark.parametrize("useElements", [pytest.param(False), pytest.param(True)])
-    def test_tms_sphere(self, tms_sphere, rdm, mag, solver_type, fill, nearest, useElements):
+    def test_tms_sphere(
+        self, tms_sphere, rdm, mag, solver_type, fill, nearest, useElements
+    ):
         # get analytical solution and dipole coil object
         m, cond, dAdt, E_analytical, coil = tms_sphere
 

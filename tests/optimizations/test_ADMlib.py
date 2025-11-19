@@ -340,5 +340,5 @@ def test_ADMmag():
                 H = calculate_Hprim(current_elm_positions, c, coil_dipole_pos_moved)
                 E_comp[c_idx] = np.sum(H * coil_dipole_weights_rot)
 
-            magnE = np.sqrt(np.sum(E_comp ** 2))
+            magnE = np.sqrt(np.sum(E_comp**2))
             assert np.allclose(magnE_adm[j, i], magnE)

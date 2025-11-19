@@ -7326,7 +7326,7 @@ def read_medit(fn):
         line = f.readline()
         if not line.startswith("MeshVersionFormatted"):
             raise IOError("Invalid mesh format: Missing 'MeshVersionFormatted'")
-        
+
         line = f.readline().strip()
         if line != "Dimension 3":
             raise IOError(f"Can only read 3D meshes, but got: {line}")
@@ -7335,27 +7335,29 @@ def read_medit(fn):
         while True:
             line = f.readline().strip()
             if not line:
-                raise IOError("Invalid mesh format: Reached EOF before 'Vertices' block")
+                raise IOError(
+                    "Invalid mesh format: Reached EOF before 'Vertices' block"
+                )
             if line == "Vertices":
                 break
 
         n_vertices = int(f.readline().strip())
         if n_vertices <= 0:
             raise ValueError("Invalid vertex count")
-        
+
         for _ in range(n_vertices):
             parts = f.readline().split()
             vertices_list.append([float(parts[0]), float(parts[1]), float(parts[2])])
-        
+
         nodes = Nodes(np.array(vertices_list, dtype=float))
 
         while True:
             element_type_line = f.readline().strip()
-            
+
             if not element_type_line:
                 # This can happen if 'End' is missing and we just hit EOF
-                break 
-                
+                break
+
             if element_type_line.startswith("#"):
                 continue
 
@@ -7381,27 +7383,28 @@ def read_medit(fn):
 
             block_elements = []
             block_tags = []
-            
+
             for _ in range(n_elements):
                 parts = [int(p) for p in f.readline().split()]
                 block_elements.append(parts[:-1])
                 block_tags.append(parts[-1])
-            
+
             # Convert this block's data to numpy
             elements_np = np.array(block_elements, dtype=int)
             tags_np = np.array(block_tags, dtype=int)
 
             # Validate shape
             if elements_np.shape[1] != expected_nodes:
-                raise IOError(f"Mismatched element data for {element_type_line}. "
-                              f"Expected {expected_nodes} nodes, got {elements_np.shape[1]}")
+                raise IOError(
+                    f"Mismatched element data for {element_type_line}. "
+                    f"Expected {expected_nodes} nodes, got {elements_np.shape[1]}"
+                )
 
             # Pad Triangles to 4 columns (n1, n2, n3, -1)
             if expected_nodes == 3:
-                elements_np = np.hstack((
-                    elements_np, 
-                    -1 * np.ones((n_elements, 1), dtype=int)
-                ))
+                elements_np = np.hstack(
+                    (elements_np, -1 * np.ones((n_elements, 1), dtype=int))
+                )
 
             element_node_lists.append(elements_np)
             element_type_list.append(np.full(n_elements, elm_type_id, dtype=int))

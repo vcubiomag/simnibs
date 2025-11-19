@@ -13,7 +13,9 @@ from simnibs.segmentation.charm_main import _check_q_and_s_form
 
 from simnibs.segmentation.simnibs_samseg import initVisualizer
 from simnibs.segmentation.simnibs_samseg.io import kvlReadSharedGMMParameters
-from simnibs.segmentation.simnibs_samseg.simnibs_segmentation_utils import writeBiasCorrectedImagesAndSegmentation
+from simnibs.segmentation.simnibs_samseg.simnibs_segmentation_utils import (
+    writeBiasCorrectedImagesAndSegmentation,
+)
 
 
 @pytest.fixture(scope="module")
@@ -28,12 +30,24 @@ def testmni_nii(test_data_dir):
 
 @pytest.fixture(scope="module")
 def testtemplate_nii():
-    return Path(SIMNIBSDIR) / "segmentation" / "atlases" / "charm_atlas_mni" / "template.nii"
+    return (
+        Path(SIMNIBSDIR)
+        / "segmentation"
+        / "atlases"
+        / "charm_atlas_mni"
+        / "template.nii"
+    )
 
 
 @pytest.fixture(scope="module")
 def testaffinemesh_msh():
-    return Path(SIMNIBSDIR) / "segmentation" / "atlases" / "charm_atlas_mni" / "affine_no_neck.txt.gz"
+    return (
+        Path(SIMNIBSDIR)
+        / "segmentation"
+        / "atlases"
+        / "charm_atlas_mni"
+        / "affine_no_neck.txt.gz"
+    )
 
 
 @pytest.fixture(scope="module")
@@ -49,7 +63,6 @@ def testcube_nii(test_data_dir):
 @pytest.fixture(scope="module")
 def testcubeatlas_path(test_data_dir):
     return test_data_dir / "cube_atlas"
-
 
 
 def _calc_dice(vol1, vol2):

@@ -140,7 +140,7 @@ class OnlineFEM:
 
         self.solver_loglevel = solver_loglevel
 
-        if not cpus is None:
+        if cpus is not None:
             logger.info(f"Attempting to limit number of threads to {cpus}")
             if solver_options == "pardiso":
                 os.environ["MKL_DOMAIN_NUM_THREADS"] = (

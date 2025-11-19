@@ -1773,9 +1773,9 @@ def create_mesh(
     """
     if hierarchy is None:
         hierarchy = (1, 2, 9, 3, 4, 8, 7, 6, 11, 10, 12, 5)
-    if not "standard" in elem_sizes:
+    if "standard" not in elem_sizes:
         raise ValueError('elem_sizes needs a "standard" entry')
-    if not "standard" in facet_distances:
+    if "standard" not in facet_distances:
         raise ValueError('facet_distances needs a "standard" entry')
 
     if label_img.dtype not in [np.uint8, np.uint16]:

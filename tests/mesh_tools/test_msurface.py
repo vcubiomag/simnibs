@@ -3,6 +3,7 @@ import numpy as np
 
 from simnibs.mesh_tools import surface
 
+
 @pytest.fixture
 def sphere3_surf(sphere3_msh):
     return surface.Surface(sphere3_msh, 1005)

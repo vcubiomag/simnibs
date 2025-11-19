@@ -53,7 +53,7 @@ def sphere3_msh():
 @pytest.fixture(scope="module")
 def example_dataset():
     url = (
-        f"https://github.com/simnibs/example-dataset/releases/"
+        "https://github.com/simnibs/example-dataset/releases/"
         "download/v4.0-lowres/ernie_lowres_V2.zip"
     )
     fn_folder = os.path.abspath(os.path.join(os.path.dirname(__file__), "test_data"))

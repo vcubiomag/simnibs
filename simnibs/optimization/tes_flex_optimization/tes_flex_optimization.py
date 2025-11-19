@@ -151,6 +151,7 @@ class TesFlexOptimization:
         self.run_mapped_electrodes_simulation = False
         self.net_electrode_file = None
         self.fn_mapped_sim = []
+        self.electrode_mapping = None
 
         # headmodel
         self.fn_mesh = None

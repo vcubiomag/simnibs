@@ -52,3 +52,4 @@ simnibs/ccd-files/README.md
 .vscode/
 .idea/
 .ruff_cache
+.pytest_cache

@@ -89,4 +89,4 @@ GUI =[ # Renamed from 'gui' to 'GUI' to match old file
 [tool.scikit-build]
 wheel.packages = ["simnibs"]
 wheel.exclude = ["**.pyx", "**.cpp", "**.c", "**.h"]
-sdist.exclude = ["simnibs/external/bin/**", "**/tests/**", "simnibs/_internal_resources/testing_files/**"]
+sdist.exclude = ["simnibs/external/bin/**"]

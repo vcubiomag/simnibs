@@ -585,7 +585,7 @@ class DipoleElements(PositionalTmsCoilElements):
         A[:, 1] = out.gradtarg[2][0] - out.gradtarg[0][2]
         A[:, 2] = out.gradtarg[0][1] - out.gradtarg[1][0]
 
-        A *= -1e-7
+        A *= -1e-7 * 4 * np.pi
 
         return A
 
@@ -635,7 +635,7 @@ class DipoleElements(PositionalTmsCoilElements):
                 pgt=2,
             )
 
-        B = out.gradtarg.T * -1e-7
+        B = out.gradtarg.T * -1e-7 * 4 * np.pi
         return B
 
     def generate_element_mesh(
@@ -810,7 +810,7 @@ class LineSegmentElements(PositionalTmsCoilElements):
                 pgt=1,
             )
 
-        A = 1e-7 * A.pottarg.T
+        A = 1e-7 * 4 * np.pi * A.pottarg.T
         return A
 
     def get_b_field(
@@ -866,7 +866,7 @@ class LineSegmentElements(PositionalTmsCoilElements):
         B[:, 1] = out.gradtarg[2][0] - out.gradtarg[0][2]
         B[:, 2] = out.gradtarg[0][1] - out.gradtarg[1][0]
 
-        B *= -1e-7
+        B *= -1e-7 * 4 * np.pi
         return B
 
     def generate_element_mesh(

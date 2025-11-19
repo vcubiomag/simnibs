@@ -289,7 +289,7 @@ def computeHprimary(rs, js, robs, prec):
     # As such, this function is used to compute E-primary due to magnetic currents also.
     outex = fmm.Output()
     Hprimary = np.zeros([3, robs.shape[1]])
-    muover4pi = -1e-7
+    muover4pi = -1e-7 * 4 * np.pi
     js1 = js[0, :]
     out = fmm.lfmm3d(eps=prec, sources=rs, targets=robs, charges=js1, pgt=2)
     logger.debug("Run 1")

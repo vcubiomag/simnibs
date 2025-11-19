@@ -35,6 +35,8 @@ from itertools import combinations
 from typing import Union
 from functools import partial
 
+from pathlib import Path
+
 import numpy as np
 from numpy.lib import recfunctions
 import scipy.spatial
@@ -7311,42 +7313,108 @@ def read_medit(fn):
     mesh: Msh
         Mesh class
     """
-    with open(fn, "r") as f:
-        if not f.readline().startswith("MeshVersionFormatted"):
-            raise IOError("invalid mesh format")
-        if f.readline().strip() != "Dimension 3":
-            raise IOError("Can only read 3D meshes")
-        if f.readline().strip() != "Vertices":
-            raise IOError("invalid mesh format")
-        n_vertices = int(f.readline().strip())
-        assert n_vertices > 0
-        vertices = np.loadtxt(f, dtype=float, max_rows=n_vertices)[:, :-1]
-        nodes = Nodes(vertices)
-        elm = Elements()
+
+    if not isinstance(fn, Path):
+        fn = Path(fn)
+
+    vertices_list = []
+    element_node_lists = []
+    element_type_list = []
+    element_tag_list = []
+
+    with fn.open("r") as f:
+        line = f.readline()
+        if not line.startswith("MeshVersionFormatted"):
+            raise IOError("Invalid mesh format: Missing 'MeshVersionFormatted'")
+        
+        line = f.readline().strip()
+        if line != "Dimension 3":
+            raise IOError(f"Can only read 3D meshes, but got: {line}")
+
+        # Skip any inserted comments from ITK
         while True:
-            element_type = f.readline().strip()
-            if element_type == "Triangles":
-                elm_type = 2
-            elif element_type == "Tetrahedra":
-                elm_type = 4
-            elif element_type == "End":
+            line = f.readline().strip()
+            if not line:
+                raise IOError("Invalid mesh format: Reached EOF before 'Vertices' block")
+            if line == "Vertices":
+                break
+
+        n_vertices = int(f.readline().strip())
+        if n_vertices <= 0:
+            raise ValueError("Invalid vertex count")
+        
+        for _ in range(n_vertices):
+            parts = f.readline().split()
+            vertices_list.append([float(parts[0]), float(parts[1]), float(parts[2])])
+        
+        nodes = Nodes(np.array(vertices_list, dtype=float))
+
+        while True:
+            element_type_line = f.readline().strip()
+            
+            if not element_type_line:
+                # This can happen if 'End' is missing and we just hit EOF
+                break 
+                
+            if element_type_line.startswith("#"):
+                continue
+
+            elm_type_id = 0
+            expected_nodes = 0
+
+            if element_type_line == "Triangles":
+                elm_type_id = 2
+                expected_nodes = 3
+            elif element_type_line == "Tetrahedra":
+                elm_type_id = 4
+                expected_nodes = 4
+            elif element_type_line == "End":
                 break
             else:
-                raise IOError(f"Cant read element type: {element_type}")
-            n_elements = int(f.readline().strip())
-            elements_tag = np.loadtxt(f, dtype=int, max_rows=n_elements)
-            elements = elements_tag[:, :-1]
-            tag = elements_tag[:, -1]
-            if elements.shape[1] == 3:
-                elements = np.hstack((elements, -1 * np.ones((n_elements, 1), int)))
-            elm.node_number_list = np.vstack((elm.node_number_list, elements))
-            elm.elm_type = np.hstack(
-                (elm.elm_type, elm_type * np.ones(n_elements, int))
-            )
-            elm.tag1 = np.hstack((elm.tag1, tag))
+                raise IOError(f"Cannot read element type: {element_type_line}")
 
+            n_elements = int(f.readline().strip())
+            if n_elements < 0:
+                raise ValueError("Element count cannot be negative")
+            if n_elements == 0:
+                continue
+
+            block_elements = []
+            block_tags = []
+            
+            for _ in range(n_elements):
+                parts = [int(p) for p in f.readline().split()]
+                block_elements.append(parts[:-1])
+                block_tags.append(parts[-1])
+            
+            # Convert this block's data to numpy
+            elements_np = np.array(block_elements, dtype=int)
+            tags_np = np.array(block_tags, dtype=int)
+
+            # Validate shape
+            if elements_np.shape[1] != expected_nodes:
+                raise IOError(f"Mismatched element data for {element_type_line}. "
+                              f"Expected {expected_nodes} nodes, got {elements_np.shape[1]}")
+
+            # Pad Triangles to 4 columns (n1, n2, n3, -1)
+            if expected_nodes == 3:
+                elements_np = np.hstack((
+                    elements_np, 
+                    -1 * np.ones((n_elements, 1), dtype=int)
+                ))
+
+            element_node_lists.append(elements_np)
+            element_type_list.append(np.full(n_elements, elm_type_id, dtype=int))
+            element_tag_list.append(tags_np)
+
+    elm = Elements()
+    if element_node_lists:
+        elm.node_number_list = np.vstack(element_node_lists)
+        elm.elm_type = np.hstack(element_type_list)
+        elm.tag1 = np.hstack(element_tag_list)
         elm.tag2 = elm.tag1.copy()
-        return Msh(nodes, elm)
+
+    return Msh(nodes, elm)
 
 
 def open_in_gmsh(fn, new_thread=False):

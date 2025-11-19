@@ -2400,9 +2400,9 @@ class Msh:
         -------
         min_distance_on_grid : Callable
             The signed gridded distance field function (inside is negative)
-        grid : npt.NDArray[np.float_]
+        grid : npt.NDArray[np.float64]
             The voxelized surface distance
-        affine : npt.NDArray[np.float_]
+        affine : npt.NDArray[np.float64]
             The affine transformation from voxel to world coordinates
         AABBTree : pyAABBTree
             The AABBTree used
@@ -2490,9 +2490,9 @@ class Msh:
         -------
         npt.NDArray[np.bool_]
             The binary voxel volume
-        npt.NDArray[np.float_]
+        npt.NDArray[np.float64]
             The affine transformation from voxel to world space
-        voxel_dither_factors : npt.NDArray[np.float_]
+        voxel_dither_factors : npt.NDArray[np.float64]
             The spacial factor that describes how many voxel are described by each interior dithered voxel for each voxel inside the volume
         pyAABBTree
             The AABBTree used

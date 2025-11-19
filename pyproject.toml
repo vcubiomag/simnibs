@@ -24,21 +24,19 @@ description = "Simulation of Non-Invasive Brain Stimulation"
 requires-python = ">=3.11"
 dependencies =[
     "numpy>=1.26.4",
-    #"fmm3dpy",
-    #"h5py",
-    #"jsonschema",
-    #"matplotlib",
-    #"mkl ; sys_platform != 'darwin'",
-    #"nibabel",
-    #"numba",
-    #"petsc4py",
-    #"pillow",
-    #"pygpc==0.4.1",
-    #"PyQt5",
-    #"requests",
-    #"samseg",
-    #"scipy",
-    #"tbb",
+    "fmm3dpy==1.0.3",
+    "h5py",
+    "jsonschema",
+    "matplotlib",
+    "nibabel",
+    "numba",
+    "petsc4py",
+    "pillow",
+    "pygpc",
+    "PyQt5",
+    "requests",
+    "samseg",
+    "scipy",
 ]
 
 [project.optional-dependencies]
@@ -46,7 +44,7 @@ test =[
     "pytest",
     "mock"
 ]
-GUI =[ # Renamed from 'gui' to 'GUI' to match old file
+GUI =[
     "pyqt5",
     "pyopengl"
 ]

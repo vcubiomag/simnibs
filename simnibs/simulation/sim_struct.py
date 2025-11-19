@@ -3184,7 +3184,7 @@ def sphereFit(pts, bounds=None):
 def get_surround_pos(
     center_pos,
     fnamehead,
-    radius_surround=50,
+    radius_surround=50.0,
     N=4,
     pos_dir_1stsurround=None,
     phis_surround=None,

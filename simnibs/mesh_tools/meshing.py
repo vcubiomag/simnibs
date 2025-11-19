@@ -126,7 +126,7 @@ def _decompose_affine(affine):
     return rot, scaling, shearing
 
 
-def _resample2iso(image, affine, sampling_rate=1, order=1):
+def _resample2iso(image, affine, sampling_rate=1.0, order=1):
     ## DEPRECATED ##
     # R is a rotation matrix, K a scaling matrix and S a shearing matrix
     R, Z, S = _decompose_affine(affine[:3, :3])

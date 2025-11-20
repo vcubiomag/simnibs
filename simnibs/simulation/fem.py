@@ -18,7 +18,6 @@ from simnibs.utils.mesh_element_properties import ElementTags
 
 from ..mesh_tools import mesh_io
 from ..utils import cond_utils as cond_lib
-import mumps
 from ..utils.simnibs_logger import logger
 
 from petsc4py import PETSc
@@ -140,28 +139,142 @@ class KSPSolver:
 
 
 class MUMPS_Solver:
-    def __init__(self, A=None, isSymmetric=True, log_level=20):
+    def __init__(self, A, isSymmetric=True, log_level=20):
+        """
+        Initializes the solver, performing matrix setup, analysis, and factorization.
+
+        :param A: The matrix in scipy.sparse.csr_matrix format.
+        :param isSymmetric: Flag indicating if the matrix is symmetric.
+        :param log_level: Logging level.
+        """
         self.log_level = log_level
+        # Use PETSc.COMM_SELF for a serial (non-MPI) solver
+        comm = PETSc.COMM_SELF
+
         start = time.time()
-        self.ctx = mumps.Context()
-        self.ctx.set_matrix(A, symmetric=isSymmetric)
-        logger.log(self.log_level, f"{time.time() - start:.2f} seconds to init solver")
-        start = time.time()
-        self.ctx.analyze()
+        try:
+            # Create PETSc Matrix from SciPy CSR format
+            rows, cols = A.shape
+            self.A_petsc = PETSc.Mat().createAIJ(
+                size=(rows, cols), csr=(A.indptr, A.indices, A.data), comm=comm
+            )
+        except AttributeError:
+            raise TypeError("Input matrix A must be a scipy.sparse.csr_matrix")
+
+        self.A_petsc.setOption(PETSc.Mat.Option.SYMMETRIC, isSymmetric)
+        self.A_petsc.assemble()
+
+        # Create KSP (solver) context
+        self.ksp = PETSc.KSP().create(comm=comm)
+        self.ksp.setOperators(self.A_petsc)
+
+        # Set KSP to 'preonly' to just apply the PC (which is our direct solve)
+        self.ksp.setType("preonly")
+
+        # Get the Preconditioner (PC) context
+        pc = self.ksp.getPC()
+        # Set the PC type to 'lu' for LU factorization
+        pc.setType("lu")
+        # Tell the 'lu' solver to use 'mumps' as the backend
+        pc.setFactorSolverType("mumps")
+
         logger.log(
-            self.log_level, f"{time.time() - start:.2f} seconds to analyze matrix"
-        )
-        start = time.time()
-        self.ctx.factor()
-        logger.log(
-            self.log_level, f"{time.time() - start:.2f} seconds to factorize matrix"
+            self.log_level,
+            f"{time.time() - start:.2f} seconds to init solver and set matrix",
         )
 
+        start_setup = time.time()
+
+        self.ksp.setUp()
+
+        logger.log(
+            self.log_level,
+            f"{time.time() - start_setup:.2f} seconds to analyze and factorize matrix",
+        )
+
+        # Pre-allocate PETSc vectors for solution (x) and RHS (b)
+        self.x_petsc, self.b_petsc = self.A_petsc.createVecs()
+
     def solve(self, b):
-        start = time.time()
-        x = self.ctx._solve_dense(b)
-        logger.log(self.log_level, f"{time.time() - start:.2f} seconds to solve system")
-        return x
+        """
+        Solves the system Ax = b for a given right-hand side b.
+
+        'b' can be a 1D NumPy array (single RHS) or a 2D NumPy array
+        (multiple RHS, with vectors as columns).
+
+        :param b: The right-hand side vector(s) as a NumPy array.
+        :return: The solution vector(s) x as a NumPy array.
+        """
+        start_solve = time.time()
+
+        try:
+            if b.ndim == 1:
+                
+                # Check for shape mismatch
+                if b.shape[0] != self.A_petsc.size[1]:
+                    raise ValueError(
+                        f"RHS vector has length {b.shape[0]} "
+                        f"but matrix has {self.A_petsc.size[1]} columns."
+                    )
+                
+                # Copy data from NumPy array 'b' into the pre-allocated PETSc vector
+                self.b_petsc.array[:] = b
+                
+                # Solve the system Ax=b
+                self.ksp.solve(self.b_petsc, self.x_petsc)
+                
+                logger.log(
+                    self.log_level,
+                    f"{time.time() - start_solve:.2f} seconds to solve system (single RHS)",
+                )
+                
+                # Return the solution as a 1D NumPy array
+                return self.x_petsc.array
+
+            elif b.ndim == 2:
+                rows, n_rhs = b.shape
+                
+                # Check for shape mismatch
+                if rows != self.A_petsc.size[1]:
+                    raise ValueError(
+                        f"RHS matrix has {rows} rows "
+                        f"but matrix has {self.A_petsc.size[1]} columns."
+                    )
+
+                # Get the communicator
+                comm = PETSc.COMM_SELF
+                
+                # Create a PETSc dense matrix (Mat) from the NumPy RHS matrix 'b'
+                # We copy the array to avoid potential memory issues
+                B_petsc = PETSc.Mat().createDense(b.shape, array=b.copy(), comm=comm)
+                
+                # Create an empty PETSc dense matrix for the solution 'X'
+                X_petsc = PETSc.Mat().createDense(b.shape, comm=comm)
+
+                # Solve AX=B for X
+                self.ksp.matSolve(B_petsc, X_petsc)
+
+                logger.log(
+                    self.log_level,
+                    f"{time.time() - start_solve:.2f} seconds to solve system ({n_rhs} RHS)",
+                )
+                
+                # Return the solution as a 2D NumPy array
+                # .getDenseArray() returns a view, so we copy it.
+                return X_petsc.getDenseArray().copy()
+
+            else:
+                raise ValueError(
+                    f"RHS 'b' must be a 1D or 2D NumPy array, but got {b.ndim} dimensions."
+                )
+
+        except ValueError as e:
+            # Re-raise the exception with more context
+            raise ValueError(
+                f"Shape mismatch: Error processing RHS. "
+                f"RHS shape: {b.shape}, Matrix shape: {self.A_petsc.size}. "
+                f"Original error: {e}"
+            )
 
 
 def calc_fields(potentials, fields, cond=None, dadt=None, units="mm", E=None):

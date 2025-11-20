@@ -19,3 +19,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """
 
+from simnibs.optimization.tms_flex_optimization import TmsFlexOptimization
+from simnibs.optimization.tms_optimization import TMSoptimize
+from simnibs.optimization.tdcs_optimization import TDCSoptimize
+from simnibs.optimization.tdcs_optimization import TDCSDistributedOptimize
+from simnibs.optimization.tes_flex_optimization.tes_flex_optimization import TesFlexOptimization

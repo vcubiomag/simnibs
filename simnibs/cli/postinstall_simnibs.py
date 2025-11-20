@@ -69,7 +69,9 @@ def create_scripts(dest_dir):
             with open(env_sitecustomize, "r") as f:
                 env_sitecustomize_contents = f.read()
             # If it's alteady there, will not append the PATH
-            write_sitecustomize = simnibs_sitecustomize_contents not in env_sitecustomize_contents
+            write_sitecustomize = (
+                simnibs_sitecustomize_contents not in env_sitecustomize_contents
+            )
         if write_sitecustomize:
             with open(env_sitecustomize, "a") as f:
                 f.write("\n")

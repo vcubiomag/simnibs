@@ -63,11 +63,3 @@ class TestSurfaceSetup:
         np.testing.assert_allclose(
             sphere3_surf.nodes_areas[0], 1.0 / 3.0 * area_of_triangles_w_node
         )
-
-
-if __name__ == "__main__":
-    msh = sphere3_msh()
-    s = sphere3_surf(msh)
-    import IPython
-
-    IPython.embed()

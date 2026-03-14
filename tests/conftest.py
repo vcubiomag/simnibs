@@ -1,13 +1,14 @@
-import functools
-import os
-import shutil
-import tempfile
-import zipfile
-
-import numpy as np
 import pytest
+from pathlib import Path
+import copy
+import numpy as np
 import requests
+import shutil
+import zipfile
+import tempfile
+import functools
 
+from simnibs.mesh_tools import mesh_io
 from simnibs.mesh_tools.mesh_io import Elements, Msh, Nodes
 from simnibs.simulation.tms_coil.tms_coil import TmsCoil
 from simnibs.simulation.tms_coil.tms_coil_deformation import (
@@ -21,60 +22,104 @@ from simnibs.simulation.tms_coil.tms_coil_element import (
 from simnibs.simulation.tms_coil.tms_coil_model import TmsCoilModel
 from simnibs.simulation.tms_coil.tms_stimulator import TmsStimulator
 
-from . import SIMNIBSDIR
-
-
-def pytest_addoption(parser):
-    parser.addoption(
-        "--runslow", action="store_true", default=False, help="run slow tests"
-    )
-
 
 def pytest_configure(config):
     config.addinivalue_line("markers", "slow: mark test as slow to run")
 
 
+def pytest_addoption(parser):
+    """
+    Adds the --skip-slow command-line option to pytest.
+    """
+    parser.addoption(
+        "--skip-slow",
+        action="store_true",
+        default=False,
+        help="skip tests marked as slow",
+    )
+
+
 def pytest_collection_modifyitems(config, items):
-    if config.getoption("--runslow"):
-        # --runslow given in cli: do not skip slow tests
+    """
+    Modifies the collected test items based on the --skip-slow flag.
+    """
+    if not config.getoption("--skip-slow"):
         return
-    skip_slow = pytest.mark.skip(reason="need --runslow option to run")
+
+    skip_slow = pytest.mark.skip(reason="skipped because --skip-slow was specified")
     for item in items:
         if "slow" in item.keywords:
             item.add_marker(skip_slow)
 
 
-@pytest.fixture(scope="module")
-def sphere3_msh():
-    fn = os.path.join(SIMNIBSDIR, "_internal_resources", "testing_files", "sphere3.msh")
-    return Msh(fn=fn)
+@pytest.fixture(scope="session")
+def test_data_dir():
+    """Returns the absolute path to the 'resources' directory."""
+    return Path(__file__).parent / "resources"
+
+
+@pytest.fixture(scope="session")
+def examples_dir():
+    """Returns the absolute path to the 'examples' directory."""
+    return Path(__file__).parent / ".." / "examples"
+
+
+@pytest.fixture(scope="session")
+def _base_sphere3_msh(test_data_dir):
+    return mesh_io.read_msh(test_data_dir / "sphere3.msh")
+
+
+@pytest.fixture(scope="function")
+def sphere3_msh(_base_sphere3_msh):
+    return copy.deepcopy(_base_sphere3_msh)
 
 
 @pytest.fixture(scope="module")
 def example_dataset():
-    url = (
-        "https://github.com/simnibs/example-dataset/releases/"
-        "download/v4.0-lowres/ernie_lowres_V2.zip"
-    )
-    fn_folder = os.path.abspath(os.path.join(os.path.dirname(__file__), "test_data"))
-    tmpname = tempfile.mktemp(".zip")
-    # Download the dataset
-    with requests.get(url, stream=True) as r:
-        r.raw.read = functools.partial(r.raw.read, decode_content=True)
-        with open(tmpname, "wb") as f:
-            shutil.copyfileobj(r.raw, f)
-    # Unzip the dataset
-    with zipfile.ZipFile(tmpname) as z:
-        z.extractall(
-            fn_folder,
-        )
-    os.remove(tmpname)
+    url = "https://github.com/simnibs/example-dataset/releases/download/v4.0-lowres/ernie_lowres_V2.zip"
+
+    fn_folder = tempfile.mkdtemp()
+
+    with tempfile.NamedTemporaryFile(suffix=".zip") as tmp_zip:
+        with requests.get(url, stream=True) as r:
+            r.raw.read = functools.partial(r.raw.read, decode_content=True)
+            shutil.copyfileobj(r.raw, tmp_zip)
+
+        tmp_zip.flush()
+
+        with zipfile.ZipFile(tmp_zip.name) as z:
+            z.extractall(fn_folder)
+
     yield fn_folder
+
     try:
         shutil.rmtree(fn_folder)
-        pass
     except:
-        print("Could not remove example dataset folder")
+        print(f"Could not remove example dataset folder: {fn_folder}")
+
+
+@pytest.fixture(scope="session")
+def rdm():
+    """
+    Utility function to calculate the Relative Difference Measure.
+    """
+
+    def _rdm(a, b):
+        return np.linalg.norm(a / np.linalg.norm(a) - b / np.linalg.norm(b))
+
+    return _rdm
+
+
+@pytest.fixture(scope="session")
+def mag():
+    """
+    Utility function to calculate the magnitude difference in log space.
+    """
+
+    def _mag(a, b):
+        return np.abs(np.log(np.linalg.norm(a) / np.linalg.norm(b)))
+
+    return _mag
 
 
 @pytest.fixture(scope="module")

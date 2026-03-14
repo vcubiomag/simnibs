@@ -1,18 +1,8 @@
-import os
-
 import pytest
 import numpy as np
 
-from simnibs import SIMNIBSDIR
 from simnibs.GUI import surface
-from simnibs.mesh_tools import mesh_io
 
-
-@pytest.fixture(scope="module")
-def sphere3_msh():
-    fn = os.path.join(SIMNIBSDIR, "_internal_resources", "testing_files", "sphere3.msh")
-
-    return mesh_io.read_msh(fn)
 
 
 @pytest.fixture

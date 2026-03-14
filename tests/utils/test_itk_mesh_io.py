@@ -1,18 +1,12 @@
-import os
-
 import numpy as np
 import pytest
 
-from simnibs import SIMNIBSDIR
 from simnibs.utils import itk_mesh_io
 
 
 @pytest.fixture
-def atlas_itk_msh_fn():
-    fn = os.path.join(
-        SIMNIBSDIR, "_internal_resources", "testing_files", "cube_atlas", "atlas.txt.gz"
-    )
-    return fn
+def atlas_itk_msh_fn(test_data_dir):
+    return str(test_data_dir / "cube_atlas" / "atlas.txt.gz")
 
 
 class TestITKReader:

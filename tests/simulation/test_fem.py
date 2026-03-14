@@ -9,7 +9,6 @@ import numpy as np
 import scipy.sparse.linalg as spalg
 import scipy.sparse as sparse
 
-from simnibs import SIMNIBSDIR
 from simnibs.simulation import fem
 from simnibs.simulation import analytical_solutions
 from simnibs.mesh_tools import mesh_io
@@ -27,31 +26,18 @@ N_WORKERS_CASES = [
 
 
 @pytest.fixture
-def sphere3_msh():
-    fn = os.path.join(SIMNIBSDIR, "_internal_resources", "testing_files", "sphere3.msh")
-    return mesh_io.read_msh(fn)
+def sphere_el_msh(test_data_dir):
+    return mesh_io.read_msh(test_data_dir / "sphere_w_electrodes.msh")
 
 
 @pytest.fixture
-def sphere_el_msh():
-    fn = os.path.join(
-        SIMNIBSDIR, "_internal_resources", "testing_files", "sphere_w_electrodes.msh"
-    )
-    return mesh_io.read_msh(fn)
+def cube_msh(test_data_dir):
+    return mesh_io.read_msh(test_data_dir / "cube_w_electrodes.msh")
 
 
 @pytest.fixture
-def cube_msh():
-    fn = os.path.join(
-        SIMNIBSDIR, "_internal_resources", "testing_files", "cube_w_electrodes.msh"
-    )
-    return mesh_io.read_msh(fn)
-
-
-@pytest.fixture
-def cube_lr():
-    fn = os.path.join(SIMNIBSDIR, "_internal_resources", "testing_files", "cube.msh")
-    return mesh_io.read_msh(fn)
+def cube_lr(test_data_dir):
+    return mesh_io.read_msh(test_data_dir / "cube.msh")
 
 
 @pytest.fixture

@@ -1,25 +1,18 @@
-import os
-
 import numpy as np
 import pytest
 
-from simnibs import SIMNIBSDIR
 from simnibs.mesh_tools import mesh_io
 from simnibs.segmentation import brain_surface
 
 
 @pytest.fixture
-def sphere_surf():
-    fn = os.path.join(SIMNIBSDIR, "_internal_resources", "testing_files", "sphere3.msh")
-    mesh = mesh_io.read_msh(fn)
-    return mesh.crop_mesh(1005)
+def sphere_surf(sphere3_msh):
+    return sphere3_msh.crop_mesh(1005)
 
 
 @pytest.fixture
-def sphere_2_surfs():
-    fn = os.path.join(SIMNIBSDIR, "_internal_resources", "testing_files", "sphere3.msh")
-    mesh = mesh_io.read_msh(fn)
-    return mesh.crop_mesh([1004, 1005])
+def sphere_2_surfs(sphere3_msh):
+    return sphere3_msh.crop_mesh([1004, 1005])
 
 
 def one_sphere_image():

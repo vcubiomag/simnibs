@@ -9,25 +9,19 @@ import pytest
 import pygpc
 from collections import OrderedDict
 
-from simnibs import SIMNIBSDIR
 from simnibs.simulation import fem, sim_struct, gpc as simnibs_gpc
 from simnibs.mesh_tools import mesh_io
 from simnibs.simulation.sim_struct import TDCSLIST
 
 
 @pytest.fixture(scope="module")
-def sphere3():
-    return mesh_io.read_msh(
-        os.path.join(SIMNIBSDIR, "_internal_resources", "testing_files", "sphere3.msh")
-    )
+def sphere3(test_data_dir):
+    return mesh_io.read_msh(test_data_dir / "sphere3.msh")
 
 
 @pytest.fixture
-def cube_msh():
-    fn = os.path.join(
-        SIMNIBSDIR, "_internal_resources", "testing_files", "cube_w_electrodes.msh"
-    )
-    return mesh_io.read_msh(fn)
+def cube_msh(test_data_dir):
+    return mesh_io.read_msh(test_data_dir / "cube_w_electrodes.msh")
 
 
 @pytest.fixture(scope="module")

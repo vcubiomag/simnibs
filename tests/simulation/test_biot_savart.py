@@ -1,16 +1,7 @@
-import os
 import numpy as np
 import pytest
 
-from simnibs import SIMNIBSDIR
-from simnibs.mesh_tools import mesh_io
 from simnibs.simulation import biot_savart
-
-
-@pytest.fixture
-def sphere3_msh():
-    fn = os.path.join(SIMNIBSDIR, "_internal_resources", "testing_files", "sphere3.msh")
-    return mesh_io.read_msh(fn)
 
 
 def _smooth_field(r, x, y, z):

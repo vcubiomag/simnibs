@@ -17,19 +17,13 @@ from simnibs.segmentation.simnibs_segmentation_utils import (
 
 
 @pytest.fixture(scope="module")
-def testernie_nii():
-    fn = os.path.join(
-        SIMNIBSDIR, "_internal_resources", "testing_files", "ernie_T1_ds5.nii.gz"
-    )
-    return fn
+def testernie_nii(test_data_dir):
+    return str(test_data_dir / "ernie_T1_ds5.nii.gz")
 
 
 @pytest.fixture(scope="module")
-def testmni_nii():
-    fn = os.path.join(
-        SIMNIBSDIR, "_internal_resources", "testing_files", "MNI_test_ds5.nii.gz"
-    )
-    return fn
+def testmni_nii(test_data_dir):
+    return str(test_data_dir / "MNI_test_ds5.nii.gz")
 
 
 @pytest.fixture(scope="module")
@@ -53,23 +47,18 @@ def testaffinemesh_msh():
 
 
 @pytest.fixture(scope="module")
-def testcubenoise_nii():
-    fn = os.path.join(
-        SIMNIBSDIR, "_internal_resources", "testing_files", "cube_noise.nii.gz"
-    )
-    return fn
+def testcubenoise_nii(test_data_dir):
+    return str(test_data_dir / "cube_noise.nii.gz")
 
 
 @pytest.fixture(scope="module")
-def testcube_nii():
-    fn = os.path.join(SIMNIBSDIR, "_internal_resources", "testing_files", "cube.nii.gz")
-    return fn
+def testcube_nii(test_data_dir):
+    return str(test_data_dir / "cube.nii.gz")
 
 
 @pytest.fixture(scope="module")
-def testcubeatlas_path():
-    fn = os.path.join(SIMNIBSDIR, "_internal_resources", "testing_files", "cube_atlas")
-    return fn
+def testcubeatlas_path(test_data_dir):
+    return str(test_data_dir / "cube_atlas")
 
 
 def _calc_dice(vol1, vol2):

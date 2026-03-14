@@ -5,7 +5,6 @@ import shutil
 import numpy as np
 import pytest
 
-from simnibs import SIMNIBSDIR
 from simnibs.utils.cond_utils import standard_cond
 from simnibs.simulation.analytical_solutions import potential_dipole_3layers
 from simnibs.eeg import forward
@@ -14,19 +13,10 @@ from simnibs.utils.csv_reader import write_csv_positions
 from simnibs.mesh_tools import mesh_io
 from simnibs.segmentation.brain_surface import fibonacci_sphere, fibonacci_sphere_points
 
-from simnibs.simulation.tests.test_fem import rdm, mag
-
-
-@pytest.fixture
-def sphere3_msh():
-    return mesh_io.read_msh(
-        Path(SIMNIBSDIR) / "_internal_resources" / "testing_files" / "sphere3.msh"
-    )
-
 
 # False gives large errors with this coarse mesh
 @pytest.mark.parametrize("point_electrodes", [True])
-def test_prepare_forward(point_electrodes, sphere3_msh):
+def test_prepare_forward(point_electrodes, sphere3_msh, rdm, mag):
     s = standard_cond()
     # Special tags for sphere3_msh
     s[2].value = 0.3  # gray matter

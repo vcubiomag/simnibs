@@ -1,5 +1,4 @@
 import json
-import os
 import shutil
 from copy import deepcopy
 from pathlib import Path
@@ -20,31 +19,19 @@ from simnibs.simulation.tms_coil.tms_coil_element import (
 )
 from simnibs.simulation.tms_coil.tms_stimulator import TmsStimulator
 
-from simnibs import SIMNIBSDIR
+@pytest.fixture(scope="module")
+def testcoil_ccd(test_data_dir):
+    return str(test_data_dir / "testcoil.ccd")
 
 
 @pytest.fixture(scope="module")
-def testcoil_ccd():
-    fn = os.path.join(
-        SIMNIBSDIR, "_internal_resources", "testing_files", "testcoil.ccd"
-    )
-    return fn
+def testcoil_nii_gz(test_data_dir):
+    return str(test_data_dir / "testcoil.nii.gz")
 
 
 @pytest.fixture(scope="module")
-def testcoil_nii_gz():
-    fn = os.path.join(
-        SIMNIBSDIR, "_internal_resources", "testing_files", "testcoil.nii.gz"
-    )
-    return fn
-
-
-@pytest.fixture(scope="module")
-def testcoil_nii_gz_B():
-    fn = os.path.join(
-        SIMNIBSDIR, "_internal_resources", "testing_files", "testcoilB.nii.gz"
-    )
-    return fn
+def testcoil_nii_gz_B(test_data_dir):
+    return str(test_data_dir / "testcoilB.nii.gz")
 
 
 def is_close_subset_of(array1, array2, tolerance=1e-4):

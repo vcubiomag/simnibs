@@ -4,21 +4,20 @@ import numpy as np
 import tempfile
 import warnings
 
-from simnibs import SIMNIBSDIR
 from simnibs.simulation.sim_struct import TMSLIST, POSITION
 from simnibs.utils.nnav import localite, softaxic, brainsight, ant
 
 
-FIXTURE_DIR = os.path.join(
-    SIMNIBSDIR, "_internal_resources", "testing_files", "nnav_testdata"
-)
+@pytest.fixture(scope="session")
+def nnav_data_dir(test_data_dir):
+    return test_data_dir / "nnav_testdata"
 
 
 ## LOCALITE test files and data ##
 @pytest.fixture()
-def tm_fn():
+def tm_fn(nnav_data_dir):
     fn = os.path.join(
-        FIXTURE_DIR,
+        nnav_data_dir,
         "localite",
         "Session_20120925103137328/TMSTrigger/"
         "TriggerMarkers_Coil1_20210409170817799.xml".replace("/", os.sep),
@@ -27,9 +26,9 @@ def tm_fn():
 
 
 @pytest.fixture()
-def tm_no_pos_fn():
+def tm_no_pos_fn(nnav_data_dir):
     fn = os.path.join(
-        FIXTURE_DIR,
+        nnav_data_dir,
         "localite",
         "Session_20120925103137328/TMSTrigger/"
         "no_pos_data_TriggerMarkers_Coil0_20200220155529299.xml".replace("/", os.sep),
@@ -38,10 +37,10 @@ def tm_no_pos_fn():
 
 
 @pytest.fixture()
-def im_lps_fn1():
+def im_lps_fn1(nnav_data_dir):
     """Localite data for LPS oriented (-> DICOM) T1."""
     fn = os.path.join(
-        FIXTURE_DIR,
+        nnav_data_dir,
         "localite",
         "Session_20120925103137328/InstrumentMarkers/"
         "LPS_InstrumentMarker20120925123537421.xml".replace("/", os.sep),
@@ -50,10 +49,10 @@ def im_lps_fn1():
 
 
 @pytest.fixture()
-def im_ras_fn1():
+def im_ras_fn1(nnav_data_dir):
     """Localite data for RAS oriented T1."""
     fn = os.path.join(
-        FIXTURE_DIR,
+        nnav_data_dir,
         "localite",
         "Session_20120925103137328/InstrumentMarkers/"
         "RAS_InstrumentMarker20170316160859032.xml".replace("/", os.sep),
@@ -62,10 +61,10 @@ def im_ras_fn1():
 
 
 @pytest.fixture()
-def im_ras_fn2():
+def im_ras_fn2(nnav_data_dir):
     """Localite data for RAS oriented T1."""
     fn = os.path.join(
-        FIXTURE_DIR,
+        nnav_data_dir,
         "localite",
         "Session_20120925103137328/InstrumentMarkers/"
         "RAS_InstrumentMarker20170403154022328.xml".replace("/", os.sep),
@@ -111,8 +110,8 @@ def arr_im_lps_0():
 
 ## SOFTAXIC test files and data ##
 @pytest.fixture()
-def softaxicTestFile():
-    fn = os.path.join(FIXTURE_DIR, "softaxic", "neuronav_coil_test.stmpx")
+def softaxicTestFile(nnav_data_dir):
+    fn = os.path.join(nnav_data_dir, "softaxic", "neuronav_coil_test.stmpx")
     return fn
 
 
@@ -131,64 +130,64 @@ def pos0():
 
 ## BRAINSIGHT test files and data ##
 @pytest.fixture()
-def dcm_brainsight_fn():
+def dcm_brainsight_fn(nnav_data_dir):
     # Brainsight export for DICOM file, brainsight world coordinate system
     dcm_fn = os.path.join(
-        FIXTURE_DIR, "brainsight", "dcmimage_brainsightcoord.txt".replace("/", os.sep)
+        nnav_data_dir, "brainsight", "dcmimage_brainsightcoord.txt".replace("/", os.sep)
     )
     return dcm_fn
 
 
 @pytest.fixture()
-def dcm_world_fn():
+def dcm_world_fn(nnav_data_dir):
     # Brainsight export for DICOM file, dicom coordinate system
     dcm_fn = os.path.join(
-        FIXTURE_DIR, "brainsight", "dcmimage_worldcoord.txt".replace("/", os.sep)
+        nnav_data_dir, "brainsight", "dcmimage_worldcoord.txt".replace("/", os.sep)
     )
     return dcm_fn
 
 
 @pytest.fixture()
-def dcm_niftialigned_fn():
+def dcm_niftialigned_fn(nnav_data_dir):
     # Brainsight export for DICOM file, dicom coordinate system
     dcm_fn = os.path.join(
-        FIXTURE_DIR, "brainsight", "dcmimage_niftialignedcoord.txt".replace("/", os.sep)
+        nnav_data_dir, "brainsight", "dcmimage_niftialignedcoord.txt".replace("/", os.sep)
     )
     return dcm_fn
 
 
 @pytest.fixture()
-def nii_brainsight_fn():
+def nii_brainsight_fn(nnav_data_dir):
     # Brainsight export for nifti file, brainsight coordinate system
     nii_fn = os.path.join(
-        FIXTURE_DIR, "brainsight", "niiImage_brainsightcoord.txt".replace("/", os.sep)
+        nnav_data_dir, "brainsight", "niiImage_brainsightcoord.txt".replace("/", os.sep)
     )
     return nii_fn
 
 
 @pytest.fixture()
-def nii_niftiscanner_fn():
+def nii_niftiscanner_fn(nnav_data_dir):
     # Brainsight export for nifti file, nifti:scanner coordinate system
     nii_fn = os.path.join(
-        FIXTURE_DIR, "brainsight", "niiImage_nifticoord.txt".replace("/", os.sep)
+        nnav_data_dir, "brainsight", "niiImage_nifticoord.txt".replace("/", os.sep)
     )
     return nii_fn
 
 
 @pytest.fixture()
-def nii_niftialigned_fn():
+def nii_niftialigned_fn(nnav_data_dir):
     # Brainsight export for nifti file, nifti:aligned coordinate system
     nii_fn = os.path.join(
-        FIXTURE_DIR, "brainsight", "niiImage_niftialignedcoord.txt".replace("/", os.sep)
+        nnav_data_dir, "brainsight", "niiImage_niftialignedcoord.txt".replace("/", os.sep)
     )
     return nii_fn
 
 
 @pytest.fixture()
-def nii_niftialigned_q_fn():
+def nii_niftialigned_q_fn(nnav_data_dir):
     # Brainsight export for nifti file, nifti:aligned:q coordinate system
     nii_fn = os.path.join(
-        FIXTURE_DIR,
+        nnav_data_dir,
         "brainsight",
         "niiImage_niftialigned_q_coord_v14.txt".replace("/", os.sep),
     )
@@ -196,11 +195,11 @@ def nii_niftialigned_q_fn():
 
 
 @pytest.fixture()
-def nii_niftialigned_empty_fn():
+def nii_niftialigned_empty_fn(nnav_data_dir):
     # Brainsight export for nifti file, nifti:aligned coordinate system
     # no targets, not samples
     nii_fn = os.path.join(
-        FIXTURE_DIR,
+        nnav_data_dir,
         "brainsight",
         "niiImage_niftialignedcoord_empty.txt".replace("/", os.sep),
     )
@@ -208,11 +207,11 @@ def nii_niftialigned_empty_fn():
 
 
 @pytest.fixture()
-def nii_niftialigned_no_samples_fn():
+def nii_niftialigned_no_samples_fn(nnav_data_dir):
     # Brainsight export for nifti file, nifti:aligned coordinate system
     # not samples
     nii_fn = os.path.join(
-        FIXTURE_DIR,
+        nnav_data_dir,
         "brainsight",
         "niiImage_niftialignedcoord_no_samples.txt".replace("/", os.sep),
     )
@@ -220,11 +219,11 @@ def nii_niftialigned_no_samples_fn():
 
 
 @pytest.fixture()
-def nii_niftialigned_no_targets_fn():
+def nii_niftialigned_no_targets_fn(nnav_data_dir):
     # Brainsight export for nifti file, nifti:aligned coordinate system
     # no targets
     nii_fn = os.path.join(
-        FIXTURE_DIR,
+        nnav_data_dir,
         "brainsight",
         "niiImage_niftialignedcoord_no_targets.txt".replace("/", os.sep),
     )
@@ -269,9 +268,9 @@ def arr_sample3():
 
 ## ANT test files and data ##
 @pytest.fixture()
-def ant_mrk_fn():
+def ant_mrk_fn(nnav_data_dir):
     # ANT visor .mrk-file example
-    fn = os.path.join(FIXTURE_DIR, "ant", "ioJson3DMarker_example_SimNIBS.mrk")
+    fn = os.path.join(nnav_data_dir, "ant", "ioJson3DMarker_example_SimNIBS.mrk")
     return fn
 
 

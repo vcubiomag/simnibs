@@ -7,7 +7,6 @@ import h5py
 import pytest
 from scipy.spatial import ConvexHull
 
-from simnibs import SIMNIBSDIR
 from simnibs.mesh_tools import mesh_io
 from simnibs.utils import itk_mesh_io
 from simnibs.utils.mesh_element_properties import ElementTags, ElementTypes
@@ -20,12 +19,6 @@ def simple_element():
     elm = mesh_io.Elements(triangles, tetrahedra)
     elm.tag1 = elm.tag2 = [1, 1, 2, 3, 11, 12, 11, 13]
     return elm
-
-
-@pytest.fixture(scope="module")
-def sphere3_msh():
-    fn = os.path.join(SIMNIBSDIR, "_internal_resources", "testing_files", "sphere3.msh")
-    return mesh_io.read_msh(fn)
 
 
 @pytest.fixture(scope="module")
@@ -50,11 +43,8 @@ def sphere3_baricenters(sphere3_msh):
 
 
 @pytest.fixture
-def atlas_itk_msh():
-    fn = os.path.join(
-        SIMNIBSDIR, "_internal_resources", "testing_files", "cube_atlas", "atlas.txt.gz"
-    )
-    return itk_mesh_io.itk_to_msh(fn)
+def atlas_itk_msh(test_data_dir):
+    return itk_mesh_io.itk_to_msh(test_data_dir / "cube_atlas" / "atlas.txt.gz")
 
 
 def toCartesian(pts):

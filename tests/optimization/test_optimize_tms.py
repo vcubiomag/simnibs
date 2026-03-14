@@ -1,17 +1,7 @@
-import os
 import numpy as np
-import pytest
 import scipy.spatial
 
-from simnibs import SIMNIBSDIR
 from simnibs.optimization import tms_optimization
-from simnibs.mesh_tools import mesh_io
-
-
-@pytest.fixture
-def sphere3_msh():
-    fn = os.path.join(SIMNIBSDIR, "_internal_resources", "testing_files", "sphere3.msh")
-    return mesh_io.read_msh(fn)
 
 
 class TestGetOptGrid:

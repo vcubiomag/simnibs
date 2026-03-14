@@ -1,19 +1,9 @@
 import pytest
 from simnibs.utils.cond_utils import COND
-import os
 import numpy as np
 
 import simnibs.utils.cond_utils
-
-from simnibs import SIMNIBSDIR
 from simnibs.mesh_tools import mesh_io
-
-
-@pytest.fixture
-def sphere3_msh():
-    fn = os.path.join(SIMNIBSDIR, "_internal_resources", "testing_files", "sphere3.msh")
-    return mesh_io.read_msh(fn)
-
 
 @pytest.fixture
 def tensor():

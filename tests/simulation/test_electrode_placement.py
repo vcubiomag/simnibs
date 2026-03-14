@@ -1,22 +1,10 @@
-import os
-
 import copy
 
 # import matplotlib.pyplot as plt
 import numpy as np
 import scipy.spatial
-import pytest
-
-
-from simnibs import SIMNIBSDIR
 from simnibs.mesh_tools import mesh_io
 from simnibs.simulation import electrode_placement
-
-
-@pytest.fixture(scope="module")
-def sphere3_msh():
-    fn = os.path.join(SIMNIBSDIR, "_internal_resources", "testing_files", "sphere3.msh")
-    return mesh_io.read_msh(fn)
 
 
 class TestDrawElectrodes:

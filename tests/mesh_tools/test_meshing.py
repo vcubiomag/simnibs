@@ -4,7 +4,6 @@ import tempfile
 import pytest
 import numpy as np
 
-from simnibs import SIMNIBSDIR
 from simnibs.mesh_tools import meshing, mesh_io
 
 
@@ -24,23 +23,18 @@ def cube_image():
 
 
 @pytest.fixture
-def surface():
-    fn = os.path.join(SIMNIBSDIR, "_internal_resources", "testing_files", "cube.off")
-    return mesh_io.read_off(fn)
+def surface(test_data_dir):
+    return mesh_io.read_off(test_data_dir / "cube.off")
 
 
 @pytest.fixture
-def sphere3():
-    fn = os.path.join(SIMNIBSDIR, "_internal_resources", "testing_files", "sphere3.msh")
-    return mesh_io.read_msh(fn)
+def sphere3(test_data_dir):
+    return mesh_io.read_msh(test_data_dir / "sphere3.msh")
 
 
 @pytest.fixture
-def spikyblob():
-    fn = os.path.join(
-        SIMNIBSDIR, "_internal_resources", "testing_files", "spikyblob.msh"
-    )
-    return mesh_io.read_msh(fn)
+def spikyblob(test_data_dir):
+    return mesh_io.read_msh(test_data_dir / "spikyblob.msh")
 
 
 def volumes(mesh):

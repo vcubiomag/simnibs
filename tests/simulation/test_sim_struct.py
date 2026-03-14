@@ -10,29 +10,18 @@ import numpy as np
 import nibabel
 
 
-from simnibs import SIMNIBSDIR
 from simnibs.simulation import sim_struct
-from simnibs.mesh_tools import mesh_io
 
 
 @pytest.fixture(scope="module")
-def sphere3_fn():
-    return os.path.join(
-        SIMNIBSDIR, "_internal_resources", "testing_files", "sphere3.msh"
-    )
-
-
-@pytest.fixture
-def sphere3_msh():
-    return mesh_io.read_msh(
-        os.path.join(SIMNIBSDIR, "_internal_resources", "testing_files", "sphere3.msh")
-    )
+def sphere3_fn(test_data_dir):
+    return str(test_data_dir / "sphere3.msh")
 
 
 @pytest.fixture(scope="module")
-def mat_session():
+def mat_session(test_data_dir):
     mat = scipy.io.loadmat(
-        os.path.join(SIMNIBSDIR, "_internal_resources", "testing_files", "session.mat"),
+        test_data_dir / "session.mat",
         struct_as_record=True,
         squeeze_me=False,
     )
@@ -41,25 +30,15 @@ def mat_session():
 
 
 @pytest.fixture(scope="module")
-def sphere3_folders():
+def sphere3_folders(test_data_dir, tmp_path_factory):
     """Creates folder structure"""
-    path_to_dir = os.path.join(
-        SIMNIBSDIR, "_internal_resources", "testing_files", "d2c_sphere3"
-    )
-    if not os.path.exists(path_to_dir):
-        os.mkdir(path_to_dir)
+    path_to_dir = tmp_path_factory.mktemp("d2c_sphere3")
 
-    with open(os.path.join(path_to_dir, "CTI_vn_tensor.nii.gz"), "w") as f:
-        f.write(b"")
-    with open(os.path.join(path_to_dir, "CTI_dir_tensor.nii.gz"), "w") as f:
-        f.write(b"")
-    with open(os.path.join(path_to_dir, "CTI_dir_mc.nii.gz"), "w") as f:
-        f.write(b"")
+    open(path_to_dir / "CTI_vn_tensor.nii.gz", "w").close()
+    open(path_to_dir / "CTI_dir_tensor.nii.gz", "w").close()
+    open(path_to_dir / "CTI_dir_mc.nii.gz", "w").close()
 
-    def fin():
-        shutil.rmtree(path_to_dir)
-
-    return os.path.join(SIMNIBSDIR, "_internal_resources", "testing_files")
+    return str(test_data_dir)
 
 
 class TestFiducials:

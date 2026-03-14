@@ -1,4 +1,3 @@
-import os
 import pytest
 import numpy as np
 
@@ -9,14 +8,7 @@ from simnibs.simulation import analytical_solutions, onlinefem
 from simnibs.simulation import tms_coil
 import sys
 from simnibs.mesh_tools import mesh_io
-from simnibs import SIMNIBSDIR
 from simnibs.simulation.onlinefem import OnlineFEM, FemTargetPointCloud
-
-
-@pytest.fixture
-def sphere3_msh():
-    fn = os.path.join(SIMNIBSDIR, "_internal_resources", "testing_files", "sphere3.msh")
-    return mesh_io.read_msh(fn)
 
 
 @pytest.fixture
@@ -52,11 +44,8 @@ def tms_sphere(sphere3_msh):
 
 
 @pytest.fixture
-def cube_msh():
-    fn = os.path.join(
-        SIMNIBSDIR, "_internal_resources", "testing_files", "cube_w_electrodes.msh"
-    )
-    m = mesh_io.read_msh(fn)
+def cube_msh(test_data_dir):
+    m = mesh_io.read_msh(test_data_dir / "cube_w_electrodes.msh")
     m = m.crop_mesh(tags=[5, 1005])
     return m
 

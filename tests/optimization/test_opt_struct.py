@@ -1,7 +1,7 @@
-import os
 import csv
 from mock import patch, MagicMock
 import tempfile
+import os
 
 import pytest
 import numpy as np
@@ -9,7 +9,6 @@ import nibabel
 import h5py
 import scipy.io
 
-from simnibs import SIMNIBSDIR
 from simnibs.mesh_tools import mesh_io
 from simnibs.simulation import sim_struct
 from simnibs.simulation import analytical_solutions
@@ -31,11 +30,8 @@ def sphere_vol(sphere3_msh):
 
 
 @pytest.fixture
-def sphere_w_elec_msh():
-    fn = os.path.join(
-        SIMNIBSDIR, "_internal_resources", "testing_files", "sphere_w_electrodes.msh"
-    )
-    return mesh_io.Msh(fn=fn)
+def sphere_w_elec_msh(test_data_dir):
+    return mesh_io.Msh(fn=str(test_data_dir / "sphere_w_electrodes.msh"))
 
 
 @pytest.fixture

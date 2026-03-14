@@ -5,19 +5,16 @@ Created on Fri Jul  1 16:08:27 2022
 @author: axthi
 """
 
-import os
 import numpy as np
 import pytest
 import h5py
+import os
 from simnibs.utils import TI_utils as TI
-from simnibs.mesh_tools import mesh_io
-from simnibs import SIMNIBSDIR
 
 
 @pytest.fixture()
-def sphere_surf():
-    fn = os.path.join(SIMNIBSDIR, "_internal_resources", "testing_files", "sphere3.msh")
-    return mesh_io.read_msh(fn).crop_mesh([1003, 1004])
+def sphere_surf(sphere3_msh):
+    return sphere3_msh.crop_mesh([1003, 1004])
 
 
 @pytest.fixture()

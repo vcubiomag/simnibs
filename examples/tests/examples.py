@@ -184,8 +184,9 @@ class TestPythonErnie:
         shutil.copy(
             os.path.join(
                 simnibs.SIMNIBSDIR,
-                "_internal_resources",
-                "testing_files",
+                "..",
+                "tests",
+                "resources",
                 "ID03_MOTOR_ICA.nii.gz",
             ),
             example_dataset,
@@ -372,8 +373,9 @@ class TestMatlabErnie:
         shutil.copy(
             os.path.join(
                 simnibs.SIMNIBSDIR,
-                "_internal_resources",
-                "testing_files",
+                "..",
+                "tests",
+                "resources",
                 "ID03_MOTOR_ICA.nii.gz",
             ),
             example_dataset,

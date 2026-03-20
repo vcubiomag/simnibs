@@ -1,49 +1,33 @@
 [project]
 name = "simnibs"
 authors = [
-  { name = "SimNIBS developers", email = "support@simnibs.org" }, # Optional
+  { name = "SimNIBS developers", email = "support@simnibs.org" },
 ]
 maintainers = [{ name = "SimNIBS developers", email = "support@simnibs.org" }]
 license = "GPL-3.0-only"
 description = "Simulation of Non-Invasive Brain Stimulation"
-# long_description = file: README.md
-# long_description_content_type = text/markdown
 dynamic = ["version"]
-# version=open("simnibs/_version.py").readlines()[-1].split()[-1].strip("\"'"),
-#version = v4.1
 requires-python = ">=3.11"
 
-# additional dependencies which should perhaps be added?
-# libwebp, freeglut
-# python-mumps - only works automatically via conda
-# mpfr, gmp - from conda
-
-[project.urls] # Optional
-"Homepage" = "http://simnibs.org"
-"Bug Reports" = "https://github.com/simnibs/simnibs/issues"
-"Source" = "https://github.com/simnibs/simnibs/"
-
 [build-system]
+build-backend = "scikit_build_core.build"
 requires = [
-  'setuptools>=68',
-  'wheel',
-  'build',
-  'numpy>=2',
-  'cython',
-  'setuptools-scm>=8',
+    "scikit-build-core",
+    "cython",
+    "numpy>=2.0.0",
 ]
-build-backend = 'setuptools.build_meta'
 
-[tool.setuptools]
-zip-safe = false
-include-package-data = true
+[tool.scikit-build]
+wheel.packages = ["simnibs"]
+wheel.exclude = ["**.pyx", "**.cpp", "**.c", "**.h"]
+build-dir = "build/{wheel_tag}"
 
-[tool.setuptools.packages.find]
-where = ["."]
-exclude = ["packing*", "docs*"]
+[tool.scikit-build.editable]
+mode = "redirect"
 
-[tool.setuptools_scm]
-# setuptools_scm complains if this section is not present
+[tool.scikit-build.metadata.version]
+provider = "scikit_build_core.metadata.regex"
+input = "simnibs/__init__.py"
 
 [project.scripts]
 charm = "simnibs.cli.charm:main"
@@ -74,7 +58,3 @@ simnibs_gui = "simnibs.cli.simnibs_gui:main"
 subject2mni_coords = "simnibs.cli.subject2mni_coords:main"
 subject2mni = "simnibs.cli.subject2mni:main"
 subject_atlas = "simnibs.cli.subject_atlas:main"
-
-[project.optional-dependencies]
-test = ["pytest", "mock"]
-GUI = ["pyqt5", "pyopengl"]

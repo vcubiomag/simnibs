@@ -151,3 +151,6 @@ miniconda3/
 *.vrb
 *.xdy
 *.tdo
+# pixi environments
+.pixi/*
+!.pixi/config.toml

@@ -1,0 +1,33 @@
+[workspace]
+name = "simnibs"
+description = "Simulation of Non-Invasive Brain Stimulation"
+channels = ["https://prefix.dev/vcubiomag", "conda-forge"]
+platforms = ["osx-arm64"]
+
+[dependencies]
+python = ">=3.14"
+numpy = ">=2.4.3,<3"
+nibabel = ">=5.4.0,<6"
+scipy = ">=1.17.1,<2"
+pip = ">=26.0.1,<27"
+cgal-cpp = ">=5.6.3,<6"
+h5py = ">=3.15.1,<4"
+cortech = ">=0.1,<0.2"
+python-mumps = ">=0.0.6,<0.0.7"
+petsc4py = ">=3.24.4,<4"
+jsonschema = ">=4.26.0,<5"
+fmm3dpy = ">=2.1.0,<3"
+pygpc = ">=0.4.4,<0.5"
+samseg = ">=0.6a0.dev0,<0.6a1"
+pytorch = ">=2.10.0,<3"
+brainnet = ">=0.2,<0.3"
+numba = ">=0.64.0,<0.65"
+requests = ">=2.32.5,<3"
+tbb-devel = ">=2022.3.0,<2023"
+eigen = ">=5.0.1,<6"
+gmsh = ">=4.15.0,<5"
+
+[pypi-dependencies]
+simnibs = { path = ".", editable = true }
+
+[tasks]

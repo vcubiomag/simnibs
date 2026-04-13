@@ -3,11 +3,13 @@
 #include <CGAL/Polyhedron_3.h>
 
 #include <CGAL/AABB_tree.h>
-#include <CGAL/AABB_traits.h>
+#include <CGAL/AABB_traits_3.h>
 #include <CGAL/AABB_face_graph_triangle_primitive.h>
 #include <CGAL/Side_of_triangle_mesh.h>
 
 #include <cstdlib>
+#include <optional>
+#include <variant>
 
 // Domain
 typedef CGAL::Exact_predicates_inexact_constructions_kernel K;
@@ -20,9 +22,10 @@ typedef CGAL::Surface_mesh<Point> Surface_mesh;
 
 // Intersection
 typedef CGAL::AABB_face_graph_triangle_primitive<Surface_mesh> Primitive;
-typedef CGAL::AABB_traits<K, Primitive> Traits;
+typedef CGAL::AABB_traits_3<K, Primitive> Traits;
 typedef CGAL::AABB_tree<Traits> Tree;
-typedef boost::optional<Tree::Intersection_and_primitive_id<Segment>::Type> Segment_intersection;
+typedef Tree::Intersection_and_primitive_id<Segment>::Type Segment_intersection;
+typedef std::optional<Segment_intersection> Segment_intersection_optional;
 typedef Tree::Primitive_id Primitive_id;
 
 // Side of triangle
@@ -62,13 +65,13 @@ std::pair<std::vector<int>, std::vector<float>> _segment_triangle_intersection(
       // Test intersections
       std::list<Segment_intersection> intersections;
       tree.all_intersections(segment, std::back_inserter(intersections));
-      for (std::list<Segment_intersection>::iterator it=intersections.begin(); it != intersections.end(); ++it){
-          Segment_intersection inter = *it;
-          std::size_t id = boost::get<CGAL::SM_Face_index>(inter->second);
+      for (auto it=intersections.begin(); it != intersections.end(); ++it){
+          auto& inter = *it;
+          std::size_t id = inter.second;
           indices_pairs.push_back(i);
           indices_pairs.push_back((int) id);
-          Point* p = boost::get<Point>(&(inter->first));
-          Segment *s = boost::get<Segment>(&(inter->first));
+          Point* p = std::get_if<Point>(&(inter.first));
+          Segment *s = std::get_if<Segment>(&(inter.first));
           if (p) {
               for (int j=0; j<3; j++) intersect_positions.push_back((float) (*p)[j]);
            }
@@ -131,13 +134,13 @@ std::pair<std::vector<int>, std::vector<float>> TreeC::_intersections(
       // Test intersections
       std::list<Segment_intersection> intersections;
       this->tree.all_intersections(segment, std::back_inserter(intersections));
-      for (std::list<Segment_intersection>::iterator it=intersections.begin(); it != intersections.end(); ++it){
-          Segment_intersection inter = *it;
-          std::size_t id = boost::get<CGAL::SM_Face_index>(inter->second);
+      for (auto it=intersections.begin(); it != intersections.end(); ++it){
+          auto& inter = *it;
+          std::size_t id = inter.second;
           indices_pairs.push_back(i);
           indices_pairs.push_back((int) id);
-          Point* p = boost::get<Point>(&(inter->first));
-          Segment *s = boost::get<Segment>(&(inter->first));
+          Point* p = std::get_if<Point>(&(inter.first));
+          Segment *s = std::get_if<Segment>(&(inter.first));
           if (p) {
               for (int j=0; j<3; j++) intersect_positions.push_back((float) (*p)[j]);
            }
@@ -158,7 +161,7 @@ bool TreeC::_any_intersections(
         Point(segment_end[3*i], segment_end[3*i + 1], segment_end[3*i + 2])
       );
       // Test intersections
-      Segment_intersection intersection = this->tree.any_intersection(segment);
+      Segment_intersection_optional intersection = this->tree.any_intersection(segment);
     if(intersection)
     {
       return true;

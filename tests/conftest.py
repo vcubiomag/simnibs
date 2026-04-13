@@ -86,8 +86,9 @@ def example_dataset():
             shutil.copyfileobj(r.raw, tmp_zip)
 
         tmp_zip.flush()
+        tmp_zip.seek(0)
 
-        with zipfile.ZipFile(tmp_zip.name) as z:
+        with zipfile.ZipFile(tmp_zip) as z:
             z.extractall(fn_folder)
 
     yield fn_folder

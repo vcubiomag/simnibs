@@ -90,7 +90,7 @@ class SamsegWholeHead(Samseg):
             meshCollectionFileName=os.path.join(
                 self.atlasDir, "atlasForAffineRegistration.txt.gz"
             ),
-            templateFileName=os.path.join(self.atlasDir, "template.nii"),
+            templateFileName=os.path.join(self.atlasDir, "template.nii.gz"),
         )
         self.probabilisticAtlas = ProbabilisticAtlas()
 

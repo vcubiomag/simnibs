@@ -29,7 +29,7 @@ def testmni_nii(test_data_dir):
 @pytest.fixture(scope="module")
 def testtemplate_nii():
     fn = os.path.join(
-        SIMNIBSDIR, "segmentation", "atlases", "charm_atlas_mni_v1-1", "template.nii"
+        SIMNIBSDIR, "segmentation", "atlases", "charm_atlas_mni_v1-1", "template.nii.gz"
     )
     return fn
 
